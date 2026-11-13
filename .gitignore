@@ -20,3 +20,7 @@ env/
 # Archivos de sistema operativo
 .DS_Store
 Thumbs.db
+
+# Copias locales de conversación
+copia_conversacion.md
+
