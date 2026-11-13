@@ -71,3 +71,10 @@ Este documento registra todas las decisiones técnicas, metodológicas y de mode
   - BPC del bigrama MLE (10 transiciones): `0.6000 bits`.
   - Perplejidad (PPL): `1.5157`.
 * **Justificación:** Garantiza matemáticamente que los algoritmos de estimación, entropía y evaluación están programados sin sesgos conceptuales.
+
+---
+
+## 8. Inicialización del Control de Versiones con Git
+* **Decisión:** Se inicializó un repositorio Git local en la rama principal `main` con un archivo `.gitignore` configurado para ignorar binarios, cachés de Python (`__pycache__`) y archivos auxiliares de LaTeX (`.aux`, `.log`, `.out`). Se realizó el primer *commit* con los 112 archivos base del proyecto.
+* **Justificación:** Garantiza la trazabilidad, reproducibilidad y trabajo colaborativo para sincronizar el código con GitHub y plataformas en la nube (como Google Colab).
+
