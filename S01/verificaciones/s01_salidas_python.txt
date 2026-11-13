@@ -1,0 +1,13 @@
+MATRIZ CONTEOS {'a': {'a': 0, 'b': 2, 'c': 2}, 'b': {'a': 2, 'b': 1, 'c': 0}, 'c': {'a': 1, 'b': 1, 'c': 0}}
+PRUEBA CON PROB. INICIAL UNIFORME {'bits': 6.714245517666122, 'bpc': 1.6785613794165306, 'ppl': 3.2010858729436795, 'eventos': 4}
+BPE: paso, par, frecuencia bruta, sustituciones efectivas, longitud
+(1, ('a', 's'), 16, 16, 89)
+(2, ('a', '<eow>'), 11, 11, 78)
+(3, ('c', 'as'), 11, 11, 67)
+(4, ('c', 'o'), 9, 9, 58)
+(5, ('co', 's'), 9, 9, 49)
+(6, ('cos', 'a<eow>'), 6, 6, 43)
+TOKENIZACION FINAL {'casa': ['cas', 'a<eow>'], 'casas': ['cas', 'as', '<eow>'], 'cosa': ['cosa<eow>'], 'cosas': ['cos', 'as', '<eow>'], 'caso': ['cas', 'o', '<eow>']}
+H(p)= 1.5 H(p,q)= 1.75 KL(p||q)= 0.25
+PPL [1/2,1/4,1/8,1/2]= 3.363585661014858
+BPC A= 1.6780719051126378 BPC B= 1.3931568569324173

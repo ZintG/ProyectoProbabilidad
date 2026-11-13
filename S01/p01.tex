@@ -1,0 +1,678 @@
+\documentclass[aspectratio=169,10pt]{beamer}
+% p01.tex v0.9 — alineada con sesiones/S01/contenido_libro.tex v0.9:
+% misma notación (tabla de notación de S01), misma terminología (Regla 1) y
+% mismas deducciones (Regla 4). Lo que no se cubre en clase lleva la marca
+% «continúa en curso posterior» y no se elimina.
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands]{babel}
+\usepackage{lmodern}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs,tabularx,graphicx,tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,shapes.geometric}
+\definecolor{azul}{HTML}{1F3A5F}
+\definecolor{claro}{HTML}{E8EEF5}
+\definecolor{verde}{HTML}{2E6B3F}
+\definecolor{luz}{HTML}{EAF3EC}
+\definecolor{vino}{HTML}{7A1F2B}
+\setbeamercolor{structure}{fg=azul}
+\setbeamercolor{frametitle}{fg=azul,bg=claro}
+\setbeamercolor{block title}{fg=white,bg=azul}
+\setbeamercolor{block body}{bg=claro,fg=black}
+\setbeamercolor{alertblock title}{fg=white,bg=vino}
+\setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{footline}[frame number]
+\setbeamertemplate{theorems}[numbered]
+\setbeamersize{text margin left=7mm,text margin right=7mm}
+\newtheorem{proposicion}{Proposición}
+\newtheorem{observacion}{Observación}
+\newtheorem{teorema}{Teorema}
+\newcommand{\posterior}{\hfill{\scriptsize\color{vino}[continúa en curso posterior]}}
+\newcommand{\libro}[1]{{\scriptsize\color{gray}Libro: #1}}
+\title{Del texto a la probabilidad}
+\subtitle{Sesión 01 · Una introducción visual a los modelos de lenguaje}
+\author{Maestría en Matemáticas Aplicadas · Dr. José G. Marcano}
+\date{S01 v0.9 · Octubre 2026}
+\begin{document}
+\begin{frame}\titlepage\end{frame}
+
+% =====================================================================
+\section{Del texto a los tokens}
+\begin{frame}{¿Cómo completa una máquina una frase?}
+\centering\Large «El gato duerme sobre la \underline{\hspace{1.8cm}}»\\[5mm]
+\begin{tikzpicture}[>=Stealth,font=\normalsize,b/.style={draw=azul,rounded corners=3pt,fill=claro,minimum width=27mm,minimum height=11mm}]
+\node[b] (a) at (0,0) {contexto};
+\node[b,fill=luz] (b) at (5,1.1){alfombra: $0.50$};
+\node[b,fill=luz] (c) at (5,0){cama: $0.30$};
+\node[b,fill=luz] (d) at (5,-1.1){mesa: $0.20$};
+\draw[->,thick] (a)--(b);\draw[->,thick] (a)--(c);\draw[->,thick] (a)--(d);
+\end{tikzpicture}
+\vspace{4mm}\small Probabilidades \textbf{inventadas} para ilustrar la idea, no medidas de un modelo real.
+\end{frame}
+
+\begin{frame}{Qué entendemos por modelo de lenguaje de gran escala}
+\begin{block}{Definición operativa}
+Un \textbf{modelo de lenguaje de gran escala} (Large Language Model, LLM) es una
+familia parametrizada de distribuciones condicionales sobre el siguiente símbolo
+de un texto, ajustada con grandes volúmenes de datos.
+\end{block}
+\medskip
+\begin{itemize}
+\item Pregunta de Shannon: ¿cuánto podemos anticipar el siguiente símbolo a partir del contexto?
+\item Un \textbf{modelo de $n$-gramas} predice cada símbolo con los $n-1$ anteriores.
+\item Predicción estadística $\neq$ comprensión semántica.
+\end{itemize}
+\libro{sección 1.1.1}
+\end{frame}
+
+\begin{frame}{¿Para qué sirve modelar secuencias?}
+\begin{columns}[T]
+\column{.49\textwidth}\begin{block}{Lenguaje}\begin{itemize}\item Continuar una frase\item Clasificar reseñas\item Traducir documentos\item Interpretar reportes\end{itemize}\end{block}
+\column{.49\textwidth}\begin{block}{Datos ordenados}\begin{itemize}\item Predecir temperatura\item Analizar eventos\item Estudiar demanda eléctrica\item Identificar regímenes\end{itemize}\end{block}
+\end{columns}\vspace{3mm}\centering\bfseries Idea común: el orden y la historia aportan información.
+\end{frame}
+
+\begin{frame}{El itinerario de hoy}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners=3pt,fill=claro,text width=21mm,minimum height=14mm,align=center}]
+\node[b] (a) at (0,0){Texto};\node[b] (b) at (2.7,0){Tokens};\node[b] (c) at (5.4,0){Pares};\node[b] (d) at (8.1,0){Probabilidad};
+\foreach \x/\y in {a/b,b/c,c/d}{\draw[->,thick] (\x)--(\y);}
+\node[b,fill=luz] (e) at (2.7,-2){Evaluar};\node[b,fill=luz] (f) at (5.4,-2){Investigar};\draw[->,thick] (d.south) to[out=-90,in=0] (e.east);\draw[->,thick] (e)--(f);
+\end{tikzpicture}
+\end{frame}
+
+\begin{frame}{Notación de la sesión (extracto)}
+\small
+\begin{tabularx}{\textwidth}{@{}p{38mm}X@{}}\toprule
+$V$, $|V|$ & vocabulario (conjunto finito) y su número de elementos\\
+\texttt{a}, \texttt{b}, \texttt{c} & símbolos de los alfabetos de juguete\\
+$x_{<t}$ & historia $x_1,\ldots,x_{t-1}$\\
+$c_i$, $N$ & conteos en un contexto; total $N=\sum_ic_i$\\
+$p$; $q$; $\widehat q$ & distribución verdadera; modelo; estimador\\
+$\Delta_{K-1}$; $\operatorname{supp}(p)$ & símplex sobre $K$ categorías; soporte\\
+$s(x)$; $H_2$, $H_e$ & sorpresa; entropía en bits y en nats\\
+$\rho_t$; $|z|$; $\operatorname{bits}(z)$ & probabilidad del evento $t$; caracteres de $z$; bits totales\\
+$\langle/\mathrm w\rangle$; $\langle\mathrm s\rangle$, $\langle/\mathrm s\rangle$ & fin de palabra; inicio y fin de secuencia\\\bottomrule
+\end{tabularx}
+\libro{tabla completa al inicio de la sección 1.1}
+\end{frame}
+
+\begin{frame}{Una secuencia conserva el orden}
+\centering
+\Large El perro persigue al gato\\[4mm]
+$\Downarrow$\\[4mm]
+\begin{tikzpicture}[font=\normalsize,s/.style={draw=azul,fill=claro,rounded corners,minimum height=10mm,minimum width=20mm}]
+\foreach \i/\w in {0/El,1/perro,2/persigue,3/al,4/gato}{\node[s] at (\i*2.35,0){\w};}
+\end{tikzpicture}
+\vspace{6mm}\small ¿Qué cambia si intercambiamos «perro» y «gato»?
+\end{frame}
+
+\begin{frame}{Vocabulario, token y tokenización}
+\begin{definition}[Vocabulario, token y tokenización]
+Un \textbf{vocabulario} es un conjunto finito $V$; su número de elementos es $|V|$.
+Una \textbf{tokenización} transforma cada texto en una secuencia finita de
+elementos de $V$, llamados \textbf{tokens}.
+\end{definition}
+\begin{center}\begin{tabular}{ll}\toprule
+Regla & «El gato salta» se convierte en \\\midrule
+Palabras & El $\mid$ gato $\mid$ salta\\
+Caracteres & E $\mid$ l $\mid$ espacio $\mid$ g $\mid$ a $\mid$ t $\mid$ o ...\\
+Subpalabras (ilustrativo) & El $\mid$ gat $\mid$ o $\mid$ salt $\mid$ a\\\bottomrule
+\end{tabular}\end{center}
+\end{frame}
+
+\begin{frame}{Texto $\to$ tokens $\to$ identificadores}
+\centering\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=claro,text width=32mm,minimum height=13mm,align=center}]
+\node[b] (a) at (0,0){«el gato duerme»};\node[b] (b) at (4.1,0){el $\mid$ gato $\mid$ duerme};\node[b] (c) at (8.2,0){$1,2,3$};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);
+\end{tikzpicture}\vspace{5mm}\begin{block}{Una distinción importante}
+Tokenizar, asignar un identificador y representar mediante un vector son \textbf{tres pasos distintos}.
+\end{block}
+\end{frame}
+
+\begin{frame}{Del número al vector: one-hot y embedding}
+\begin{columns}
+\column{.45\textwidth}\begin{tabular}{cc}\toprule Token&ID\\\midrule el&1\\gato&2\\duerme&3\\$\langle/\mathrm s\rangle$&4\\\bottomrule\end{tabular}
+
+\smallskip\scriptsize $\langle/\mathrm s\rangle$: símbolo especial de fin de secuencia; $|V|=4$.
+\column{.55\textwidth}La \textbf{codificación one-hot} usa el vector canónico $e_i\in\{0,1\}^{|V|}$:
+\[e_2=\begin{pmatrix}0\\1\\0\\0\end{pmatrix}\]
+Un \textbf{embedding} es un vector real aprendido, $Ee_i$ con $E\in\mathbb R^{d\times|V|}$; no es una probabilidad.
+\end{columns}
+\end{frame}
+
+\begin{frame}{¿Por qué subpalabras?}
+\begin{columns}[T]\column{.49\textwidth}\begin{block}{Solo palabras}\begin{itemize}\item Vocabulario enorme\item Términos poco frecuentes\item Palabras desconocidas\end{itemize}\end{block}
+\column{.49\textwidth}\begin{block}{Solo caracteres}\begin{itemize}\item Unidades reutilizables\item Secuencias más largas\item Dependencias más lejanas\end{itemize}\end{block}\end{columns}
+\vspace{4mm}\centering\bfseries Subpalabras: un compromiso, no una garantía de mejora.
+\end{frame}
+
+\begin{frame}{Codificación por pares de bytes (BPE)}
+\begin{definition}[Codificación por pares de bytes]
+La \textbf{codificación por pares de bytes} (Byte Pair Encoding, BPE) repite $R$
+veces (presupuesto de fusiones): contar, ponderando por la frecuencia de cada
+palabra, los pares de unidades adyacentes; elegir el más frecuente (desempate
+lexicográfico); sustituir de izquierda a derecha sus apariciones no solapadas por
+una unidad nueva.
+\end{definition}
+\small El nombre viene de la compresión de bytes (Gage, 1994); Sennrich et al.\ (2016) lo
+adaptaron a subpalabras. Aquí las unidades iniciales son \textbf{caracteres}, con el
+marcador de fin de palabra $\langle/\mathrm w\rangle$.
+\end{frame}
+
+\begin{frame}{BPE: los primeros pasos sobre \emph{casa}}
+\centering\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=claro,text width=26mm,minimum height=12mm,align=center}]
+\node[b] (a) at (0,0){c $\mid$ a $\mid$ s $\mid$ a $\mid$ $\langle/\mathrm w\rangle$};
+\node[b] (b) at (3.6,0){c $\mid$ as $\mid$ a $\mid$ $\langle/\mathrm w\rangle$};
+\node[b] (c) at (7.2,0){c $\mid$ as $\mid$ a$\langle/\mathrm w\rangle$};
+\node[b] (d) at (10.8,0){cas $\mid$ a$\langle/\mathrm w\rangle$};
+\draw[->,thick] (a)--node[above,font=\scriptsize]{paso 1}(b);\draw[->,thick] (b)--node[above,font=\scriptsize]{paso 2}(c);\draw[->,thick] (c)--node[above,font=\scriptsize]{paso 3}(d);
+\end{tikzpicture}
+\vspace{5mm}\small Corpus de juguete: \emph{casa} (5), \emph{casas} (2), \emph{cosa} (6), \emph{cosas} (3), \emph{caso} (4).
+\end{frame}
+
+\begin{frame}{BPE: los números se verifican}
+\centering\begin{tabular}{clrr}\toprule Paso&Par&Frecuencia&Longitud ponderada\\\midrule
+Inicial&---&---&105\\1&$(a,s)$&16&89\\2&$(a,\langle/\mathrm w\rangle)$&11&78\\3&$(c,as)$&11&67\\4&$(c,o)$&9&58\\5&$(co,s)$&9&49\\6&$(cos,a\langle/\mathrm w\rangle)$&6&43\\\bottomrule\end{tabular}
+\vspace{3mm}\small Cada reducción coincide con las sustituciones efectivas (Proposición de reducción exacta, Complemento S01.C11). Cifras de un corpus construido.
+\end{frame}
+
+\begin{frame}{BPE es voraz: no garantiza el óptimo}
+\small Corpus \emph{bdac} (4), \emph{ebac} (4), \emph{bad} (5), \emph{feb} (4); longitud $59$; frecuencias $(b,a)=9$, $(a,c)=8$, $(e,b)=8$.
+\begin{columns}[T]
+\column{.48\textwidth}\begin{block}{Ruta voraz}Fusiona $(b,a)$: $-9$. En \emph{ebac} desaparece $(a,c)$.\\ Luego $(ba,d)$: $-5$.\\ \textbf{Longitud final 45.}\end{block}
+\column{.48\textwidth}\begin{block}{Ruta óptima}Fusiona $(a,c)$: $-8$.\\ Luego $(e,b)$, intacto: $-8$.\\ \textbf{Longitud final 43.}\end{block}
+\end{columns}
+\vspace{2mm}\centering\scriptsize Verificado por búsqueda exhaustiva (\texttt{verificar\_complementos\_s01.py}). Ilustrativo.
+\end{frame}
+
+% =====================================================================
+\section{Contar y estimar}
+\begin{frame}{¿Qué son los unigramas y bigramas?}
+\centering\large el gato mira al perro\\[5mm]
+\begin{tabular}{ll}\toprule Unigramas & Bigramas\\\midrule
+el & el gato\\gato & gato mira\\mira & mira al\\al & al perro\\perro & \\\bottomrule\end{tabular}
+\vspace{4mm}\small Hay cinco tokens, cinco unigramas y cuatro bigramas, sin marcadores especiales.
+\end{frame}
+
+\begin{frame}{El trigrama añade un vecino}
+\centering\large «el gato mira al perro»\\[4mm]
+\begin{tabular}{l}\toprule Trigramas consecutivos\\\midrule
+el gato mira\\gato mira al\\mira al perro\\\bottomrule\end{tabular}
+\vspace{5mm}\begin{block}{Regla de conteo} Una secuencia de $T$ tokens tiene $T-n+1$ ventanas de tamaño $n$, si $1\le n\le T$.\end{block}
+\end{frame}
+
+\begin{frame}{Secuencia, conjunto y bolsa: no son iguales}
+\begin{columns}[T]\column{.33\textwidth}\begin{block}{Secuencia}\centering gato, gato, perro\\\vspace{2mm}\small Importa el orden\end{block}
+\column{.33\textwidth}\begin{block}{Conjunto}\centering\{gato, perro\}\\\vspace{2mm}\small No cuenta repetición\end{block}
+\column{.33\textwidth}\begin{block}{Bolsa}\centering gato: 2\\perro: 1\\\small No guarda orden\end{block}\end{columns}
+\vspace{4mm}\small Una bolsa de \textit{bigramas} cuenta pares y descarta sus posiciones globales.
+\end{frame}
+
+\begin{frame}{Un corpus de juguete que sí podemos verificar}
+\centering\Large\texttt{a b a c a b b a c b}\\[6mm]
+\normalsize Diez símbolos. ¿Cuántas transiciones?\\[4mm]
+\begin{block}{Contemos}\centering $10-1=9$ bigramas consecutivos\end{block}
+\end{frame}
+
+\begin{frame}{De la cadena a una lista de bigramas}
+\centering\normalsize \texttt{a b a c a b b a c b}\\[3mm]
+\begin{tabular}{c|ccccccccc}\toprule Posición&1&2&3&4&5&6&7&8&9\\\midrule Bigrama&ab&ba&ac&ca&ab&bb&ba&ac&cb\\\bottomrule\end{tabular}
+\vspace{5mm}\begin{block}{Pregunta al grupo}\centering ¿Cuántas veces aparece la pareja $\texttt{a}\to\texttt{b}$? ¿Y $\texttt{b}\to\texttt{c}$?\end{block}
+\end{frame}
+
+\begin{frame}{Tabla de conteos y matriz $C$}
+\begin{columns}
+\column{.5\textwidth}\centering\begin{tabular}{c|ccc|c}\toprule Anterior / siguiente&\texttt{a}&\texttt{b}&\texttt{c}&total\\\midrule
+\texttt{a}&0&2&2&4\\\texttt{b}&2&1&0&3\\\texttt{c}&1&1&0&2\\\midrule total&3&4&2&9\\\bottomrule\end{tabular}
+\column{.5\textwidth}\[C=\begin{pmatrix}0&2&2\\2&1&0\\1&1&0\end{pmatrix}\]
+\small Filas: símbolo previo. Columnas: símbolo siguiente. Suma: $9$.
+\end{columns}
+\end{frame}
+
+\begin{frame}{De contar a predecir}
+\begin{columns}\column{.5\textwidth}\centering Contexto \texttt{a}\\[4mm] $0$ veces \texttt{a}\\$2$ veces \texttt{b}\\$2$ veces \texttt{c}
+\column{.5\textwidth}\centering\[\widehat q(\cdot\mid\texttt{a})=\left(0,\frac24,\frac24\right)\]
+\end{columns}
+\vspace{4mm}\begin{block}{Regla}\centering Dividir cada conteo por el total de su \textbf{fila}.\end{block}
+\end{frame}
+
+\begin{frame}{La matriz de transición estimada}
+\[\widehat P=\begin{pmatrix}0&1/2&1/2\\2/3&1/3&0\\1/2&1/2&0\end{pmatrix}\]
+\begin{block}{Nombre del estimador}Es la \textbf{estimación por máxima verosimilitud} (maximum likelihood estimation, MLE): las probabilidades que hacen máxima la probabilidad de los datos observados. Lo demostramos más adelante.\end{block}
+\small Cada fila suma uno.
+\end{frame}
+
+\begin{frame}{¿Qué sucede con un par que nunca apareció?}
+\centering\Large Entrenamiento: \texttt{abacabbacb}\\[5mm]
+Prueba: \texttt{abca}\\[5mm]
+\begin{alertblock}{Problema}\centering La transición $\texttt{b}\to\texttt{c}$ no fue observada: $\widehat P(\texttt{c}\mid\texttt{b})=0$.\end{alertblock}
+\normalsize No observado \textbf{no equivale} a imposible.
+\end{frame}
+
+\begin{frame}{El suavizado reparte masa a pares ausentes}
+\begin{columns}\column{.52\textwidth}\begin{block}{Conteos tras \texttt{a}}\[(0,2,2)\quad\stackrel{+1}{\longrightarrow}\quad(1,3,3)\]\end{block}
+\column{.48\textwidth}\begin{block}{Probabilidades}\[\left(\frac17,\frac37,\frac37\right)\]\end{block}\end{columns}
+\vspace{3mm}\[\widehat P_{\alpha=1}=\begin{pmatrix}1/7&3/7&3/7\\1/2&1/3&1/6\\2/5&2/5&1/5\end{pmatrix},\qquad
+\Pr(\texttt{b}\mid\texttt{a})\Pr(\texttt{c}\mid\texttt{b})\Pr(\texttt{a}\mid\texttt{c})=\frac37\cdot\frac16\cdot\frac25=\frac1{35}.\]
+\small Con $\pi_0(\texttt{a})=1/3$, la probabilidad conjunta de \texttt{abca} es $1/105$.
+\end{frame}
+
+\begin{frame}{La regla de la cadena}
+\begin{proposicion}[Regla de la cadena]
+Si $p(x_{1:T})>0$, todos los prefijos son positivos y
+\[p(x_{1:T})=p(x_1)\prod_{t=2}^T p(x_t\mid x_{<t}).\]
+\end{proposicion}
+\begin{proof}[Demostración]
+\emph{Prefijos:} $\{X_{1:T}=x_{1:T}\}\subseteq\{X_{1:t}=x_{1:t}\}$, luego $p(x_{1:t})\ge p(x_{1:T})>0$.
+\emph{Inducción:} $T=1$ es trivial; si vale para $T-1$, la definición de condicional da
+$p(x_{1:T})=p(x_{1:T-1})\,p(x_T\mid x_{<T})$ y se sustituye la hipótesis.
+\end{proof}
+\small Es una \textbf{identidad}; el bigrama es una \textbf{aproximación}. Si algún prefijo tiene probabilidad cero, sus condicionales no son identificables.
+\end{frame}
+
+\begin{frame}{Independencia condicional e hipótesis de Markov}
+\begin{definition}[Independencia condicional]
+$X\perp Z\mid Y$ si $p(x,z\mid y)=p(x\mid y)p(z\mid y)$ siempre que $p(y)>0$;
+equivalentemente, $p(x\mid y,z)=p(x\mid y)$ cuando $p(y,z)>0$.
+\end{definition}
+\begin{definition}[Hipótesis de Markov de orden $m$]
+$X_t\perp X_{1:t-m-1}\mid X_{t-m:t-1}$ para $t>m+1$. Entonces
+$p(x_t\mid x_{<t})=p(x_t\mid x_{t-m:t-1})$. Un $n$-grama corresponde a $m=n-1$.
+\end{definition}
+\end{frame}
+
+\begin{frame}{Ejemplo: la memoria corta omite información}
+Sean $X_1,X_2$ monedas justas independientes y $X_3=X_1$.\\[2mm]
+\[p(1,0,1)=\frac12\cdot\frac12\cdot1=\frac14,\qquad
+\widetilde q(1,0,1)=\frac12\cdot\frac12\cdot p(X_3=1\mid X_2=0)=\frac12\frac12\frac12=\frac18.\]
+\begin{block}{¿De dónde viene la diferencia?}\centering $X_3$ depende de $X_1$; un modelo de orden uno solo retiene $X_2$: $X_3\not\perp X_1\mid X_2$.\end{block}
+\small Aquí $\widetilde q$ denota la aproximación de orden uno construida con las condicionales verdaderas.
+\end{frame}
+
+\begin{frame}{Símplex y soporte}
+\begin{definition}[Símplex y soporte]
+$\Delta_{K-1}=\{q\in\mathbb R^K: q_i\ge0,\ \sum_iq_i=1\}$. Interior relativo: todas
+las $q_i>0$; borde: alguna $q_i=0$. Soporte: $\operatorname{supp}(q)=\{i:q_i>0\}$.
+\end{definition}
+\medskip
+\small Para un vocabulario, $K=|V|$. El símplex es convexo y compacto (Complemento S01.C1).
+\end{frame}
+
+\begin{frame}{MLE categórico: enunciado}
+\begin{proposicion}[Estimador de máxima verosimilitud]
+\emph{Hipótesis:} (i) dado el contexto, $X_1,\dots,X_N$ son independientes con
+$\Pr(X_s=i\mid q)=q_i$; (ii) $N=\sum_ic_i>0$. Entonces $L(q)$ alcanza su máximo
+en $\Delta_{K-1}$ en un único punto: $\widehat q_i=c_i/N$.
+\end{proposicion}
+\begin{enumerate}\small
+\item \textbf{Verosimilitud:} $L(q)=\prod_sq_{x_s}=\prod_iq_i^{c_i}$; la multinomial añade
+$N!/\prod_ic_i!$, que no depende de $q$. Con $S=\{i:c_i>0\}$, $\ell(q)=\sum_{i\in S}c_i\ln q_i$.
+\item \textbf{Masa fuera de $S$:} si $\varepsilon=\sum_{i\notin S}q_i\in(0,1)$, reescalar
+$q'_i=q_i/(1-\varepsilon)$ en $S$ da $\ell(q')=\ell(q)-N\ln(1-\varepsilon)>\ell(q)$.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{MLE categórico: existencia, Lagrange y unicidad}
+\begin{enumerate}\small\setcounter{enumi}{2}
+\item \textbf{Existencia:} en $\Lambda=\{q:\ \ell(q)\ge\ell(q^0)\}$, con $q^0$ uniforme en $S$,
+$\ell(q)\le c_i\ln q_i$ obliga a $q_i\ge e^{\ell(q^0)/c_i}>0$; $\Lambda$ es compacto y $\ell$
+continua allí (Weierstrass).
+\item \textbf{Lagrange:} para $v$ con $\sum_{i\in S}v_i=0$, $\frac{d}{dt}\ell(q^*+tv)|_{0}=\sum_i\frac{c_i}{q^*_i}v_i=0$;
+con $v=e_i-e_j$: $c_i/q^*_i=\lambda$. Sumando, $\lambda=N$.
+\item \textbf{Unicidad:} todo maximizador es nulo fuera de $S$ y cumple el paso 4.
+\end{enumerate}
+\begin{alertblock}{Hipótesis retiradas}
+$N=0$: toda $q$ maximiza. Exigir $q_i>0$ con algún $c_i=0$: el supremo no se alcanza.
+Versión con condiciones de Karush--Kuhn--Tucker (KKT): Complemento S01.C4.
+\end{alertblock}
+\end{frame}
+
+\begin{frame}{Función Gamma y distribución de Dirichlet}
+\begin{definition}[Función Gamma]
+$\Gamma(x)=\int_0^\infty t^{x-1}e^{-t}dt$, $x>0$; $\Gamma(1)=1$, $\Gamma(x+1)=x\Gamma(x)$, $\Gamma(n+1)=n!$.
+\end{definition}
+\begin{definition}[Distribución de Dirichlet]
+Con $\alpha_i>0$ y $A=\sum_i\alpha_i$: densidad en el interior del símplex
+\[f(q\mid\boldsymbol\alpha)=\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{\alpha_i-1}.\]
+\end{definition}
+\small La constante procede de la \textbf{integral de Dirichlet}
+$\int\prod_iq_i^{\beta_i-1}dq=\prod_i\Gamma(\beta_i)/\Gamma(\sum_i\beta_i)$ (Complemento S01.C5).
+\end{frame}
+
+\begin{frame}{Teorema de Bayes para densidades}
+\begin{teorema}[Bayes, parámetro con densidad y datos discretos]
+Si $\Pr(x_{1:N})=\int\Pr(x_{1:N}\mid q')f(q')dq'>0$,
+\[f(q\mid x_{1:N})=\frac{\Pr(x_{1:N}\mid q)f(q)}{\int\Pr(x_{1:N}\mid q')f(q')dq'}.\]
+\end{teorema}
+\begin{proof}[Demostración]
+$(q,X_{1:N})$ tiene densidad conjunta $f(q)\Pr(x_{1:N}\mid q)$; integrando en $q$ se obtiene
+la marginal de los datos; la condicional es conjunta/marginal.
+\end{proof}
+\end{frame}
+
+\begin{frame}{Conjugación Dirichlet--categórica: la deducción}
+\begin{proposicion}[Conjugación]
+Con priori $q\sim\mathrm{Dir}(\boldsymbol\alpha)$ y la verosimilitud categórica,
+$q\mid x_{1:N}\sim\mathrm{Dir}(c_1+\alpha_1,\ldots,c_K+\alpha_K)$.
+\end{proposicion}
+\small
+\begin{enumerate}
+\item Priori: $f(q)=\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{\alpha_i-1}$.\quad
+(2) Verosimilitud: $\prod_iq_i^{c_i}$.
+\setcounter{enumi}{2}
+\item Producto: $\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{c_i+\alpha_i-1}$.\quad
+(4) Núcleo: $\prod_iq_i^{\beta_i-1}$, $\beta_i=c_i+\alpha_i$.
+\setcounter{enumi}{4}
+\item Normalización: $\int\prod_iq_i^{\beta_i-1}dq=\prod_i\Gamma(\beta_i)/\Gamma(N+A)$.
+\item Conclusión: $f(q\mid x_{1:N})=\frac{\Gamma(N+A)}{\prod_i\Gamma(c_i+\alpha_i)}\prod_iq_i^{c_i+\alpha_i-1}$.
+\end{enumerate}
+\end{frame}
+
+\begin{frame}{Predictiva posterior: integrando}
+\begin{proposicion}[Predictiva posterior]
+Si $X_{N+1}\perp X_{1:N}\mid q$ y $\Pr(X_{N+1}=i\mid q)=q_i$:
+\[\Pr(X_{N+1}=i\mid x_{1:N})=\frac{c_i+\alpha_i}{N+A}=\mathbb E[q_i\mid x_{1:N}].\]
+\end{proposicion}
+\small
+\[\int q_if(q\mid x_{1:N})dq=\frac{\Gamma(N+A)}{\prod_j\Gamma(\beta_j)}\cdot\frac{\Gamma(\beta_i+1)\prod_{j\ne i}\Gamma(\beta_j)}{\Gamma(N+A+1)}
+=\frac{\Gamma(\beta_i+1)}{\Gamma(\beta_i)}\cdot\frac{\Gamma(N+A)}{\Gamma(N+A+1)}=\frac{\beta_i}{N+A},\]
+usando $\Gamma(x+1)=x\Gamma(x)$ dos veces.
+\end{frame}
+
+\begin{frame}{Media, moda y predictiva no son lo mismo}
+\begin{itemize}\small
+\item \textbf{Media} = predictiva: $\beta_i/(N+A)$.
+\item \textbf{Moda}: maximizar $\sum_i(\beta_i-1)\ln q_i$, el mismo problema que el MLE con «conteos» $\beta_i-1$:
+\(\text{moda}_i=\frac{c_i+\alpha_i-1}{N+A-K}\) si todos $\beta_i\ge1$ y algún $\beta_i>1$. Si algún $\beta_i<1$, no hay moda.
+\end{itemize}
+\begin{block}{Ejemplo verificado: $c=(6,3,1,0,0)$, $N=10$, $K=5$}
+$\alpha_i=1$: posterior $\mathrm{Dir}(7,4,2,1,1)$; media $(7,4,2,1,1)/15$; moda $(6,3,1,0,0)/10$ (= MLE).\\
+$\alpha_i=2$: media $(8,5,3,2,2)/20$; moda $(7,4,2,1,1)/15$.
+\end{block}
+\end{frame}
+
+\begin{frame}{Suavizado como regularización}
+\[\frac{c_i+\alpha}{N+K\alpha}=\underbrace{\frac{N}{N+K\alpha}}_{\lambda}\frac{c_i}{N}+\underbrace{\frac{K\alpha}{N+K\alpha}}_{1-\lambda}\frac1K\]
+\begin{itemize}\small
+\item $N=10$, $K=5$, $\alpha=1$: $\lambda=2/3$; con $K=100$: $\lambda=1/11$.
+\item Contexto \texttt{b} con conteos $(2,1,0)$ y $\alpha=1/2$: $(5/9,1/3,1/9)$; con $\alpha=1$, el no visto recibe $1/6$.
+\item $\alpha$ se elige en validación, nunca en prueba. \textbf{No se promete mejor rendimiento.}
+\end{itemize}
+\end{frame}
+
+% =====================================================================
+\section{Medir la calidad predictiva}
+\begin{frame}{Sorprenderse también se puede medir}
+\centering\begin{tabular}{cc}\toprule Probabilidad asignada & Sorpresa $s=-\log_2 p$\\\midrule $1$&$0$ bits\\$1/2$&$1$ bit\\$1/4$&$2$ bits\\$1/8$&$3$ bits\\\bottomrule\end{tabular}
+\vspace{5mm}\large A menor probabilidad de lo observado, mayor pérdida.
+\end{frame}
+
+\begin{frame}{Entropía y sus cotas}
+\[H_2(p)=-\sum_ip_i\log_2p_i,\qquad 0\log_20:=0;\qquad H_2=H_e/\ln2.\]
+\begin{proposicion}[Cotas]
+$0\le H_2(p)\le\log_2K$; mínimo si toda la masa está en una categoría; máximo si y solo si $p$ es uniforme.
+\end{proposicion}
+\begin{proof}[Demostración]\small
+Inferior: cada $-p_i\log_2p_i\ge0$. Superior: \textbf{desigualdad de Jensen} (para
+$\varphi$ cóncava, $\sum_iw_i\varphi(x_i)\le\varphi(\sum_iw_ix_i)$):
+$H_2(p)=\sum_{i\in S}p_i\log_2\frac1{p_i}\le\log_2\sum_{i\in S}p_i\frac1{p_i}=\log_2|S|\le\log_2K$.
+\end{proof}
+\end{frame}
+
+\begin{frame}{Entropía condicional e información mutua}
+\begin{definition}[Entropías de dos variables]
+$H(X,Y)=-\sum p(x,y)\log p(x,y)$;\quad $H(X\mid Y)=\sum_yp(y)H(X\mid Y=y)$;\quad
+$I(X;Y)=H(X)-H(X\mid Y)$.
+\end{definition}
+\small $I(X;Y)\ge0$, con igualdad si y solo si $X$ e $Y$ son independientes (Complemento S01.C7).
+Una señal ruidosa reduce la incertidumbre \emph{en promedio}, no siempre por completo.
+\end{frame}
+
+\begin{frame}{Entropía cruzada y divergencia de Kullback--Leibler}
+\begin{definition}[Soportes compatibles, entropía cruzada, KL]
+Si $\operatorname{supp}(p)\subseteq\operatorname{supp}(q)$:
+$H_2(p,q)=-\sum_{p_i>0}p_i\log_2q_i$,\quad $D_{\mathrm{KL}}(p\|q)=\sum_{p_i>0}p_i\log_2\frac{p_i}{q_i}$; si no, ambas valen $+\infty$.
+\end{definition}
+\begin{proposicion}
+$H_2(p,q)=H_2(p)+D_{\mathrm{KL}}(p\|q)$.
+\end{proposicion}
+\small\emph{Prueba:} $-\log_2q_i=-\log_2p_i+\log_2(p_i/q_i)$, multiplicar por $p_i$ y sumar.
+$D_{\mathrm{KL}}\ge0$ con igualdad si y solo si $q=p$: \textbf{desigualdad de Gibbs}.
+\end{frame}
+
+\begin{frame}{Desigualdad de Gibbs}
+\begin{teorema}[Gibbs]
+$D_{\mathrm{KL}}(p\|q)\ge0$, con igualdad si y solo si $p=q$.
+\end{teorema}
+\begin{proof}[Demostración]\small
+Si $p_i>0=q_i$ para algún $i$, vale $+\infty$. Si no, con $\ln z\le z-1$ (igualdad solo en $z=1$):
+$-D_{\mathrm{KL}}=\sum_{p_i>0}p_i\ln\frac{q_i}{p_i}\le\sum_{p_i>0}(q_i-p_i)\le0$.
+La igualdad exige $q_i=p_i$ en el soporte y ninguna masa de $q$ fuera de él.
+\end{proof}
+\begin{block}{Cálculo pequeño}\centering $p=(1/2,1/4,1/4)$, $q=(1/4,1/2,1/4)$:
+$H_2(p)=1.5$; $H_2(p,q)=1.75$; $D_{\rm KL}=0.25$ bits.\end{block}
+\end{frame}
+
+\begin{frame}{Pérdida empírica = verosimilitud}
+\begin{proposicion}[Pérdida empírica y verosimilitud]
+Con $\widehat R_T(q_\theta)=T^{-1}\sum_t-\ln q_\theta(x_t\mid x_{<t})$ y $q_\theta(x_{1:T})>0$:
+$\arg\min_\theta\widehat R_T=\arg\max_\theta q_\theta(x_{1:T})$.
+\end{proposicion}
+\small\emph{Prueba:} por la regla de la cadena, $\widehat R_T=-T^{-1}\ln q_\theta(x_{1:T})$, decreciente en la verosimilitud.\\[2mm]
+Con datos independientes de ley $p$, $\widehat R_T(q)\to H_e(p,q)$ (ley de los grandes números). Esto \textbf{no} prueba $q_\theta=p$ ni generalización.
+\end{frame}
+
+\begin{frame}{Perplejidad (PPL)}
+\[\boxed{\mathrm{PPL}=2^{L_2}=e^{L_e}=\Bigl(\prod_{t=1}^T\frac1{\rho_t}\Bigr)^{1/T}}\]
+\[\underbrace{(1/2,1/4,1/8,1/2)}_{\rho_t}\ \Rightarrow\ \underbrace{(1,2,3,1)}_{\text{bits}}\ \Rightarrow\ L_2=\frac74,\quad \mathrm{PPL}=2^{1.75}\approx 3.364\]
+\small Media geométrica de las inversas. Con la tercera probabilidad en $1/16$: $8$ bits y PPL $=4$.
+No significa que existan literalmente $3.364$ palabras posibles.
+\end{frame}
+
+\begin{frame}{Bits por carácter (BPC)}
+\begin{definition}[Bits por carácter]
+Para un texto $z$ con $|z|$ caracteres (puntos de código) y un modelo $q$ que da probabilidad a la
+secuencia completa $\tau(z)$, con sus marcas de inicio y fin:
+$\operatorname{bits}(z)=-\log_2q(\tau(z))$ y $\mathrm{BPC}(z;q)=\operatorname{bits}(z)/|z|$.
+\end{definition}
+\begin{proposicion}[PPL y BPC]
+Si la PPL se calcula sobre los mismos $T$ tokens de $\tau(z)$:
+$\mathrm{BPC}=\frac{T}{|z|}\log_2\mathrm{PPL}$.
+\end{proposicion}
+\small\emph{Prueba:} $L_2=\operatorname{bits}(z)/T$ y $\mathrm{PPL}=2^{L_2}$.
+\end{frame}
+
+\begin{frame}{No todas las perplejidades se pueden comparar}
+\begin{columns}\column{.48\textwidth}\begin{block}{Modelo A}\centering 100 tokens\\PPL por token $=3.2$\\$\mathrm{BPC}_A=\frac{100\log_2(3.2)}{100}\approx1.678$\end{block}
+\column{.48\textwidth}\begin{block}{Modelo B}\centering 30 tokens\\PPL por token $=25$\\$\mathrm{BPC}_B=\frac{30\log_2(25)}{100}\approx1.393$\end{block}\end{columns}
+\vspace{3mm}\begin{block}{Cautela}\centering Mismo texto de 100 caracteres, normalización compatible, probabilidades de la cadena completa y evaluación reservada. Cifras ilustrativas.\end{block}
+\end{frame}
+
+% =====================================================================
+\section{Laboratorio e investigación}
+\begin{frame}{Dos preguntas, dos mediciones}
+\begin{columns}[T]
+\column{.48\textwidth}\begin{block}{Bigramas de caracteres}Pérdida predictiva (BPC) con tokenización fija.\end{block}
+\column{.48\textwidth}\begin{block}{Microexperimento BPE}Tokens por palabra al cambiar el tokenizador.\end{block}
+\end{columns}
+\vspace{3mm}\small La segunda magnitud no mide por sí sola calidad probabilística.
+\end{frame}
+
+\begin{frame}{Bootstrap pareado e intervalo percentil}
+\begin{definition}[Bootstrap pareado]
+Con diferencias $\Delta_1,\ldots,\Delta_J$ por documento, una remuestra elige $J$ índices al azar
+\textbf{con reemplazo} y calcula $\bar\Delta^*$. Con $J=6$ hay $6^6=46656$ remuestras igualmente probables.
+El \textbf{intervalo percentil} del 95\,\% usa los cuantiles $0.025$ y $0.975$ de las $\bar\Delta^*$.
+\end{definition}
+\begin{block}{Resultado (datos sintéticos, Python)}
+$\bar\Delta\approx-0.54025$ bits/carácter; intervalo $[-0.66771,-0.42038]$.
+\end{block}
+\small Cobertura nominal: sin garantía con seis frases construidas.
+\end{frame}
+
+\begin{frame}{Del ejemplo al reporte: tres productos conectados}
+\begin{enumerate}
+\item \textbf{Guía y laboratorio matemático:} una distribución y una pérdida con unidades definidas.
+\item \textbf{Laboratorio computacional:} seis diferencias pareadas de BPC sobre frases sintéticas; $\bar\Delta\approx-0.54025$ bits/carácter.
+\item \textbf{Taller:} reporte de 2--3 páginas, datos, método, incertidumbre, límites y dos áreas de interés.
+\end{enumerate}
+\begin{block}{Interpretación responsable}
+\centering Un resultado reproducible \emph{no es todavía} evidencia sobre informes reales.
+\end{block}
+\end{frame}
+
+\begin{frame}{De una observación a una investigación}
+\begin{block}{Observación}\large Un texto especializado podría segmentarse en más unidades que la prosa general.\end{block}
+\begin{block}{Pregunta investigable}\large ¿Cuántos tokens por palabra y bits por carácter requiere un modelo, bajo un protocolo controlado?\end{block}
+\small La observación todavía no es un resultado experimental.
+\end{frame}
+
+\begin{frame}{IC10: un problema que comienza en S01}
+\small\textbf{IC10} es el código, en la matriz de investigación del curso, del problema «penalización de la tokenización en textos técnicos en español».\\[3mm]
+\centering\Large ¿Existe una penalización de tokenización en textos técnicos en español?\\[5mm]
+\normalsize\begin{itemize}\item Definir corpus y unidades\item Registrar tokenizador y licencia\item Controlar particiones por documento\item Comparar métricas con incertidumbre\end{itemize}
+\end{frame}
+
+\begin{frame}{Los datos no viven dentro del catálogo}
+\begin{block}{Fuentes candidatas}\begin{itemize}\item D01: Wikipedia en español (general)\item D02: Proyecto Gutenberg (texto)\item D03: Volve (datos de dominio; comprobar informes e idioma)\end{itemize}\end{block}
+\begin{alertblock}{Advertencia}\centering Las fuentes se mencionan en el documento de investigación: su disponibilidad y licencia deben comprobarse antes de ejecutar un estudio.\end{alertblock}
+\end{frame}
+
+\begin{frame}{El primer hito de investigación}
+\begin{columns}\column{.48\textwidth}\begin{block}{Área de interés 1}\centering Relevancia\\Datos candidatos\\Medición imaginable\\Precaución\end{block}
+\column{.48\textwidth}\begin{block}{Área de interés 2}\centering Relevancia\\Datos candidatos\\Medición imaginable\\Precaución\end{block}\end{columns}
+\vspace{5mm}\centering\large Un párrafo por área. \textbf{No elegir todavía el problema definitivo}.
+\end{frame}
+
+\begin{frame}{Una ruta científica con ambición Q1}
+\begin{columns}[T]
+\column{.48\textwidth}
+\begin{block}{Curso I: fundamentos y evidencia inicial}
+Dos áreas en S01; problema elegido en S05; línea base, prerregistro y reporte técnico en S12.
+\end{block}
+\column{.48\textwidth}
+\begin{block}{Cursos II y III: contribución defendible}
+Baselines fuertes, datos externos, robustez, análisis crítico y manuscrito candidato a una revista del primer cuartil (Q1).
+\end{block}
+\end{columns}
+\vspace{3mm}\centering\small Q1 depende de la categoría y el año. No garantiza aceptación ni convierte el piloto sintético en artículo.
+\end{frame}
+
+\begin{frame}{Preguntas de salida}
+\begin{enumerate}\item ¿Qué diferencia hay entre palabra y token?\item ¿Para qué sirve contar bigramas?\item ¿Por qué $0$ en entrenamiento no significa imposible?\item ¿Qué información falta al comparar dos PPL?\item ¿Qué convertiría IC10 en evidencia científica?\end{enumerate}
+\end{frame}
+
+\begin{frame}{La próxima etapa}
+\begin{block}{Hoy}\centering Construimos modelos probabilísticos de secuencias a partir de unidades y conteos.\end{block}
+\begin{block}{Después}\centering Aprenderemos representaciones vectoriales, parámetros neuronales y arquitecturas que estiman distribuciones sobre secuencias.\end{block}
+\small\centering Lectura sugerida: \emph{Deep Learning with R} (Chollet y Allaire, 2018), cap. 6, como inspiración didáctica; las imágenes y el recorrido son originales.
+\end{frame}
+
+% =====================================================================
+\section{Complementos (continúa en curso posterior)}
+\begin{frame}{Complementos matemáticos de S01}
+Las diapositivas siguientes reproducen las deducciones de los Complementos S01.C1--C12
+del libro. \textbf{No se cubren en la clase presencial}: se marcan
+«continúa en curso posterior» y se estudian como trabajo autónomo.
+\medskip
+\begin{columns}[T]\small
+\column{.5\textwidth}C1 Símplex y convenciones\\ C2 Cadena e independencia condicional\\ C3 Jensen, Gibbs, entropía y KL\\ C4 MLE y condiciones KKT\\ C5 Gamma, Beta, integral de Dirichlet\\ C6 Moda y vocabulario
+\column{.5\textwidth}C7 Entropía condicional\\ C8 KL sobre secuencias y procesamiento\\ C9 Cadenas de Markov\\ C10 PPL, BPC y códigos\\ C11 BPE\\ C12 Bootstrap
+\end{columns}
+\end{frame}
+
+\begin{frame}{C1--C2. Símplex, $x\ln x$ e independencia condicional\posterior}
+\small
+\begin{itemize}
+\item $\Delta_{K-1}$ es intersección de semiespacios cerrados y un hiperplano, acotado por $0\le q_i\le1$: compacto y convexo.
+\item $\lim_{x\downarrow0}x\ln x=0$: con $x=e^{-u}$, $|x\ln x|=ue^{-u}\le 2/u$ porque $e^u\ge u^2/2$.
+\item Equivalencia: si $p(y)>0$, $p(x,z\mid y)=p(x\mid y)p(z\mid y)\iff p(x\mid y,z)=p(x\mid y)$ para $p(y,z)>0$ (dividir o multiplicar por $p(z\mid y)$; si $p(z\mid y)=0$, ambos lados valen 0).
+\item Tabla condicional de orden $m$: $K^m$ contextos $\times(K-1)$ coordenadas libres.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C3. Jensen y Gibbs\posterior}
+\small
+\begin{itemize}
+\item $\ln z\le z-1$: $g(z)=z-1-\ln z$ tiene $g'=1-1/z$ y mínimo único $g(1)=0$.
+\item Jensen por inducción: $\sum_{i\le n}w_i\varphi(x_i)=(1-w_n)\sum_{i<n}w'_i\varphi(x_i)+w_n\varphi(x_n)\le(1-w_n)\varphi(\bar x')+w_n\varphi(x_n)\le\varphi(\sum_iw_ix_i)$.
+\item Segunda prueba de $H_2\le\log_2K$: $D_{\mathrm{KL}}(p\|u)=\log_2K-H_2(p)\ge0$.
+\item Regla estrictamente propia: $\mathbb E_p[-\ln q(X)]=H_e(p)+D_{\mathrm{KL}}(p\|q)>H_e(p)$ si $q\ne p$.
+\item KL no es métrica: $D(p\|q)\approx0.188722\neq D(q\|p)\approx0.207519$ para $p=(3/4,1/4)$, $q=(1/2,1/2)$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C4. MLE con condiciones KKT\posterior}
+\small
+Maximizar $\ell(q)=\sum_{i\in S}c_i\ln q_i$ con $-q_i\le0$ y $\sum_iq_i=1$. Estacionariedad:
+$\partial\ell/\partial q_i=-\mu_i+\lambda$, $\mu_i\ge0$, $\mu_iq_i=0$.
+\begin{itemize}
+\item $i\in S$: $q_i>0\Rightarrow\mu_i=0$, $q_i=c_i/\lambda$.\quad $i\notin S$: $\mu_i=\lambda$.
+\item Sumando sobre $S$: $\lambda=N$; entonces $\mu_i=N>0$ y $q_i=0$ fuera de $S$.
+\item Suficiencia por concavidad (Boyd y Vandenberghe, 2004, §5.5.3).
+\end{itemize}
+\textbf{Prueba por Gibbs:} $\ell(q)-\ell(\widehat q)=-N\,D_{\mathrm{KL}}(\widehat q\|q)\le0$, igualdad solo en $q=\widehat q$.
+\end{frame}
+
+\begin{frame}{C5. Beta--Gamma e integral de Dirichlet\posterior}
+\small
+\begin{itemize}
+\item $\Gamma(x+1)=x\Gamma(x)$: partes en $[\varepsilon,R]$, el borde $-t^xe^{-t}$ se anula.
+\item $\Gamma(a)\Gamma(b)=\iint s^{a-1}t^{b-1}e^{-(s+t)}$; con $s=uv$, $t=u(1-v)$, $|J|=u$:
+$=\int_0^\infty u^{a+b-1}e^{-u}du\int_0^1v^{a-1}(1-v)^{b-1}dv=\Gamma(a+b)\mathrm B(a,b)$.
+\item Inducción en $K$: integrar $q_{K-1}\in(0,s)$ con $q_{K-1}=sv$ da $s^{\beta_{K-1}+\beta_K-1}\mathrm B(\beta_{K-1},\beta_K)$;
+queda $I_{K-1}(\ldots,\beta_{K-1}+\beta_K)$, y el producto da $\prod_i\Gamma(\beta_i)/\Gamma(\sum_i\beta_i)$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C6--C7. Vocabulario y condicionamiento\posterior}
+\small
+\begin{itemize}
+\item Masa de no vistos con suavizado aditivo: $m(K)=\frac{(K-K_+)\alpha}{N+K\alpha}$,
+$m'(K)=\frac{\alpha(N+K_+\alpha)}{(N+K\alpha)^2}>0$, $m(K)\to1$. Con $N=10$, $K_+=3$, $\alpha=1$: $2/15$ ($K=5$), $97/110$ ($K=100$).
+\item Regla de la cadena de la entropía: $H(X_{1:T})=\sum_tH(X_t\mid X_{<t})$.
+\item $I(X;Z\mid Y)=H(X\mid Y)-H(X\mid Y,Z)\ge0$, con igualdad si y solo si $X\perp Z\mid Y$.
+\item Monedas: $H(X_3\mid X_2)=1$ bit, $H(X_3\mid X_1,X_2)=0$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C8. KL sobre secuencias y procesamiento de datos\posterior}
+\small
+\begin{itemize}
+\item $D_{\mathrm{KL}}(p\|q)=\sum_t\mathbb E_p[D_{\mathrm{KL}}(p(\cdot\mid X_{<t})\|q(\cdot\mid X_{<t}))]$ si $\operatorname{supp}p\subseteq\operatorname{supp}q$.
+\item Suma logarítmica: $\sum_ia_i\ln\frac{a_i}{b_i}=A\,D_{\mathrm{KL}}(p\|r)+A\ln\frac AB\ge A\ln\frac AB$.
+\item Procesamiento determinista: $D_{\mathrm{KL}}(p_f\|q_f)\le D_{\mathrm{KL}}(p\|q)$.
+Agrupar $\{b,c\}$: $0.25\to0.207519$ bits.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C9. Cadenas de Markov: estacionaria y tasa\posterior}
+\small
+\begin{itemize}
+\item Si $\delta=\min P_{ij}>0$: $\|\eta P\|_1\le(1-K\delta)\|\eta\|_1$ para $\sum_i\eta_i=0$; existe una única $\pi$ y $\|\pi_0P^t-\pi\|_1\le2(1-K\delta)^t$.
+\item Matriz suavizada: $\delta=1/7$, factor $4/7$. Eliminación: $60u=35v+28w$, $168w=90u+35v$ $\Rightarrow$ $w=\frac{75}{98}u$, $v=\frac{108}{98}u$:
+$\pi=(98,108,75)/281$.
+\item $H(X_{1:T})=H(\pi)+(T-1)H_\infty$; aquí $H(\pi)\approx1.568836$, $H_\infty\approx1.472301$ bits.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C10. Códigos y longitud de las secuencias\posterior}
+\small
+\begin{itemize}
+\item Kraft: hay un código de prefijo con longitudes $\ell_i$ si y solo si $\sum_i2^{-\ell_i}\le1$. Ejemplo $\{0,10,11\}$: $\frac12+\frac14+\frac14=1$.
+\item Exceso esperado de longitud ideal: $\mathbb E_p[-\log_2q]-\mathbb E_p[-\log_2p]=D_{\mathrm{KL}}(p\|q)$.
+\item Parada geométrica: $P(M=n)=(1-r)^nr$, $P(M\ge t_{\max})=(1-r)^{t_{\max}}$,
+$\mathbb E[M]=\sum_{k\ge1}P(M\ge k)=\frac{1-r}{r}$.
+\end{itemize}
+\end{frame}
+
+\begin{frame}{C11--C12. BPE y bootstrap\posterior}
+\small
+\begin{itemize}
+\item Reducción exacta: longitud anterior $-$ nueva $=\sum_wf(w)k_w$ (sustituciones no solapadas). En \texttt{aaaaa}: 4 pares solapados, 2 sustituciones.
+\item Cuantil empírico: $h=(M-1)p$, $\ell=\lfloor h\rfloor$, $Q(p)=s_{(\ell+1)}+(h-\ell)(s_{(\ell+2)}-s_{(\ell+1)})$.
+\item Intervalo percentil $[Q(0.025),Q(0.975)]$ (Efron, 1979; Efron y Tibshirani, 1993); la unidad remuestreada debe ser la unidad independiente.
+\end{itemize}
+\end{frame}
+
+\end{document}

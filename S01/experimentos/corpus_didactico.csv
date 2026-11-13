@@ -1,0 +1,23 @@
+id,grupo,particion,texto
+G01,general,entrenamiento,el gato duerme cerca de la casa
+G02,general,entrenamiento,el perro mira la casa de madera
+G03,general,entrenamiento,la niña abre la puerta de la casa
+G04,general,entrenamiento,un libro espera sobre la mesa
+G05,general,entrenamiento,la mesa tiene una silla pequeña
+G06,general,entrenamiento,el niño encuentra un libro nuevo
+G07,general,entrenamiento,la casa tiene una puerta verde
+G08,general,entrenamiento,el perro camina por la calle
+T01,tecnico,entrenamiento,la bomba presenta fuga en el sello
+T02,tecnico,entrenamiento,el sensor mide presión en la tubería
+T03,tecnico,entrenamiento,la válvula regula el caudal del pozo
+T04,tecnico,entrenamiento,el equipo registra vibración alta
+T05,tecnico,entrenamiento,la presión del pozo aumenta rápido
+T06,tecnico,entrenamiento,la bomba requiere ajuste del sello
+T07,tecnico,entrenamiento,el operador verifica la válvula
+T08,tecnico,entrenamiento,el caudal de la tubería es estable
+E01,tecnico,prueba,la bomba tiene presión alta
+E02,tecnico,prueba,el sensor registra caudal del pozo
+E03,tecnico,prueba,la válvula presenta fuga pequeña
+E04,tecnico,prueba,el operador mide vibración del equipo
+E05,tecnico,prueba,el sello de la bomba requiere ajuste
+E06,tecnico,prueba,la presión de la tubería cambia

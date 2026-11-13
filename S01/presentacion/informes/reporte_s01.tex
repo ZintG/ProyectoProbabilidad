@@ -1,0 +1,52 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[spanish]{babel}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,booktabs,geometry,hyperref}
+\geometry{margin=25mm}
+\title{S01: reporte de un experimento de modelos probabilísticos de texto}
+\author{Nombre del estudiante: \rule{65mm}{.3pt}}
+\date{Versión del código y fecha: \rule{45mm}{.3pt}}
+\begin{document}\maketitle
+\section{Pregunta e hipótesis}
+Pregunta: ¿un bigrama entrenado en textos técnicos fabricados predice las
+seis frases técnicas reservadas con menor BPC que otro entrenado en
+prosa general fabricada? Declare la dirección del contraste.
+\section{Datos y licencias}
+El conjunto \texttt{corpus\_didactico.csv} contiene textos sintéticos
+creados para la clase, no informes reales. Ocho y ocho para ajustar; seis
+para evaluar. Indique cómo se evitó usar prueba en entrenamiento.
+\section{Métodos y reproducibilidad}
+Bigrama a nivel de carácter, $\alpha=1$, vocabulario común fijado en
+entrenamiento, BOS/EOS, Unicode como puntos de código, minúsculas,
+recorte de espacios de extremos. Nombre comandos y versiones ejecutadas.
+\section{Resultados (debe regenerarlos)}
+\begin{center}\begin{tabular}{lcc}\toprule
+Estimador & Valor de ejemplo & Interpretación \\\midrule
+Diferencia media, BPC (técnico - general) & $-0.54024842$ & Solo corpus sintético \\
+IC bootstrap percentil pareado (95\%) & $[-0.66771,-0.42038]$ & Remuestreo de seis frases \\\bottomrule
+\end{tabular}\end{center}
+Reemplace o confirme los valores con su ejecución. Incluya la tabla de
+resultados por documento y la versión del intérprete. Si R no está
+instalado, declare la ejecución pendiente.
+\section{Microexperimento IC10: dos tokenizadores BPE}
+Comparamos BPE general y tecnico con \textbf{20 fusiones} cada uno,
+entrenados exclusivamente con sus corpus respectivos y evaluados en
+las mismas seis frases tecnicas reservadas. Son 35 palabras en total.
+\begin{center}\begin{tabular}{lrr}\toprule
+& Tokens & Tokens por palabra\\\midrule
+BPE general &148&4.228571\\
+BPE tecnico &127&3.628571\\\bottomrule
+\end{tabular}\end{center}
+Incluya \texttt{resultados\_ic10\_tokenizacion.csv}, su comando de
+ejecucion y los datos por documento. Estas cifras describen longitud
+tokenizada, \emph{no} perdida predictiva ni resultados de LLM.
+\section{Amenazas a la validez y conclusión responsable}
+No hay muestra representativa ni comparacion con tokenizadores modernos;
+la reduccion de longitud en el microexperimento no implica mejora de BPC.
+No existen evidencias generalizables sobre una poblacion de reportes. Explique por qué el objetivo de un
+artículo Q1 exige novedad, baselines fuertes y evaluación externa.
+\section{Puente con investigación: dos áreas de interés}
+\paragraph{Área 1.} Relevancia, datos candidatos y riesgo.
+\paragraph{Área 2.} Relevancia, datos candidatos y riesgo.
+\end{document}

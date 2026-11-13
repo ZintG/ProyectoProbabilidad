@@ -1,0 +1,25 @@
+
+\phantomsection\addcontentsline{toc}{chapter}{Laboratorio matemático: de conteos a demostraciones}\label{lab:mat}
+\input{fuentes/ejemplos_verificados}
+\input{fuentes/derivaciones_de_pizarra}
+\chapter*{Cierre del laboratorio matemático: predicciones que el código debe verificar}
+\phantomsection\addcontentsline{toc}{chapter}{Cierre del laboratorio matemático}\label{lab:mat:cierre}
+\begin{enumerate}
+\item Sobre \texttt{abacabbacb}, la fila suavizada de $a$ es
+$\left(\frac17,\frac37,\frac37\right)$, no $(1/6,\ldots)$:
+$N_a=4$, $K=3$ y $\alpha=1$.
+\item Para \texttt{abca}, la \emph{probabilidad condicionada en el primer
+símbolo} es el producto de tres transiciones. La probabilidad \emph{conjunta}
+incluye la masa inicial declarada. Mezclar ambos protocolos cambia la PPL.
+\item La identidad $H(p,q)=H(p)+D_{\mathrm{KL}}(p\Vert q)$ es una igualdad
+matemática (con convenciones de soporte), no una afirmación de que un modelo
+entrenado estima correctamente $p$.
+\item En una evaluación reproducible, la unidad de resampling es el documento;
+no se deben remuestrear caracteres relacionados como observaciones independientes.
+\end{enumerate}
+\begin{puente}[Puente al laboratorio computacional]
+La teoría define qué se calcula. En el laboratorio computacional de esta sesión
+se declara el corpus, se fijan reglas de preprocesamiento y se generan
+\texttt{resultados\_python.csv} y \texttt{resultados\_R.csv}; la concordancia
+numérica de ambos es una prueba de implementación, no de generalización.
+\end{puente}

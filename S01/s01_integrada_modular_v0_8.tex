@@ -1,0 +1,34 @@
+% Conservado en v0.9: manual modular de v0.8, sustituido por s01_integrada.tex (texto del libro).
+% No se compila ni se empaqueta; se guarda por la regla «mover en lugar de borrar».
+
+\documentclass[11pt,a4paper,oneside]{report}
+\def\documentonombre{Sesión 01 integrada: teoría, laboratorios, investigación y taller}
+\input{preambulo}
+\begin{document}
+\begin{center}
+{\Huge\bfseries\color{azul} SESIÓN 01}\\[6pt]
+{\LARGE Del texto a la probabilidad: comprender, calcular y producir evidencia}\\[8pt]
+{\large Manual modular integrado · Maestría en Matemáticas Aplicadas}\\[5pt]
+\textbf{S01 v1.0 · octubre de 2026 · edición de referencia académica}
+\end{center}
+\begin{idea}[Cómo leer y utilizar el material]
+Este volumen contiene una guía de clase, dos laboratorios, un taller con
+reporte, el suplemento y los ejercicios. Cada componente posee una fuente
+LaTeX independiente y enlaces internos. \textbf{No se espera impartir todo
+el volumen durante cuatro horas}: la clase introduce y demuestra; el resto
+es trabajo autónomo o consulta. El solucionario está en el volumen docente.
+\end{idea}
+\clearpage\begingroup\small\tableofcontents\endgroup\clearpage
+\input{modulos/00_proposito_y_ruta}
+\input{modulos/10_guia}
+\input{modulos/20_laboratorio_matematico}
+\input{modulos/30_laboratorio_computacional}
+\input{modulos/32_microexperimento_ic10}
+\input{modulos/35_codigo_detallado}
+\input{modulos/codigo_detalle_heredado}
+\input{modulos/50_taller_contenido}
+\input{modulos/40_investigacion_y_q1}
+\input{modulos/60_suplemento_contenido}
+\input{modulos/70_ejercicios_contenido}
+\input{fuentes/bibliografia_revisada}
+\end{document}

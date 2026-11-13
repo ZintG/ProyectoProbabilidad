@@ -1,0 +1,48 @@
+\chapter*{Parte V. BPE paso a paso y buenas prácticas de comparación}
+\addcontentsline{toc}{chapter}{Parte V. BPE y validación de modelos}
+\section*{29. Cinco palabras, una regla de fusión}
+La técnica de BPE puede ilustrarse sin emplear bibliotecas de aprendizaje profundo. Usaremos las palabras \emph{casa} (5 apariciones), \emph{casas} (2), \emph{cosa} (6), \emph{cosas} (3) y \emph{caso} (4). Cada palabra se representa inicialmente como caracteres y un marcador de fin $\langle/\mathrm{w}\rangle$. La frecuencia de una palabra pondera todas sus parejas adyacentes. El objetivo de este ejercicio no es crear un tokenizador listo para producción, sino entender qué se modifica al aprender unidades.
+
+\begin{center}
+\begin{tabular}{lcl}\toprule
+Palabra & Frecuencia & Segmentación inicial\\\midrule
+casa &5& c $\mid$ a $\mid$ s $\mid$ a $\mid$ $\langle/\mathrm{w}\rangle$\\
+casas &2& c $\mid$ a $\mid$ s $\mid$ a $\mid$ s $\mid$ $\langle/\mathrm{w}\rangle$\\
+cosa &6& c $\mid$ o $\mid$ s $\mid$ a $\mid$ $\langle/\mathrm{w}\rangle$\\
+cosas &3& c $\mid$ o $\mid$ s $\mid$ a $\mid$ s $\mid$ $\langle/\mathrm{w}\rangle$\\
+caso &4& c $\mid$ a $\mid$ s $\mid$ o $\mid$ $\langle/\mathrm{w}\rangle$\\\bottomrule
+\end{tabular}
+\end{center}
+\noindent En este corpus de juguete, el par de caracteres $(a,s)$ aparece ponderadamente $5+2\cdot2+3+4=16$ veces (en \emph{casas} aparece dos veces). El par $(s,a)$ también suma 16: hay un empate que resolvemos con la regla lexicográfica declarada. Se elige $(a,s)$ y se fusiona en una unidad \texttt{as}. En \emph{casa} pasamos de \texttt{c|a|s|a|fin} a \texttt{c|as|a|fin}. El cambio no altera el texto original; altera la forma de \emph{segmentarlo}.
+
+\section*{30. Cómo leer una tabla de fusiones}
+Las seis primeras fusiones, bajo conteo ponderado, empates lexicográficos y sustitución de pares no solapados, resultan así:
+\begin{center}
+\begin{tabular}{c l r r}\toprule
+Paso & Par fusionado & Frecuencia & Unidades después\\\midrule
+0 & -- & -- &105\\
+1 & $(a,s)$ &16&89\\
+2 & $(a,\langle/\mathrm{w}\rangle)$ &11&78\\
+3 & $(c,as)$ &11&67\\
+4 & $(c,o)$ &9&58\\
+5 & $(co,s)$ &9&49\\
+6 & $(cos,a\langle/\mathrm{w}\rangle)$ &6&43\\\bottomrule
+\end{tabular}
+\end{center}
+\noindent Cada resta $105-89=16$, $89-78=11$, etc. es verificable en el módulo R/Python. No debemos suponer sin comprobar que \emph{frecuencia de un par} y \emph{sustituciones efectivas} siempre coinciden: en \texttt{aaaaa}, el par $(a,a)$ aparece en cuatro ventanas superpuestas, pero una pasada de fusión no solapada puede efectuar solamente dos reemplazos.
+
+\section*{31. Una tabla de preguntas para discutir con la clase}
+\begin{center}
+\begin{tabularx}{\textwidth}{p{55mm}X}\toprule
+Pregunta & Idea matemática o metodológica\\\midrule
+¿BPE siempre disminuye el número de unidades? & Una fusión aplicada sustituye dos unidades por una; las reducciones efectivas dependen de los solapamientos.\\
+¿BPE produce mejores predicciones? & No se deduce de reducir longitud: es necesario evaluar modelos probabilísticos en prueba.\\
+¿Podemos comparar PPL entre segmentaciones? & No directamente por token; fijar texto, unidades y probabilidades de la cadena completa.\\
+¿El corpus técnico permite generalizar al español técnico? & Solo con muestreo adecuado, procedencia y dominio especificados.\\\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Puente hacia el proyecto IC10.} Podemos investigar si ciertos términos técnicos ocupan más tokens por palabra que la prosa general. Esto ya es una medición falsable y puede ampliarse a BPC con modelos adecuadamente controlados. La tabla del catálogo identifica D01 y D02 como corpus generales candidatos; ninguna cifra empírica sobre esos corpus se afirma en esta guía.
+\begin{idea}[Tres capas: prompt, contexto y arnés]
+En un modelo generativo, el \emph{prompt} aporta la entrada inicial; el \emph{contexto} es la historia efectiva disponible, según la ventana y las reglas de truncamiento; el \emph{arnés} ejecuta y registra el procedimiento (muestreo, parada, validación, semillas y herramientas). Que los tres influyan en la salida no los convierte en la misma operación. Su estudio sistemático se retomará en sesiones posteriores.
+\end{idea}
+\clearpage

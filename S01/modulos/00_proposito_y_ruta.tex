@@ -1,0 +1,63 @@
+
+\chapter*{Cómo usar esta sesión integrada}
+\phantomsection\addcontentsline{toc}{chapter}{Cómo usar esta sesión integrada}\label{mod:ruta}
+\begin{idea}[Pregunta práctica que justifica toda la sesión]
+Un equipo técnico redacta bitácoras en español. Queremos saber si un modelo entrenado
+sobre lenguaje general representa y predice esos textos con la misma eficacia que uno
+adaptado al vocabulario del dominio. Antes de decir que un modelo es ``mejor'', debemos
+\emph{definir unidades, aprender probabilidades, evaluar documentos no vistos y medir incertidumbre}.
+La pregunta nació de un problema observable, no de una ecuación presentada sin contexto.
+\end{idea}
+\begin{center}
+\begin{tikzpicture}[>=Stealth, node distance=6mm and 8mm,
+  paso/.style={draw=azul, rounded corners,fill=azulclaro,minimum height=12mm,
+  text width=31mm,align=center,font=\small}]
+\node[paso](uno){Informes en español};
+\node[paso,right=of uno](dos){Caracteres, tokens y pares};
+\node[paso,right=of dos](tres){Conteos y probabilidades};
+\node[paso,below=of tres](cuatro){BPC y diferencias por documento};
+\node[paso,left=of cuatro](cinco){Informe con incertidumbre};
+\node[paso,left=of cinco](seis){Pregunta de investigación};
+\draw[->,thick](uno)--(dos);\draw[->,thick](dos)--(tres);
+\draw[->,thick](tres)--(cuatro);\draw[->,thick](cuatro)--(cinco);
+\draw[->,thick](cinco)--(seis);
+\end{tikzpicture}
+\end{center}
+\noindent\textbf{Dos preguntas, dos mediciones:} los bigramas de caracteres
+cuantifican una perdida predictiva (BPC), mientras que el
+\hyperref[lab:ic10]{microexperimento BPE} cuantifica tokens por palabra
+al cambiar el tokenizador. La segunda magnitud no mide por si sola calidad
+probabilistica; separar ambas evita una conclusion indebida sobre IC10.
+
+\noindent\textbf{Qué contiene este libro.} Este archivo \texttt{s01\_integrada.tex} es
+\emph{la puerta de entrada} y el índice común de materiales que también compilan
+por separado. Se puede leer únicamente la guía inicial, entrar después al
+\hyperref[lab:mat]{laboratorio matemático}, ejecutar el
+\hyperref[lab:comp]{laboratorio computacional} y su
+\hyperref[lab:ic10]{microexperimento de tokenizacion}, consultar el
+\hyperref[mod:sup]{suplemento} o resolver el
+\hyperref[mod:taller]{taller}. La \hyperref[mod:invest]{ruta de investigación}
+relaciona esos resultados con el documento de investigación y el objetivo de una
+futura contribución científica en una revista de primer cuartil (Q1).
+
+\begin{center}\small
+\begin{tabular}{p{.23\textwidth}p{.65\textwidth}}
+\toprule
+\textbf{Componente} & \textbf{Función y evidencia que produce}\\\midrule
+Guía y ejemplos & Construir el lenguaje matemático y comprender su utilidad.\\
+Laboratorio matemático & Repetir cálculos a mano y demostrar identidades.\\
+Laboratorio computacional & Generar resultados de ejemplo y archivos de auditoría en R y Python.\\
+Taller + reporte & Interpretar cifras y producir un informe breve reproducible.\\
+Suplemento & Justificar hipótesis, propiedades y límites de validez.\\
+Investigación & Elegir dos áreas; identificar el camino a una pregunta novedosa y evaluable.\\\bottomrule
+\end{tabular}
+\end{center}
+\begin{contraste}[Cuatro alcances que nunca se deben confundir]
+\textbf{Cálculo demostrado:} se deduce de hipótesis declaradas.
+\textbf{ILUSTRATIVO:} corpus o resultado fabricado para aprender.
+\textbf{REAL REPRODUCIDO:} script ejecutado sobre un conjunto identificado
+(que podría seguir siendo sintético).
+\textbf{EVIDENCIA DE INVESTIGACIÓN:} requiere datos de dominio,
+baselines fuertes, protocolo y validación externa. Los experimentos de esta
+sesión pertenecen al segundo y tercer tipo; \textbf{no prueban la hipótesis de IC10}.
+\end{contraste}

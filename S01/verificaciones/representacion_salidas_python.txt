@@ -1,0 +1,7 @@
+Texto original: el gato mira al perro
+Tokens: ['el', 'gato', 'mira', 'al', 'perro']
+Bigrama inicial: ('el', 'gato')
+Trigramas: [('el', 'gato', 'mira'), ('gato', 'mira', 'al'), ('mira', 'al', 'perro')]
+Identificadores: {'el': 1, 'gato': 2, 'mira': 3, 'al': 4, 'perro': 5}
+One-hot(gato): [0, 1, 0, 0, 0]
+Bolsa: {'el': 1, 'gato': 1, 'mira': 1, 'al': 1, 'perro': 1}

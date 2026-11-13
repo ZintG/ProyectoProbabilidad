@@ -1,0 +1,41 @@
+\chapter*{Ejercicios matemáticos de la guía}
+\addcontentsline{toc}{chapter}{Ejercicios matemáticos de la guía}
+\noindent Estos ejercicios consolidan resultados de la clase y corresponden al
+trabajo autónomo, no al tiempo presencial. Las soluciones justificadas están
+separadas en \texttt{solej01.tex}.
+\begin{enumerate}
+\item \textbf{[Derivación]} Demuestre la regla de la cadena para $T=4$.
+Para $X_1,X_2$ Bernoulli$(1/2)$ independientes y $X_3=X_1$,
+contraste $p(1,0,1)$ con la aproximación de orden uno.
+\emph{Autoverificación:} $1/4$ frente a $1/8$.
+\item \textbf{[Cálculo]} Para $c=(6,3,1,0,0)$ y $K=5$,
+calcule la predictiva usando dos \emph{priors} simétricas:
+Dirichlet con parámetros unitarios y Dirichlet con parámetros $1/2$.
+Compare la masa sobre categorías no vistas.
+\emph{Autoverificación:} $1/15$ frente a $1/25$ en cada categoría nula.
+\item \textbf{[Demostración]} Pruebe Gibbs desde $\ln t\le t-1$,
+justifique cuándo se da la igualdad y deduzca
+$H(p,q)=H(p)+D_{\rm KL}(p\|q)$.
+\emph{Autoverificación:} KL es no negativa, pero generalmente asimétrica.
+\item \textbf{[Cálculo]} Un predictor asigna a cuatro resultados observados
+$(1/2,1/4,1/8,1/2)$. Calcule pérdida total, pérdida media y
+PPL. Repita cuando la tercera probabilidad sea $1/16$.
+\emph{Autoverificación:} PPL inicial $2^{7/4}$, final $4$.
+\item \textbf{[Aplicación]} En un mismo texto de 100 caracteres, A
+produce 100 tokens con PPL 3.2 y B 30 tokens con PPL 25.
+Convierta a bits totales y BPC y enumere cuatro condiciones necesarias
+para interpretar una diferencia.
+\emph{Autoverificación:} BPC(A) $\approx1.6781$;
+BPC(B) $\approx1.3932$.
+\end{enumerate}
+\section*{Problemas suplementarios}
+\begin{enumerate}
+\item[(S1.A)] Para una cadena de Markov homogénea, relacione su
+entropía condicional $H(X_t\mid X_{t-1})$ con las tasas de
+codificación cuando existe una distribución estacionaria.
+\item[(S1.B)] Formalice por qué una frecuencia bruta de pares solapados
+no es la reducción de longitud de una fusión BPE.
+\item[(S1.C)] \emph{Semilla IC10:} formule una hipótesis falsable que
+compare tasa de segmentación en corpus general y técnico, e indique
+qué control haría falta para atribuir un efecto al tokenizador.
+\end{enumerate}

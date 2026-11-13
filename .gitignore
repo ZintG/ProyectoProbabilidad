@@ -1,0 +1,22 @@
+# Archivos de compilación de Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Archivos auxiliares de LaTeX
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+*.fls
+*.fdb_latexmk
+
+# Entornos virtuales
+.venv/
+venv/
+env/
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db

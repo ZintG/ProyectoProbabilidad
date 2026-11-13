@@ -1,0 +1,198 @@
+\phantomsection\addcontentsline{toc}{chapter}{Suplemento: propiedades y demostraciones}\label{mod:sup}
+\chapter{Distribuciones finitas y secuencias}
+\section{El símplex y el soporte}
+Sea $V=\{1,\ldots,K\}$. El símplex es
+$\Delta_{K-1}=\{p\in\mathbb R^K:p_i\ge0,\sum_i p_i=1\}$.
+Su interior relativo exige $p_i>0$. El soporte es
+$\operatorname{supp}(p)=\{i:p_i>0\}$. La convención
+$0\log0=0$ está motivada por $\lim_{x\downarrow0}x\log x=0$.
+Cuando $q_i=0$ y $p_i>0$, $-p_i\log q_i=+\infty$.
+\section{Regla de la cadena con cuidado del soporte}
+\textbf{Proposición.} Si $p(x_{1:T})>0$, entonces
+\[p(x_{1:T})=p(x_1)\prod_{t=2}^T p(x_t\mid x_{1:t-1}).\]
+\textit{Demostración.} Para todo prefijo del soporte, la definición de
+condicional permite escribir
+$p(x_{1:t})=p(x_{1:t-1})p(x_t\mid x_{1:t-1})$.
+Al iterar, los factores de prefijos se cancelan telescópicamente.\hfill$\square$
+Para prefijos de probabilidad cero, las condicionales pueden elegirse por
+convención; la representación de la ley conjunta sigue siendo válida donde
+está definida. Esto evita atribuir contenido probabilístico a expresiones
+condicionales que no son identificables por datos.
+\section{Markov no es una consecuencia de la factorización}
+La hipótesis de orden $m$ afirma
+$X_t\perp X_{1:t-m-1}\mid X_{t-m:t-1}$ bajo las condiciones de la ley.
+La notación de independencia condicional es una propiedad de la distribución;
+una ventana de longitud $m$ en un algoritmo es una \emph{decisión de modelado}.
+Por ejemplo, si $X_1,X_2$ son monedas justas independientes y $X_3=X_1$,
+el modelo de orden uno pierde información relevante para el último paso.
+\section{Número de parámetros de una tabla condicional}
+Para $K$ símbolos y una historia de longitud $m$ (por tanto, $K^m$ contextos posibles), cada contexto posee $K-1$
+grado de libertad; la tabla completa usa $K^m(K-1)$ parámetros libres.
+Este conteo presupone que cada contexto se trata independientemente, que no
+hay simetrías ni parámetros compartidos, y que todas las filas pueden variar.
+Las redes neuronales comparten parámetros y no se cuentan de esta forma.
+
+\chapter{Estimación, concavidad y modelos predictivos}
+\section{Existencia del estimador de máxima verosimilitud}
+Sea $c_i\ge0$, $N=\sum c_i>0$ y
+$\ell(p)=\sum_{i:c_i>0}c_i\ln p_i$. Es una función cóncava en el
+símplex: el Hessiano en coordenadas positivas observadas es diagonal con
+entradas $-c_i/p_i^2$. Para maximizar, la desigualdad de Gibbs o el
+multiplicador de Lagrange en el soporte observado dan
+$\widehat p_i=c_i/N$. A los índices con $c_i=0$ se les asigna masa nula.
+Si se impusiera artificialmente $p_i>0$ para todos, el supremo podría no alcanzarse.
+\section{Dirichlet y posterior: derivación completa}
+Para $\alpha_i>0$ la densidad de $p\sim\mathrm{Dirichlet}(\alpha)$ es
+\[
+f(p)=\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}
+\prod_{i=1}^Kp_i^{\alpha_i-1},\qquad A=\sum_i\alpha_i.
+\]
+Con conteos $c$, la verosimilitud es proporcional a $\prod p_i^{c_i}$.
+Por Bayes la posterior es Dirichlet$(\alpha_1+c_1,\ldots,\alpha_K+c_K)$.
+La identidad de momentos de Dirichlet es
+$\mathbb E[p_i\mid c]=(\alpha_i+c_i)/(A+N)$.
+Se demuestra integrando, pues la integral de $p_i\prod_j p_j^{\beta_j-1}$
+con la constante de normalización es $\beta_i/(\sum_j\beta_j)$.
+Así, la predicción posterior de un símbolo nuevo es la media posterior;
+no coincide necesariamente con la moda posterior.
+\section{Suavizado como estimación de compromiso}
+Cuando $\alpha_i=\alpha$,
+\[
+\frac{c_i+\alpha}{N+K\alpha}
+=\frac{N}{N+K\alpha}\frac{c_i}{N}+
+\frac{K\alpha}{N+K\alpha}\frac1K.
+\]
+Esto muestra una retracción hacia la distribución uniforme, no una garantía
+de buena generalización. Si $K$ crece, la masa agregada aumenta.
+\section{Selección y evaluación separadas}
+La elección de $\alpha$, $n$ o las fusiones BPE sobre prueba destruye la
+interpretación de prueba como evidencia final independiente. La recomendación
+es separar por documento antes de ajustar cualquier representación y realizar
+validación de hiperparámetros solo sobre el conjunto de validación.
+
+\chapter{Entropía y divergencia KL}
+\section{Entropía como esperanza}
+Para una distribución finita $p$, la información de $i$ es
+$I_p(i)=-\log_2p_i$ y $H_2(p)=\mathbb E_p[I_p(X)]$.
+Con base natural se mide en nats. La relación es
+$H_2(p)=H_e(p)/\ln2$. La entropía mide incertidumbre bajo $p$;
+la entropía cruzada $H(p,q)$ mide pérdida media al codificar datos de $p$
+con probabilidades $q$.
+\section{Límites y casos de igualdad}
+\textbf{Proposición.} Para $K$ categorías,
+$0\le H_2(p)\le\log_2K$. La primera desigualdad se obtiene porque
+$-\log_2p_i\ge0$ cuando $0<p_i\le1$; la igualdad ocurre para masas
+concentradas en un solo evento. La segunda se deduce de
+$D_{\rm KL}(p\|u)=\log_2K-H_2(p)\ge0$, donde $u$ es uniforme.
+La igualdad ocurre exactamente para $p=u$.
+\section{Desigualdad de Gibbs con masas nulas}
+\textbf{Teorema.} $D_{\rm KL}(p\|q)\ge0$, con igualdad si y solo si $p=q$.
+\textit{Demostración.} Si existe $i$ con $p_i>0=q_i$, la divergencia es
+infinita. En el otro caso, usando $\ln z\le z-1$,
+\[
+-D_{\rm KL}(p\|q)=\sum_{i:p_i>0}p_i\ln\frac{q_i}{p_i}
+\le\sum_{i:p_i>0}(q_i-p_i)\le0.
+\]
+Para la igualdad, la desigualdad logarítmica exige $q_i=p_i$ en todo el
+soporte y la última desigualdad exige que $q$ no tenga masa fuera de él.
+Concluimos $p=q$.\hfill$\square$
+\section{Entropía cruzada y KL}
+Si los soportes son compatibles,
+\[
+H(p,q)=-\sum_ip_i\log q_i
+=-\sum_ip_i\log p_i+\sum_ip_i\log\frac{p_i}{q_i}
+=H(p)+D_{\rm KL}(p\|q).
+\]
+Por tanto $q=p$ minimiza la entropía cruzada sobre \emph{todas} las
+distribuciones posibles. Si se optimiza una familia restringida $q_\theta$,
+se obtiene el mejor elemento de esa familia según el criterio, no
+necesariamente la distribución real.
+\section{KL no es una métrica}
+Para $p=(3/4,1/4)$ y $q=(1/2,1/2)$,
+\[
+D_{\rm KL}(p\|q)=1-H_2(p)\approx0.188722\text{ bits},
+\quad D_{\rm KL}(q\|p)=\tfrac12\log_2(4/3)\approx0.207519.
+\]
+La falta de simetría basta para concluir que KL no es una métrica.
+Es frecuente usar una divergencia simétrica como Jensen--Shannon:
+$\mathrm{JS}(p,q)=\tfrac12D_{\rm KL}(p\|m)+\tfrac12D_{\rm KL}(q\|m)$,
+con $m=(p+q)/2$. No se necesita JS en la S01, pero permite situar KL
+entre otros objetos de la teoría de la información.
+\section{KL entre distribuciones sobre secuencias}
+Para $p,q$ sobre $X_{1:T}$, con soportes compatibles,
+\[
+D_{\rm KL}(p(x_{1:T})\|q(x_{1:T}))=
+\sum_{t=1}^T\mathbb E_p\left[
+D_{\rm KL}\bigl(p(X_t\mid X_{<t})\|q(X_t\mid X_{<t})\bigr)\right].
+\]
+Se deriva factorizando el cociente de densidades o masas mediante la regla
+de la cadena y conmutando la suma finita y la esperanza. La fórmula es una
+versión de la regla de la cadena para KL, y enlaza la modelación de
+secuencias con las diferencias de pérdida condicional.
+
+\chapter{Perplejidad, codificación y tokenización}
+\section{La perplejidad como transformación de la pérdida}
+Para una realización observada y $r_t=q(x_t\mid x_{<t})>0$,
+\[
+\operatorname{PPL}=\exp\left(-\frac1T\sum_{t=1}^T\ln r_t\right)
+=\left(\prod_{t=1}^T\frac1{r_t}\right)^{1/T}.
+\]
+La igualdad se obtiene aplicando propiedades del logaritmo. Si $r_t=0$
+para algún evento observado, la pérdida y la perplejidad son infinitas.
+Si todos los eventos reciben probabilidad $1/K$, la PPL vale $K$.
+\section{Producto de probabilidades y probabilidad inicial}
+Una matriz de transición por sí sola solo especifica las probabilidades
+condicionales de pasos consecutivos. Para dar una ley sobre cadenas de
+longitud $T$ se debe fijar $p(X_1)$ o condicionar explícitamente al símbolo
+inicial. Si la prueba \texttt{abca} tiene transición total $1/35$ bajo
+$\alpha=1$ y la inicial es uniforme, su probabilidad conjunta es $1/105$.
+Este detalle afecta el número de factores $T$ y el denominador de la PPL.
+\section{Bits por carácter y unidades de información}
+Para el texto $z$ con $N$ caracteres bajo una convención documentada,
+\[
+\operatorname{BPC}(z;q)=\frac{-\log_2q(\tau(z))}{N}.
+\]
+Si $\tau$ es una tokenización reversible y la probabilidad cubre el texto
+completo y todas las marcas que lo determinan, esta cantidad representa
+una tasa ideal por carácter. De otro modo puede faltar información para
+reconstruir el texto. El nombre BPC requiere especificar si se cuentan
+puntos de código Unicode, bytes o grafemas y cómo se tratan saltos de línea.
+\section{Relación entre PPL y BPC bajo una tokenización fijada}
+Si la segmentación de $z$ contiene $T$ tokens y $\operatorname{PPL}_q$
+se calculó sobre exactamente esos $T$ eventos, entonces
+\[
+\operatorname{BPC}=\frac{T}{N}\log_2\operatorname{PPL}_q.
+\]
+La fórmula es algebraica; no autoriza mezclar valores de PPL, $T$ y $N$
+provenientes de convenciones o textos distintos.
+\section{Byte Pair Encoding: reducción local}
+Sea un corpus representado por secuencias finitas y un par $(u,v)$.
+Cada reemplazo \emph{no solapado} de $u,v$ por $uv$ disminuye
+el número de símbolos en una unidad. Si se ejecutan $r$ reemplazos,
+la longitud total desciende exactamente $r$. Para el par $(a,a)$ en
+$\texttt{aaaaa}$ se cuentan cuatro apariciones solapadas pero solo dos
+reemplazos no solapados de izquierda a derecha: la disminución es dos.
+Por ello, una implementación que cuenta pares brutos debe separar
+``frecuencia'' de ``reemplazos efectivos''.
+\section{Por qué BPE no prueba un óptimo global}
+El algoritmo elige, en cada paso, el par de mayor frecuencia y toma una
+decisión local. Aunque disminuye la longitud inmediatamente, cambiar las
+fusiones tempranas cambia el conjunto de pares futuros; por ello la
+propiedad local no implica optimalidad global con un presupuesto dado de
+fusiones. También debe documentarse la política de desempate.
+\section{Preguntas suplementarias de nivel matemático}
+\begin{enumerate}
+\item Pruebe la concavidad de $H(p)$ usando el Hessiano restringido al
+interior del símplex.
+\item Derive la regla de la cadena de KL a partir de las factorizaciones
+$p(x_{1:T})$ y $q(x_{1:T})$.
+\item Estudie el límite $\alpha\to\infty$ del estimador suavizado
+con $K$ fijo, e interprete el resultado.
+\item Dé un ejemplo donde dos modelos tengan igual pérdida en bits por
+carácter y perplejidades por token distintas.
+\item Explique por qué la validación aleatoria por caracteres es
+incorrecta cuando el corpus contiene documentos muy similares.
+\end{enumerate}
+\clearpage
+\input{fuentes/propiedades_aplicadas}
+\input{fuentes/puentes_aplicados}

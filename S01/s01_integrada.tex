@@ -1,0 +1,44 @@
+% s01_integrada.tex v0.9 — PDF de la sesión S01 para estudiantes.
+% Compila exactamente el texto que entra al libro (contenido_libro.tex) con el
+% preámbulo y la numeración del libro, de modo que «Proposición 1.1.8» o
+% «Complemento S01.C4» coinciden en ambos documentos.
+% El manual modular de v0.8 se conserva en s01_integrada_modular_v0_8.tex.
+% Compilar desde esta carpeta con COMPILAR.sh.
+\documentclass[11pt,a4paper,oneside,openany]{book}
+\def\documentonombre{Sesión 01 · El lenguaje como distribución de probabilidad}
+\input{../../estilo/preambulo_curso}
+\usepackage{bookmark}
+\setcounter{tocdepth}{3}
+\setcounter{secnumdepth}{3}
+\renewcommand{\cursoversioncorta}{Edición LaTeX v0.9}
+\renewcommand{\cursoversion}{Edición LaTeX v0.9}
+\numberwithin{equation}{section}
+\numberwithin{figure}{section}
+\numberwithin{table}{section}
+\numberwithin{proposicion}{section}
+\titleformat{\chapter}[display]{\normalfont\bfseries\color{azul}\Huge}{\chaptername\ \thechapter}{12pt}{\Huge}
+\titleformat{\subsubsection}{\normalsize\bfseries\color{petroleo}}{\thesubsubsection}{0.8em}{}
+\fancyhead[R]{\small\color{gris}Dr. José G. Marcano}
+\fancyfoot[L]{\scriptsize\color{gris}Sesión S01}
+\begin{document}
+\frontmatter
+\begin{titlepage}\centering\vspace*{3cm}
+{\Large\color{gris} Maestría en Matemáticas Aplicadas\par}\vspace{1.0cm}
+{\Huge\bfseries\color{azul} Sesión 01\par}\vspace{0.6cm}
+{\LARGE El lenguaje como distribución de probabilidad\par}\vspace{1.0cm}
+{\large Texto de la sesión, laboratorios y complementos matemáticos\\
+(extraído del libro \emph{Modelos de Lenguaje de Gran Escala})\par}\vfill
+{\Large\bfseries Dr. José G. Marcano\par}\vspace{2cm}
+{\color{gris} Edición LaTeX v0.9 · material del estudiante (sin soluciones) · octubre de 2026\par}
+\end{titlepage}
+\tableofcontents
+\mainmatter
+\chapter{Fundamentos matemáticos y arquitectura}\label{c1:cap:01}
+\section{S01: El lenguaje como distribución de probabilidad}\label{sec:s01}
+\input{contenido_libro}
+\backmatter
+\renewcommand{\bibname}{Bibliografía}
+\phantomsection\addcontentsline{toc}{chapter}{Bibliografía}
+\bibliographystyle{plainnat}
+\bibliography{curso_unificado}% se localiza con BIBINPUTS (COMPILAR.sh)
+\end{document}

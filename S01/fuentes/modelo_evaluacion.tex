@@ -1,0 +1,152 @@
+\chapter*{Parte III. Formalizar lo que acabamos de contar}
+\addcontentsline{toc}{chapter}{Parte III. Modelos probabilísticos y evaluación}
+\section*{13. Del conteo al modelo de probabilidad}
+Decir que una máquina asigna probabilidades obliga a precisar el objeto: sea $V$ un vocabulario finito de símbolos, $X_t\in V$ el símbolo en la posición $t$ y $X_{1:T}=(X_1,\ldots,X_T)$ una secuencia aleatoria. La notación $p(X_t=x\mid X_{1:t-1}=h)$ significa \emph{la probabilidad del siguiente símbolo $x$ dada una historia concreta $h$}. No es la probabilidad de que la máquina ``entienda'' una oración.
+
+\begin{ejemplo}[Volvamos al dibujo de las continuaciones]
+Si tras «El gato duerme sobre la» el vocabulario de juguete fuera $V=\{\text{alfombra},\text{cama},\text{mesa}\}$, una distribución válida es $(0.50,0.30,0.20)$. La probabilidad de «cama» en ese contexto sería $0.30$. Para un vocabulario real habría muchas más opciones, incluidas puntuación y símbolos especiales.
+\end{ejemplo}
+
+\section*{14. Regla de la cadena: de condicionales a oraciones enteras}
+Sabemos por la definición de probabilidad condicional que $p(x_1,x_2)=p(x_1)p(x_2\mid x_1)$ cuando $p(x_1)>0$. Para tres posiciones:
+\begin{align*}
+p(x_1,x_2,x_3)&=p(x_1,x_2)\,p(x_3\mid x_1,x_2)\\
+&=p(x_1)\,p(x_2\mid x_1)\,p(x_3\mid x_1,x_2).
+\end{align*}
+Al repetir el argumento obtenemos la \textbf{regla de la cadena}, donde todas las condicionales se definen en los prefijos con probabilidad positiva:
+\[
+\boxed{\displaystyle p(x_{1:T})=p(x_1)\prod_{t=2}^T p(x_t\mid x_{1:t-1}).}
+\]
+Es una identidad de probabilidad, no un supuesto de aprendizaje profundo. \emph{Cada factor utiliza potencialmente toda la historia disponible}; una red neuronal causal puede parametrizarlo, pero un modelo de conteos con ventana corta utiliza una aproximación.
+
+\section*{15. Hipótesis de Markov: una simplificación, no una identidad}
+En un modelo de bigramas aproximamos $p(x_t\mid x_{1:t-1})$ mediante $q(x_t\mid x_{t-1})$. Para trigramas usamos los dos símbolos anteriores. La idea de \emph{memoria de orden $m$} es retener solo los $m$ símbolos precedentes.
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,circle,fill=azulclaro,minimum size=10mm}]
+\node[b] (x1) at (0,0){$X_1$};\node[b] (x2) at (3,0){$X_2$};\node[b] (x3) at (6,0){$X_3$};
+\draw[->,thick] (x1)--(x2);\draw[->,thick] (x2)--(x3);
+\draw[->,dashed,vino,thick] (x1) to[bend left=35] node[above,font=\scriptsize]{posible dependencia omitida} (x3);
+\end{tikzpicture}
+\end{center}
+\begin{ejemplo}[El límite de mirar solo el símbolo anterior]
+Sean $X_1,X_2$ monedas justas independientes y $X_3=X_1$. Entonces
+\[
+p(X_1=1,X_2=0,X_3=1)=\tfrac12\cdot\tfrac12\cdot1=\tfrac14.
+\]
+La aproximación de orden uno remplaza la tercera condicional por $p(X_3=1\mid X_2=0)=1/2$, y da $1/8$. La dependencia de $X_3$ con $X_1$ no queda explicada por $X_2$.
+\end{ejemplo}
+
+\section*{16. Por qué dividir por los conteos es máxima verosimilitud}
+Para un contexto fijo $h$, supongamos que contamos $c_i$ continuaciones del símbolo $i$ y $N=\sum_i c_i>0$. Buscamos probabilidades $q_i$ no negativas que sumen uno. Bajo observaciones condicionalmente independientes dadas $h$ (modelo categórico), la verosimilitud, ignorando un factor combinatorio que no depende de $q$, es
+\[
+L(q)=\prod_{i=1}^{K} q_i^{c_i},\qquad
+\ell(q)=\sum_{i:c_i>0} c_i\ln q_i.
+\]
+Para un máximo interior en el soporte observado, introducimos un multiplicador $\lambda$:
+\[
+\mathcal L(q,\lambda)=\sum_{i:c_i>0}c_i\ln q_i+\lambda(1-\sum_iq_i).
+\]
+Derivamos: $c_i/q_i-\lambda=0$, luego $q_i=c_i/\lambda$ para índices con conteo positivo. Sumando estas probabilidades se obtiene $\lambda=N$. La solución en todo el símplex, incluido su borde, es
+\[
+\boxed{\widehat q_i=\frac{c_i}{N}.}
+\]
+Los conteos cero reciben probabilidad cero. Esta fórmula explica por qué las frecuencias de la parte II no fueron una receta arbitraria. Si un contexto nunca aparece ($N=0$), la fórmula no define una fila: necesitamos una política explícita (retroceso, prior, etc.).
+
+\section*{17. Suavizado Dirichlet: qué ganamos y qué sacrificamos}
+El estimador anterior puede asignar ceros a eventos plausibles. En el modelo bayesiano utilizamos una distribución \emph{Dirichlet} sobre el vector de probabilidades: $q\sim\mathrm{Dir}(\alpha_1,\ldots,\alpha_K)$, donde $\alpha_i>0$. Como su densidad es proporcional a $\prod_iq_i^{\alpha_i-1}$ y la verosimilitud a $\prod_iq_i^{c_i}$, la posterior es
+\[
+q\mid c\sim\mathrm{Dir}(c_1+\alpha_1,\ldots,c_K+\alpha_K).
+\]
+La probabilidad predictiva posterior de una nueva observación, que coincide con la media de esa posterior, es
+\[
+\boxed{\Pr(X_{N+1}=i\mid c)=\frac{c_i+\alpha_i}{N+\sum_j\alpha_j}.}
+\]
+Con $\alpha_i=\alpha$, se conoce como suavizado aditivo. En el suplemento se deriva la esperanza de Dirichlet y se explican soporte, concavidad y dependencia del tamaño del vocabulario. \textbf{No se promete mejor rendimiento} por añadir pseudoconteos; el valor de $\alpha$ debe elegirse en datos de validación.
+
+\section*{18. ¿Cómo sabemos si el modelo predice bien?}
+Supongamos que una secuencia observada recibe probabilidad $q(x_{1:T})$. Una pérdida natural es el negativo del logaritmo de esa probabilidad: $-\ln q(x_{1:T})$. Si una probabilidad es pequeña, la pérdida es grande; si $q=0$ para un resultado observado, la pérdida es infinita.
+\begin{center}
+\begin{tabular}{c|c|c}\toprule
+Probabilidad observada & $-\log_2q$ (bits) & Lectura\\\midrule
+$1$ & $0$ & Sin sorpresa\\
+$1/2$ & $1$ & Una decisión binaria ideal\\
+$1/4$ & $2$ & Más sorpresa\\
+$1/8$ & $3$ & Todavía más sorpresa\\\bottomrule
+\end{tabular}
+\end{center}
+La \emph{pérdida logarítmica total} de una cadena se obtiene sumando contribuciones por posición. Si los modelos comparten convenciones de inicio, fin y tokenización, la media $T^{-1}\sum_t-\log q(x_t\mid x_{<t})$ permite compararlos sobre la misma secuencia. La guía distingue \emph{ejemplos construidos} de \emph{mediciones reales}; calcular una cifra no equivale a demostrar calidad predictiva fuera del ejemplo.
+
+\section*{19. Entropía: incertidumbre antes de observar el resultado}
+Sea $p=(p_1,\ldots,p_K)$ la distribución verdadera de un resultado aleatorio. La \emph{entropía en bits} es el promedio de la información $-\log_2p_i$ que aporta observar un resultado $i$:
+\[
+H_2(p)=-\sum_i p_i\log_2p_i,\qquad 0\log_2 0:=0.
+\]
+\begin{ejemplo}[Dos monedas que no sorprenden igual]
+Una moneda justa tiene $p=(1/2,1/2)$ y entropía de un bit. Una moneda con $p=(3/4,1/4)$ tiene entropía
+$-(3/4)\log_2(3/4)-(1/4)\log_2(1/4)\approx0.8113$ bits. La segunda es más predecible, en promedio, si conocemos su distribución.
+\end{ejemplo}
+El suplemento demuestra $0\le H_2(p)\le\log_2K$, incluyendo los casos de igualdad. Esta desigualdad permite interpretar la entropía antes de usarla como función de costo.
+
+\section*{20. Entropía cruzada y KL: evaluar con probabilidades equivocadas}
+Ahora distinguimos dos papeles: $p$ describe de dónde provienen los datos; $q$ es el modelo que les asigna probabilidades. La \emph{entropía cruzada} mide cuánto costaría codificar, en promedio, los datos de $p$ usando $q$:
+\[
+H_2(p,q)=-\sum_i p_i\log_2q_i.
+\]
+La diferencia con el costo ideal $H_2(p)$ se llama divergencia de Kullback--Leibler:
+\[
+D_{\rm KL}(p\|q)=\sum_i p_i\log_2\frac{p_i}{q_i},
+\qquad H_2(p,q)=H_2(p)+D_{\rm KL}(p\|q).
+\]
+\begin{ejemplo}[Un ejemplo pequeño que se puede verificar]
+Tomemos $p=(1/2,1/4,1/4)$ y $q=(1/4,1/2,1/4)$. Entonces
+\begin{align*}
+H_2(p)&=-\tfrac12(-1)-\tfrac14(-2)-\tfrac14(-2)=1.5,\\
+H_2(p,q)&=-\tfrac12(-2)-\tfrac14(-1)-\tfrac14(-2)=1.75,\\
+D_{\rm KL}(p\|q)&=1.75-1.5=0.25\ \text{bits}.
+\end{align*}
+El suplemento demuestra que KL es no negativa, que no es simétrica, que puede ser infinita y que no define una distancia métrica. La igualdad anterior no necesita ninguna red neuronal.
+\end{ejemplo}
+
+\section*{21. Perplejidad: deshacer la escala logarítmica}
+Las pérdidas en bits son sumas convenientes, pero pueden ser poco intuitivas. Si una secuencia tiene pérdida promedio $L_2$ en bits por evento, definimos
+\[
+\boxed{\mathrm{PPL}=2^{L_2}}\qquad \text{o, en nats,}\qquad \boxed{\mathrm{PPL}=e^{L_e}}.
+\]
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=azulclaro,align=center,text width=33mm,minimum height=12mm}]
+\node[b] (a) at (0,0){Probabilidades\\$1/2,1/4,1/8,1/2$};
+\node[b] (b) at (4.1,0){Información\\$1,2,3,1$ bits};
+\node[b] (c) at (8.2,0){Media $=1.75$\\PPL $=2^{1.75}$};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);
+\end{tikzpicture}
+\end{center}
+La perplejidad vale aproximadamente $3.364$. Es el equivalente uniforme de la pérdida media, no el número literal de palabras posibles ni una probabilidad de acierto. Si uno de los eventos observados recibe probabilidad cero, su PPL se vuelve infinita.
+
+\section*{22. ¿Por qué no comparamos cualquier par de perplejidades?}
+Los tokens de dos tokenizadores no representan necesariamente el mismo número de caracteres. Por eso, antes de comparar resultados debemos fijar el texto, la tokenización, la normalización, los marcadores y cómo se calcula la probabilidad de la secuencia completa.
+\begin{ejemplo}[Dos números que engañan si se omite la unidad]
+En el \emph{mismo texto de 100 caracteres}, supongamos que un modelo A utiliza 100 eventos con PPL $3.2$ y otro B utiliza 30 eventos con PPL $25$. Si ambos definen probabilidades coherentes de todo el texto y han tratado de forma compatible inicio y fin:
+\[
+\mathrm{BPC}_A=\frac{100\log_2(3.2)}{100}\approx1.678,
+\qquad
+\mathrm{BPC}_B=\frac{30\log_2(25)}{100}\approx1.393.
+\]
+B presenta una menor tasa bajo \emph{esas convenciones}, aunque tenga mayor PPL por token. Los números son ilustrativos; esta conversión no prueba una ventaja causal de su tokenizador. El análisis de condiciones y riesgos queda para el suplemento y el seminario.
+\end{ejemplo}
+
+\section*{23. ¿Por qué existen las subpalabras? Una puerta a BPE}
+La tokenización por palabras puede producir vocabularios inmensos y palabras desconocidas; la tokenización por caracteres crea secuencias largas. Las subpalabras intentan encontrar unidades intermedias útiles. El algoritmo de \emph{byte pair encoding} (BPE), adaptado a la tokenización, comienza con unidades pequeñas y fusiona iterativamente pares vecinos frecuentes.
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=azulclaro,align=center,text width=32mm,minimum height=11mm}]
+\node[b] (a) at (0,0){\texttt{c | a | s | a}};
+\node[b] (b) at (4.1,0){\texttt{c | as | a}};
+\node[b] (c) at (8.2,0){\texttt{cas | a}};
+\draw[->,thick] (a)--node[above,font=\scriptsize]{fusionar $a,s$}(b);
+\draw[->,thick] (b)--node[above,font=\scriptsize]{fusionar $c,as$}(c);
+\end{tikzpicture}
+\end{center}
+El dibujo muestra una \emph{posible} sucesión de fusiones, no el aprendizaje real de un tokenizador entrenado con corpus externos. El taller reproduce un ejemplo con palabras españolas y una regla determinista de desempate. BPE es un procedimiento voraz: no garantiza minimizar globalmente la longitud tras un número fijo de fusiones.
+
+\section*{24. Repaso de las ideas y enlace con la investigación}
+Hemos seguido la cadena \emph{texto $\to$ tokens $\to$ pares $\to$ conteos $\to$ probabilidades $\to$ pérdidas $\to$ comparación}. Cada paso exige convenciones que pueden registrarse, comprobarse y discutirse. Una pregunta legítima es si el texto técnico en español se segmenta de una manera distinta a la prosa general. Para responderla no basta observar dos ejemplos: hacen falta datos con procedencia, una hipótesis, métricas e incertidumbre. La parte IV introduce esa transición al trabajo científico.
+\clearpage

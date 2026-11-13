@@ -1,0 +1,36 @@
+\chapter{Primeros pasos: tokenizar, formar ventanas y codificar}
+\section{El ejemplo de la guía en código sencillo}
+El siguiente ejemplo es independiente de Keras o de cualquier modelo neuronal. Solo pretende que el estudiante vea la misma operación en Python y R sobre la frase \texttt{el gato mira al perro}. La unidad es la \emph{palabra separada por espacios}; no se presenta como un tokenizador moderno completo.
+\subsection{Python (biblioteca estándar)}
+\begin{lstlisting}[language=Python]
+texto = "el gato mira al perro"
+tokens = texto.split()
+bigramas = list(zip(tokens, tokens[1:]))
+vocabulario = list(dict.fromkeys(tokens))
+one_hot_gato = [int(w == "gato") for w in vocabulario]
+assert len(tokens) == 5 and len(bigramas) == 4
+assert sum(one_hot_gato) == 1
+\end{lstlisting}
+\subsection{R (sin paquetes externos)}
+\begin{lstlisting}[language=R]
+texto <- "el gato mira al perro"
+tokens <- strsplit(texto, ' ', fixed=TRUE)[[1]]
+bigramas <- lapply(seq_len(length(tokens)-1L),
+                   function(i) tokens[i:(i+1L)])
+vocabulario <- unique(tokens)
+one_hot_gato <- as.integer(vocabulario == 'gato')
+stopifnot(length(tokens)==5L, length(bigramas)==4L,
+          sum(one_hot_gato)==1L)
+\end{lstlisting}
+\noindent Compare los resultados, no únicamente la apariencia del código. Los programas completos \texttt{codigo/representacion.py} y \texttt{codigo/representacion.R} muestran además trigramas, bolsa de palabras e identificadores.
+\section{Lo que la representación no demuestra}
+Un vector one-hot identifica un token, pero no expresa semejanza semántica ni es una probabilidad predicha. Un embedding es un vector aprendido que estudiaremos en S02. Una bolsa de palabras conserva frecuencias, no orden; y un vector por documento puede corresponder a una tarea de clasificación distinta de la predicción autorregresiva.
+\section{Cómo ejecutar y comparar}
+\begin{lstlisting}
+python codigo/representacion.py
+python codigo/s01.py
+python verificaciones/verificar_s01.py
+Rscript codigo/representacion.R
+Rscript codigo/s01.R
+\end{lstlisting}
+\noindent Los comandos R requieren \texttt{Rscript} en el sistema. Si no está disponible, las instrucciones se entregan con una prueba pendiente, y nunca se atribuye ejecución a R sin observarla.

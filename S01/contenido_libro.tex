@@ -1,0 +1,2685 @@
+% REVISIÓN EDITORIAL v0.9 (piloto S01): reorganización según el índice aprobado
+% el 31-10-2026. Correspondencia antiguo→nuevo en CAMBIOS_S01_v0_9.md.
+% Archivo v0.6 íntegro en fuentes_historicas; v0.8 registrado por SHA-256.
+\iniciarcomplementos{S01}
+\phantomsection\label{s01:mod:ruta}
+\noindent\textit{Convención del libro:} los ejemplos construidos sirven para
+entender objetos matemáticos; una afirmación empírica solo procede de
+datos y ejecuciones identificados. Las instrucciones completas de los
+laboratorios están en el repositorio reproducible adjunto.
+
+% [R1] Recuperado de v0.6 (fuentes_historicas/contenido_libro_v0_6.tex, l. 66-74);
+% la mención a IC10 se sustituye por una remisión, porque IC10 se define después.
+\begin{contraste}[Cuatro alcances que nunca se deben confundir]
+\textbf{Cálculo demostrado:} se deduce de hipótesis declaradas.
+\textbf{ILUSTRATIVO:} corpus o resultado fabricado para aprender.
+\textbf{REAL REPRODUCIDO:} script ejecutado sobre un conjunto identificado
+(que podría seguir siendo sintético).
+\textbf{EVIDENCIA DE INVESTIGACIÓN:} requiere datos de dominio,
+baselines fuertes, protocolo y validación externa. Los experimentos de esta
+sesión pertenecen al segundo y tercer tipo; \textbf{no prueban la hipótesis
+de investigación} que se plantea en la sección~\ref{s01:cap:investigacion}.
+\end{contraste}
+
+\paragraph{Notación de la sesión}\label{s01:notacion}
+La tabla reúne los símbolos de S01 con un único significado cada uno. Cada fila
+es una definición operativa breve; la definición formal, con sus hipótesis, se
+da en el lugar del texto donde el concepto empieza a usarse.
+{\small
+\begin{longtable}{@{}>{\raggedright\arraybackslash}p{37mm}>{\raggedright\arraybackslash}p{\dimexpr\textwidth-37mm-2\tabcolsep\relax}@{}}\toprule
+Símbolo & Significado\\\midrule
+\endhead
+$V$, $|V|$ & vocabulario (conjunto finito de símbolos) y su número de elementos\\
+$V_A$, $V_{\mathrm{ej}}$, $V_{\mathrm{sal}}$ & vocabularios locales de un ejemplo; vocabulario de salida $V\cup\{\langle/\mathrm s\rangle\}$\\
+\texttt{a}, \texttt{b}, \texttt{c} & símbolos de los alfabetos de juguete (siempre en letra mecanografiada)\\
+$K$ & número de categorías de una distribución genérica; al aplicarla a un vocabulario, $K=|V|$\\
+$X_t$, $x_t$; $X_{1:T}$; $x_{<t}$ & símbolo aleatorio y observado en la posición $t$; secuencia de longitud $T$; historia $x_{<t}:=x_{1:t-1}$\\
+$n$; $m=n-1$; $h$ & número de símbolos de cada ventana de un modelo de $n$-gramas (que predice cada símbolo con los $n-1$ anteriores); memoria de Markov; contexto (historia concreta)\\
+$C$, $C(u,v)$; $c_i$, $\mathbf c$; $N$ & matriz y conteo de transiciones; conteos en un contexto y su vector; total de conteos $N=\sum_ic_i$\\
+$p$; $q$; $q_\theta$ & distribución verdadera; modelo; familia de modelos con parámetro $\theta$\\
+$\widehat q$; $\widehat P$, $\widehat P_\alpha$; $P$ & estimador; matriz de transición estimada y suavizada; matriz de una cadena genérica\\
+$\Pr(\cdot)$ & probabilidad de un evento\\
+$\Delta_{K-1}$; $\operatorname{supp}(p)$ & símplex de distribuciones sobre $K$ categorías; soporte de $p$\\
+$\alpha$; $\boldsymbol\alpha$, $A$ & pseudoconteo; parámetros positivos $(\alpha_1,\dots,\alpha_K)$ de una distribución sobre el símplex elegida antes de ver los datos, y su suma $A=\sum_i\alpha_i$\\
+$\Gamma$; $\mathrm B(a,b)$ & función Gamma; función Beta\\
+$s(x)$ & sorpresa (autoinformación) de un resultado\\
+$H$; $H_2$; $H_e$ & entropía con base indiferente; en bits (base 2); en nats (base $e$)\\
+$H(X\mid Y)$; $I(X;Y)$ & entropía condicional; información mutua\\
+$H(p,q)$; $D_{\mathrm{KL}}(p\|q)$ & entropía cruzada; divergencia de Kullback--Leibler\\
+$L_2$, $L_e$; $\rho_t$ & pérdida media por evento en bits y en nats; probabilidad asignada al evento $t$\\
+PPL; BPC; $|z|$; $\operatorname{bits}(z)$ & perplejidad; bits por carácter; número de puntos de código del texto $z$; bits totales de $z$\\
+$\pi_0$; $\pi$; $H_\infty$ & distribución inicial; distribución estacionaria; tasa de entropía de una cadena\\
+$e_i$; $E$; $d$ & vector canónico (one-hot); matriz de embedding $E\in\mathbb R^{d\times|V|}$; dimensión\\
+$\langle/\mathrm w\rangle$; $\langle\mathrm s\rangle$, $\langle/\mathrm s\rangle$ & fin de palabra (segmentación en subpalabras); inicio (BOS) y fin (EOS) de secuencia\\
+$k$; $r$; $M$; $t_{\max}$ & sustituciones de una fusión de pares adyacentes; probabilidad de parada; símbolos antes del fin; longitud máxima\\
+$\Delta_j$, $\bar\Delta$; $J$ & diferencias pareadas por documento y su media; número de documentos\\\bottomrule
+\end{longtable}}
+\noindent\textit{Cambio declarado (Regla 5).} Hasta v0.8, $V$ designaba también el
+tamaño del vocabulario; desde v0.9 el tamaño es $|V|$, también en la introducción
+del capítulo. Las sesiones posteriores adoptarán la misma convención en su revisión.
+\subsection{De la comunicación a la predicción del siguiente símbolo}\label{s01:cap:comunicacion}
+\begin{idea}[La pregunta histórica que todavía organiza un modelo de lenguaje de gran escala]
+Un \emph{modelo de lenguaje de gran escala} (Large Language Model, LLM) es, en
+la definición operativa que usaremos en todo el libro, una familia parametrizada
+de distribuciones condicionales sobre el siguiente símbolo de un texto, ajustada
+con grandes volúmenes de datos. Su pregunta de fondo es antigua:
+¿cómo describir una fuente que emite símbolos y cuánto podemos anticipar
+su siguiente elección a partir del contexto? Shannon formuló el problema
+en términos de distribuciones de mensajes, no de comprensión semántica
+\citep{shannon1948,shannon1951}.
+\end{idea}
+En una red telegráfica, importa cuántas alternativas debe distinguir el
+receptor, con qué probabilidades ocurren y qué restricciones impone la
+secuencia. \citet{hartley1928} y después \citet{shannon1948}
+convirtieron esa intuición en una teoría matemática. Shannon estudió
+además cómo la predicción humana de letras del inglés revela dependencias
+que no aparecen en los conteos independientes \citep{shannon1951}.
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[>=Stealth,node distance=5mm and 5mm,font=\small,
+  b/.style={draw=azul,rounded corners,fill=azulclaro,
+   text width=24mm,minimum height=11mm,align=center}]
+\node[b] (f) {Fuente\\$X_1,X_2,\ldots$};
+\node[b,right=of f] (e) {Codificación\\señal};
+\node[b,right=of e] (c) {Canal\\con ruido};
+\node[b,right=of c] (d) {Decodificación\\receptor};
+\foreach \a/\bb in {f/e,e/c,c/d}{\draw[->,thick,petroleo](\a)--(\bb);}
+\node[below=5mm of c,draw=vino,rounded corners,fill=vinoclaro] (r) {Ruido};
+\draw[->,vino](r)--(c);
+\end{tikzpicture}
+\caption{Modelo conceptual de transmisión. Para modelar lenguaje nos
+concentramos inicialmente en la fuente y las probabilidades de sus
+secuencias, sin identificar predicción estadística con comprensión semántica.}
+\label{fig:c1:shannon-canal}
+\end{figure}
+
+Shannon construyó aproximaciones de texto utilizando estadísticas de
+letras y de grupos consecutivos. Al ampliar el contexto, los resultados
+sintéticos empezaban a mostrar patrones reconocibles. El procedimiento
+\emph{no demostraba} que una máquina entendiera el texto: mostraba que
+las dependencias estadísticas contienen estructura aprovechable.
+Llamaremos \emph{modelo de $n$-gramas} (o simplemente $n$-grama) al que predice
+cada símbolo usando solo los $n-1$ símbolos anteriores; una fuente
+\emph{sin memoria} es el caso $n=1$, en que cada símbolo se elige sin mirar los
+previos. La definición formal y su estimación se dan en la
+sección~\ref{s01:cap:ngram}. El paso de una fuente sin memoria a un $n$-grama
+aproxima $p(x_t\mid x_{<t})$, donde $x_{<t}$ abrevia la historia
+$x_1,\ldots,x_{t-1}$, usando solo los $n-1$ símbolos anteriores.
+
+El precio de añadir contexto es combinatorio. Para un vocabulario $V$ de tamaño
+$|V|$ existen hasta $|V|^{n-1}$ contextos diferentes de longitud $n-1$;
+los conteos se dispersan. Esa limitación motiva el siguiente capítulo
+geométrico: compartir información entre símbolos y contextos diferentes
+mediante vectores aprendidos \citep{bengio2003neural,mikolov2013efficient}.
+\begin{ejemplo}[Shannon: cómo producir texto por muestreo]
+La comparación histórica entre cadenas de letras sin estructura y
+aproximaciones que conservan las frecuencias de transiciones permite
+visualizar por qué aumenta la plausibilidad sintáctica al considerar
+más contexto. En sus experimentos, Shannon (1948) combinó frecuencias
+de letras y palabras con selección aleatoria de continuaciones a partir
+de textos impresos; no entrenó una red neuronal. El procedimiento
+moderno equivalente consiste en estimar $\widehat q(x_t\mid x_{t-n+1:t-1})$
+y muestrear repetidamente. No debe interpretarse una frase más natural
+como evidencia automática de comprensión semántica
+\citep{shannon1948,shannon1951}.
+\end{ejemplo}
+
+\paragraph{La pregunta que abre el curso}
+Imagine que una persona lee «El gato duerme sobre la...» y debe completar la frase. Tal vez proponga \emph{alfombra}, \emph{mesa} o \emph{cama}. Algunas continuaciones resultan más naturales que otras. Una máquina puede hacer una tarea análoga: asignar números entre cero y uno a las continuaciones posibles, de modo que su suma sea uno. Aún no necesitamos redes neuronales para entender esta operación.
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small}, token/.style={draw=azul,rounded corners=3pt,fill=azulclaro,minimum height=9mm,inner xsep=9pt}]
+\node[token] (t) at (0,0) {El gato duerme sobre la};
+\node[token,fill=verdeclaro,draw=verde] (a) at (6.1,1.0) {alfombra $\;0.50$};
+\node[token,fill=verdeclaro,draw=verde] (b) at (6.1,0) {cama $\;0.30$};
+\node[token,fill=verdeclaro,draw=verde] (c) at (6.1,-1.0) {mesa $\;0.20$};
+\draw[->,thick] (t.east)--(a.west);\draw[->,thick] (t.east)--(b.west);\draw[->,thick] (t.east)--(c.west);
+\end{tikzpicture}
+\end{center}
+\noindent\textit{Lectura de la figura.} Los valores se han inventado para ilustrar el mecanismo; no proceden de un LLM ni afirman que esas sean las únicas palabras posibles. La distribución condicional depende del contexto, de las unidades de representación y del modelo concreto.
+
+\begin{idea}[Lo que aprenderemos a hacer en esta sesión]
+Tomar una frase, separarla en unidades, contar cómo se combinan esas unidades, convertir los conteos en probabilidades y evaluar qué tan bien se ajustan las probabilidades a secuencias no utilizadas para el ajuste.
+\end{idea}
+
+\paragraph{¿Para qué estudiar secuencias?}
+No toda aplicación de un modelo de lenguaje consiste en completar frases. Las mismas ideas matemáticas sustentan otras preguntas:
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.0cm}X>{\raggedright\arraybackslash}p{3.4cm}}
+\toprule Tarea & Pregunta reconocible & Objeto de entrada\\\midrule
+Clasificación & ¿Esta reseña expresa aprobación o rechazo? & Palabras de la reseña\\
+Traducción & ¿Qué secuencia en otro idioma corresponde a esta? & Secuencia de palabras\\
+Documentos técnicos & ¿Qué evento se describe en este informe? & Texto especializado\\
+Series de tiempo & ¿Cómo evolucionará la demanda mañana? & Mediciones ordenadas\\
+Predicción de texto & ¿Qué símbolo sigue a lo observado? & Contexto escrito\\\bottomrule
+\end{tabularx}
+\end{center}
+Una serie de tiempo no es texto; sin embargo, ambas tienen \emph{orden} y \emph{dependencia entre observaciones}. Más adelante estudiaremos modelos con memoria aprendida, atención y Transformers. Hoy construiremos las bases probabilísticas que hacen inteligibles sus objetivos de entrenamiento y evaluación. La intuición de comenzar por aplicaciones y ejemplos de secuencias está inspirada en el enfoque didáctico del capítulo 6 de \emph{Deep Learning with R} (primera edición) \citep[cap.~6]{cholletallaire2018}; todas las figuras siguientes son originales.
+
+\subsection{Secuencias, tokens y representación}\label{s01:cap:tokens}
+\paragraph{Antes de las ecuaciones: ¿qué es una secuencia?}
+Una \emph{secuencia} es una lista ordenada: cambiar el orden puede cambiar el significado o el fenómeno. «El perro persigue al gato» no expresa lo mismo que «El gato persigue al perro». En una serie de temperatura, $20,21,25$ no describe la misma evolución que $25,21,20$.
+
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\small},tok/.style={draw=azul,rounded corners=2pt,fill=azulclaro,minimum height=9mm,minimum width=18mm}, >=Stealth]
+\node[anchor=west,font=\bfseries] at (-.2,1.4) {Texto};
+\foreach \x/\w in {0/El,2/perro,4/persigue,6/al,8/gato} {\node[tok] at (\x,0.65){\w};}
+\draw[->,azul,thick] (.8,.65)--(1.1,.65);\draw[->,azul,thick] (2.8,.65)--(3.1,.65);\draw[->,azul,thick] (4.8,.65)--(5.1,.65);\draw[->,azul,thick] (6.8,.65)--(7.1,.65);
+\node[anchor=west,font=\bfseries] at (-.2,-.35) {Serie};
+\foreach \x/\w in {0/20,2/21,4/25,6/24,8/23} {\node[tok,fill=verdeclaro,draw=verde] at (\x,-1.1){\w};}
+\foreach \x in {0,2,4,6} {\draw[->,verde,thick] (\x+.85,-1.1)--(\x+1.1,-1.1);}
+\end{tikzpicture}
+\end{center}
+\textbf{Pregunta de comprensión:} ¿qué se pierde si guardamos solo las frecuencias de las palabras de una oración, sin su orden? Se pierde, al menos, la información que permite distinguir quién realizó una acción sobre quién.
+
+\paragraph{Primera decisión: ¿qué unidad llamaremos token?}
+Un \emph{token} es una unidad de representación definida por una regla concreta. No debe confundirse con la palabra ordinaria: un token puede ser un carácter, una palabra, una pieza de palabra o un símbolo especial. La \emph{tokenización} transforma texto en una secuencia de tokens.
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small}, b/.style={draw=azul,rounded corners,fill=azulclaro,align=center,minimum height=11mm}]
+\node[b,text width=40mm] (a) at (0,0){Texto original\\\texttt{El gato salta}};
+\node[b,text width=35mm] (w) at (6.5,1.5){Por palabras\\\texttt{El | gato | salta}};
+\node[b,text width=48mm] (c) at (6.5,0){Por caracteres\\\texttt{E | l | \_ | g | a | t | o | ...}};
+\node[b,text width=48mm] (s) at (6.5,-1.5){Por subpalabras\\\texttt{El | gat | o | salt | a}};
+\draw[->,thick] (a.east)--(w.west);\draw[->,thick] (a.east)--(c.west);\draw[->,thick] (a.east)--(s.west);
+\end{tikzpicture}
+\end{center}
+\noindent Los ejemplos de segmentación son \textbf{didácticos}, no salidas atribuidas a un tokenizador comercial. El guion bajo representa un espacio exclusivamente en el dibujo; otras implementaciones emplean otras convenciones.
+
+\paragraph{Del token al número: una representación comprensible}
+\begin{definicion}[Vocabulario, token y tokenización]\label{s01:def:vocabulario}
+Un \emph{vocabulario} es un conjunto finito $V$ de símbolos; su número de
+elementos se denota $|V|$. Una \emph{tokenización} es una regla que transforma
+cada texto en una secuencia finita de elementos de $V$, llamados \emph{tokens}.
+Fijado un orden de $V$, cada token se identifica con un número
+$i\in\{1,\ldots,|V|\}$.
+\end{definicion}
+Los algoritmos necesitan identificadores y, a menudo, vectores. Construyamos un vocabulario diminuto: $V=\{\text{el},\text{gato},\text{duerme},\langle/\mathrm s\rangle\}$, donde $\langle/\mathrm s\rangle$ es un símbolo especial que marca el fin de la secuencia, con identificadores $1,2,3,4$; aquí $|V|=4$. La frase «el gato duerme» pasa a $(1,2,3)$.
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small},box/.style={draw=azul,fill=azulclaro,rounded corners,align=center,text width=36mm,minimum height=13mm}]
+\node[box] (t) at (0,0){«el gato duerme»};
+\node[box] (s) at (4.3,0){tokens\\el $\mid$ gato $\mid$ duerme};
+\node[box] (i) at (8.6,0){identificadores\\$1,2,3$};
+\draw[->,thick] (t)--(s);\draw[->,thick] (s)--(i);
+\end{tikzpicture}
+\end{center}
+La \emph{codificación one-hot} representa el identificador $i$ mediante el vector canónico $e_i\in\{0,1\}^{|V|}$, cuya única coordenada no nula es la $i$-ésima; por ejemplo, $e_2=(0,1,0,0)^\top$. Un \emph{embedding} asignaría al token un vector real aprendido, por ejemplo de dimensión $d$; sus valores no son necesariamente probabilidades ni tienen que sumar uno. En S02 estudiaremos formalmente esas representaciones. La separación conceptual es esencial: \textbf{tokenizar, identificar y representar vectorialmente son operaciones diferentes}.
+
+\paragraph{¿Qué veremos, y qué dejamos para más adelante?}
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small},s/.style={draw=azul,rounded corners,fill=azulclaro,text width=22mm,minimum height=11mm,align=center}]
+\node[s] (a) at (0,0){Texto y\\tokens};
+\node[s] (b) at (2.8,0){Pares y\\conteos};
+\node[s] (c) at (5.6,0){Probabilidad\\condicional};
+\node[s] (d) at (8.4,0){Pérdida y\\perplejidad};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);\draw[->,thick] (c)--(d);
+\node[font=\scriptsize,text width=10cm,align=center] at (4.2,-1.1){Más adelante: embeddings, redes neuronales, atención, Transformers, generación y aplicaciones};
+\end{tikzpicture}
+\end{center}
+La S01 explica el mapa completo sin pretender enseñar todas las arquitecturas. Si el estudiante entiende por qué tiene sentido asignar probabilidades condicionales a tokens, estará preparado para comprender qué optimiza una red neuronal cuando aprende a predecirlos.
+
+
+
+
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[>=Stealth, node distance=24mm,font=\small]
+\node[draw=azul,fill=azulclaro,rounded corners] (t) {gato};
+\node[draw=azul,fill=azulclaro,rounded corners,right=of t] (u) {$e_2=(0,1,0,0)^\top$};
+\node[draw=petroleo,fill=petroleoclaro,rounded corners,right=of u] (p) {$Ee_2\in\mathbb{R}^d$};
+\draw[->,thick] (t)--node[above]{identificador} (u);
+\draw[->,thick] (u)--node[above]{representación aprendida} (p);
+\end{tikzpicture}
+\caption{De la identidad discreta a un embedding. Una matriz
+$E\in\mathbb R^{d\times|V|}$ selecciona una columna al multiplicarse
+por $e_i$; no es necesariamente una proyección ortogonal.}
+\label{fig:c1:onehot-embedding}
+\end{figure}
+La denominación \emph{one-hot} procede del lenguaje de codificación de
+estados digitales: exactamente una coordenada está activa. Para
+$i\ne j$, los vectores canónicos son ortogonales y satisfacen
+$\|e_i-e_j\|_2=\sqrt{2}$; la distancia cuadrada es $2$. Esta
+representación distingue símbolos, pero no contiene por sí misma
+una noción de semejanza léxica. S02 examina cómo aprenderla.
+
+
+
+% [R2] Recuperado de v0.6 (l. 431-448), con la figura alineada con la tabla de
+% fusiones de esta sección (marcador de fin de palabra y orden real de los pasos).
+\paragraph{¿Por qué existen las subpalabras? Una puerta a BPE}
+La tokenización por palabras puede producir vocabularios inmensos y palabras
+desconocidas; la tokenización por caracteres crea secuencias largas. Las
+subpalabras intentan encontrar unidades intermedias útiles: se parte de
+unidades pequeñas y se fusionan iterativamente pares vecinos frecuentes.
+
+\begin{definicion}[Codificación por pares de bytes]\label{s01:def:bpe}
+La \emph{codificación por pares de bytes} (Byte Pair Encoding, BPE) es el
+procedimiento que, a partir de un corpus segmentado en unidades iniciales,
+repite un número prefijado $R$ de veces (el \emph{presupuesto de fusiones}) el
+paso siguiente: contar, ponderando por la frecuencia de cada palabra, todos los
+pares de unidades adyacentes; elegir el par más frecuente, con una regla de
+desempate declarada; y sustituir cada aparición no solapada de ese par, de
+izquierda a derecha, por una unidad nueva que concatena ambas. La lista ordenada
+de fusiones aprendidas es el tokenizador.
+\end{definicion}
+\noindent\textit{Origen del nombre.} El algoritmo nació como método de compresión
+que sustituía pares de bytes frecuentes por un byte no usado \citep{gage1994bpe};
+\citet{sennrich2016} lo adaptaron a la segmentación de palabras para traducción
+neuronal. En S01 las unidades iniciales son caracteres (puntos de código Unicode),
+no bytes; conservamos el nombre establecido.
+
+\begin{center}\small
+\begin{tabular}{@{}l@{}}\toprule
+\textbf{Algoritmo BPE didáctico} (entrada: palabras con frecuencias $f(w)$; presupuesto $R$)\\\midrule
+1.\ Segmentar cada palabra $w$ en caracteres y añadir el marcador de fin de palabra $\langle/\mathrm w\rangle$.\\
+2.\ Repetir $R$ veces:\\
+\quad a)\ para cada par adyacente $(u,v)$, calcular $\sum_w f(w)\cdot\#\{\text{apariciones de }(u,v)\text{ en }w\}$;\\
+\quad b)\ elegir el par de mayor frecuencia; si hay empate, el menor en orden lexicográfico;\\
+\quad c)\ en cada palabra, sustituir de izquierda a derecha las apariciones no solapadas por $uv$;\\
+\quad d)\ registrar la fusión $(u,v)\mapsto uv$.\\
+3.\ Devolver la lista ordenada de fusiones.\\\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=azulclaro,align=center,text width=25mm,minimum height=11mm,font=\footnotesize}]
+\node[b] (a) at (0,0){c $\mid$ a $\mid$ s $\mid$ a $\mid$ $\langle/\mathrm w\rangle$};
+\node[b] (b) at (4.0,0){c $\mid$ as $\mid$ a $\mid$ $\langle/\mathrm w\rangle$};
+\node[b] (c) at (8.0,0){c $\mid$ as $\mid$ a$\langle/\mathrm w\rangle$};
+\node[b] (d) at (12.0,0){cas $\mid$ a$\langle/\mathrm w\rangle$};
+\draw[->,thick] (a)--node[above,font=\scriptsize]{paso 1}(b);
+\draw[->,thick] (b)--node[above,font=\scriptsize]{paso 2}(c);
+\draw[->,thick] (c)--node[above,font=\scriptsize]{paso 3}(d);
+\end{tikzpicture}
+\end{center}
+\noindent El dibujo sigue la palabra \emph{casa} durante los tres primeros pasos
+de la tabla de fusiones que se calcula a continuación. BPE es un procedimiento
+voraz: en cada paso elige lo mejor inmediato y no garantiza la menor longitud
+total posible con un presupuesto dado (contraejemplo verificado en el
+Complemento~\ref{s01:comp:bpe}).
+\paragraph{Cinco palabras, una regla de fusión}
+La técnica de BPE puede ilustrarse sin emplear bibliotecas de aprendizaje profundo. Usaremos las palabras \emph{casa} (5 apariciones), \emph{casas} (2), \emph{cosa} (6), \emph{cosas} (3) y \emph{caso} (4). Cada palabra se representa inicialmente como caracteres y un marcador de fin $\langle/\mathrm{w}\rangle$. La frecuencia de una palabra pondera todas sus parejas adyacentes. El objetivo de este ejercicio no es crear un tokenizador listo para producción, sino entender qué se modifica al aprender unidades.
+
+\begin{center}
+\begin{tabular}{lcl}\toprule
+Palabra & Frecuencia & Segmentación inicial\\\midrule
+casa &5& c $\mid$ a $\mid$ s $\mid$ a $\mid$ $\langle/\mathrm{w}\rangle$\\
+casas &2& c $\mid$ a $\mid$ s $\mid$ a $\mid$ s $\mid$ $\langle/\mathrm{w}\rangle$\\
+cosa &6& c $\mid$ o $\mid$ s $\mid$ a $\mid$ $\langle/\mathrm{w}\rangle$\\
+cosas &3& c $\mid$ o $\mid$ s $\mid$ a $\mid$ s $\mid$ $\langle/\mathrm{w}\rangle$\\
+caso &4& c $\mid$ a $\mid$ s $\mid$ o $\mid$ $\langle/\mathrm{w}\rangle$\\\bottomrule
+\end{tabular}
+\end{center}
+\noindent En este corpus de juguete, el par de caracteres $(a,s)$ aparece ponderadamente $5+2\cdot2+3+4=16$ veces (en \emph{casas} aparece dos veces). El par $(s,a)$ también suma 16: hay un empate que resolvemos con la regla lexicográfica declarada. Se elige $(a,s)$ y se fusiona en una unidad \texttt{as}. En \emph{casa} pasamos de c$\mid$a$\mid$s$\mid$a$\mid\langle/\mathrm w\rangle$ a c$\mid$as$\mid$a$\mid\langle/\mathrm w\rangle$. El cambio no altera el texto original; altera la forma de \emph{segmentarlo}.
+
+\paragraph{Cómo leer una tabla de fusiones}
+Las seis primeras fusiones, bajo conteo ponderado, empates lexicográficos y sustitución de pares no solapados, resultan así:
+\begin{center}
+\begin{tabular}{c l r r}\toprule
+Paso & Par fusionado & Frecuencia & Unidades después\\\midrule
+0 & -- & -- &105\\
+1 & $(a,s)$ &16&89\\
+2 & $(a,\langle/\mathrm{w}\rangle)$ &11&78\\
+3 & $(c,as)$ &11&67\\
+4 & $(c,o)$ &9&58\\
+5 & $(co,s)$ &9&49\\
+6 & $(cos,a\langle/\mathrm{w}\rangle)$ &6&43\\\bottomrule
+\end{tabular}
+\end{center}
+\noindent Cada resta $105-89=16$, $89-78=11$, etc. es verificable en el módulo R/Python. No debemos suponer sin comprobar que \emph{frecuencia de un par} y \emph{sustituciones efectivas} siempre coinciden: en \texttt{aaaaa}, el par $(a,a)$ aparece en cuatro ventanas superpuestas, pero una pasada de fusión no solapada puede efectuar solamente dos reemplazos. La reducción exacta en cada paso y un contraejemplo a la optimalidad global se demuestran en el Complemento~\ref{s01:comp:bpe}.
+
+\subsection{Modelos de $n$-gramas, estimación y ceros}\label{s01:cap:ngram}
+
+\paragraph{Unigramas, bigramas y trigramas: primero con palabras}
+Tomemos la oración \textbf{«el gato mira al perro»}. Separamos por espacios y obtenemos cinco tokens: \texttt{el}, \texttt{gato}, \texttt{mira}, \texttt{al}, \texttt{perro}. Los \emph{unigramas} son las unidades individuales; los \emph{bigramas} son pares \emph{consecutivos}; los \emph{trigramas} son grupos de tres unidades consecutivas.
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\small},t/.style={draw=azul,fill=azulclaro,minimum width=22mm,minimum height=9mm,rounded corners}]
+\foreach \x/\w in {0/el,2.35/gato,4.7/mira,7.05/al,9.4/perro} {\node[t] at (\x,0){\w};}
+\draw[very thick,verde](-1,-.72)--(3.35,-.72);\node[font=\scriptsize,verde] at (1.18,-1.0){bigrama: el gato};
+\draw[very thick,vino](3.7,.68)--(10.5,.68);\node[font=\scriptsize,vino] at (7.1,1.0){trigrama: mira al perro};
+\end{tikzpicture}
+\end{center}
+\begin{center}
+\begin{tabular}{lll}\toprule
+Unigramas (5) & Bigramas (4) & Trigramas (3)\\\midrule
+el & el gato & el gato mira\\
+gato & gato mira & gato mira al\\
+mira & mira al & mira al perro\\
+al & al perro & \\
+perro & & \\\bottomrule
+\end{tabular}
+\end{center}
+\noindent\textbf{Regla general:} con $T$ tokens y sin añadir marcadores, existen $T-n+1$ ventanas de longitud $n$ si $1\le n\le T$. La colección de ventanas conserva el orden \emph{dentro de cada ventana}, pero no necesariamente el orden entre ventanas si se usa una representación de bolsa.
+
+\paragraph{¿En qué difieren secuencia, conjunto y bolsa?}
+Consideremos \texttt{gato gato perro}. Como secuencia es una lista ordenada de tres entradas. Como conjunto de tipos distintos, $\{\texttt{gato},\texttt{perro}\}$, pierde multiplicidades y orden. Una \emph{bolsa de palabras} conserva frecuencias: \texttt{gato}: 2, \texttt{perro}: 1, pero no el orden. Una \emph{bolsa de bigramas} cuenta ventanas de dos tokens conservando su identidad de par, aunque descarta sus posiciones. No son nociones intercambiables.
+\begin{center}
+\begin{tikzpicture}[font=\small, b/.style={draw=azul,rounded corners,minimum width=35mm,minimum height=10mm,align=center,fill=azulclaro}]
+\node[b] at (0,0){Secuencia\\\texttt{gato,gato,perro}};
+\node[b] at (4.3,0){Conjunto\\\texttt{\{gato,perro\}}};
+\node[b] at (8.6,0){Bolsa\\\texttt{gato:2,perro:1}};
+\end{tikzpicture}
+\end{center}
+\noindent\textbf{Pregunta:} ¿pueden «el gato muerde al perro» y «el perro muerde al gato» compartir una misma bolsa de palabras? Sí. Sus bigramas, en cambio, contienen información local diferente.
+
+\paragraph{Ahora usemos tres símbolos: una cadena que podemos contar completa}
+Pasamos a un ejemplo pequeño para hacer cuentas sin ordenador. La cadena \texttt{abacabbacb} tiene diez posiciones y, si no usamos marcadores de inicio y fin, nueve transiciones. La escribimos numerando sus posiciones:
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\small},token/.style={draw=azul,rounded corners=2pt,fill=azulclaro,minimum width=9mm,minimum height=9mm}]
+\foreach \i/\v in {1/a,2/b,3/a,4/c,5/a,6/b,7/b,8/a,9/c,10/b} {
+\node[token] at ({(\i-1)*1.03},0) (t\i) {\texttt{\v}};
+\node[font=\scriptsize,gris] at ({(\i-1)*1.03},.75) {\i};
+}
+\foreach \i in {1,...,9} {\pgfmathtruncatemacro\j{\i+1} \draw[->,verde,thin] (t\i.south east) to[bend right=25] (t\j.south west);}
+\end{tikzpicture}
+\end{center}
+\begin{center}
+\begin{tabular}{c|ccccccccc}\toprule
+Posición inicial &1&2&3&4&5&6&7&8&9\\\midrule
+Bigrama & ab&ba&ac&ca&ab&bb&ba&ac&cb\\\bottomrule
+\end{tabular}
+\end{center}
+En esta tabla, el primer símbolo del par es el \emph{contexto} y el segundo es la \emph{continuación}. Contemos transiciones sin ninguna fórmula:
+\begin{center}
+\begin{tabular}{c|ccc|c}\toprule
+Contexto $\downarrow$ / siguiente $\to$ & \texttt{a}&\texttt{b}&\texttt{c}&Total\\\midrule
+\texttt{a}&0&2&2&4\\
+\texttt{b}&2&1&0&3\\
+\texttt{c}&1&1&0&2\\\midrule
+Total&3&4&2&9\\\bottomrule
+\end{tabular}
+\end{center}
+\textbf{De la tabla a la matriz:} ahora sí tiene sentido escribir
+\[
+C=\begin{pmatrix}0&2&2\\2&1&0\\1&1&0\end{pmatrix},
+\qquad\sum_{i,j}C_{ij}=9.
+\]
+La matriz no añade un concepto nuevo: \emph{es simplemente la misma tabla, sin rótulos}. Las filas y columnas se ordenan como \texttt{a}, \texttt{b}, \texttt{c}.
+
+\paragraph{¿Cómo se convierte un conteo en una predicción?}
+Si hemos visto cuatro continuaciones después de \texttt{a}, dos fueron \texttt{b} y dos fueron \texttt{c}. La frecuencia relativa de \texttt{b} en ese contexto es $2/4=1/2$; para \texttt{c} también $1/2$. Para \texttt{a} fue $0/4=0$.
+\begin{center}
+\begin{tikzpicture}[font=\small,>=Stealth]
+\node[draw,circle,fill=azulclaro,minimum size=12mm] (a) at (0,0) {\texttt{a}};
+\node[draw,circle,fill=verdeclaro,minimum size=10mm] (b) at (4,1.2) {\texttt{b}};
+\node[draw,circle,fill=verdeclaro,minimum size=10mm] (c) at (4,-1.2) {\texttt{c}};
+\draw[->,thick,verde] (a)--node[above] {$2/4$}(b);
+\draw[->,thick,verde] (a)--node[below] {$2/4$}(c);
+\node[align=left] at (8,0){Contexto: \texttt{a}\\Siguiente: \texttt{b} o \texttt{c}\\Probabilidades: $0.5,0.5$};
+\end{tikzpicture}
+\end{center}
+Si dividimos cada fila de $C$ por su total, obtenemos una \emph{matriz de transición}:
+\[
+\widehat P=\begin{pmatrix}0&1/2&1/2\\2/3&1/3&0\\1/2&1/2&0\end{pmatrix}.
+\]
+Cada fila suma uno. La entrada $(i,j)$ se interpreta como probabilidad estimada del siguiente símbolo $j$ cuando el anterior fue $i$. Este estimador es la \emph{estimación por máxima verosimilitud} (maximum likelihood estimation, MLE): el valor de las probabilidades que hace máxima la probabilidad de los datos observados. La deducción está en la Proposición~\ref{s01:prop:mle}.
+
+\paragraph{Un problema real para nuestro modelo pequeño: lo no observado}
+La transición $\texttt{b}\to\texttt{c}$ no apareció en la cadena. El modelo por frecuencias le asigna probabilidad cero. Sin embargo, que no haya ocurrido en una muestra \emph{no demuestra} que sea imposible en textos nuevos.
+\begin{center}
+\begin{tikzpicture}[font=\small,>=Stealth]
+\node[draw,rounded corners,fill=azulclaro,minimum height=10mm] (d) at (0,0){Entrenamiento: \texttt{abacabbacb}};
+\node[draw,rounded corners,fill=vinoclaro,minimum height=10mm] (p) at (5.5,0){Prueba: \texttt{abca}};
+\draw[->,thick] (d)--node[above,align=center,font=\scriptsize]{modelo de\\bigramas}(p);
+\node[font=\small,vino] at (5.5,-.9){En prueba aparece $\texttt{b}\to\texttt{c}$: MLE da $0$};
+\end{tikzpicture}
+\end{center}
+Esta dificultad motiva el \emph{suavizado}: reservar algo de probabilidad para resultados ausentes de la muestra. Con pseudoconteo $\alpha=1$ y tres símbolos:
+\[
+\widehat P_{\alpha=1}=\begin{pmatrix}1/7&3/7&3/7\\1/2&1/3&1/6\\2/5&2/5&1/5\end{pmatrix}.
+\]
+\textbf{Verificación a mano:} en la fila \texttt{a} contamos $(0,2,2)$ y añadimos uno a cada columna: $(1,3,3)$. El denominador es $4+3=7$, no $6$. En la fila \texttt{b}, $(2,1,0)\mapsto(3,2,1)$ y dividimos por $6$.
+
+\paragraph{¿Qué predice exactamente un modelo de bigramas?}
+Para \texttt{abca}, bajo el modelo suavizado, podemos evaluar las transiciones $\texttt{a}\to\texttt{b}$, $\texttt{b}\to\texttt{c}$, $\texttt{c}\to\texttt{a}$:
+\[
+\Pr(\texttt{b}\mid\texttt{a})\Pr(\texttt{c}\mid\texttt{b})\Pr(\texttt{a}\mid\texttt{c})=\frac37\cdot\frac16\cdot\frac25=\frac1{35}.
+\]
+Este producto es la \emph{probabilidad condicional de las tres continuaciones dado el primer símbolo}. Para obtener la probabilidad conjunta de la secuencia hay que multiplicar también la probabilidad inicial. Por ejemplo, si $\pi_0(\texttt{a})=\Pr(X_1=\texttt{a})=1/3$, donde $\pi_0$ denota la distribución del primer símbolo, entonces $\Pr(\texttt{abca})=1/105$. No debemos llamar \emph{conjunta} a $1/35$.
+
+\begin{idea}[Lo que ya sabemos]
+Sin usar cálculo avanzado hemos definido una unidad (token), formado ventanas (bigramas), construido un conteo, interpretado una probabilidad condicional y detectado por qué un modelo necesita tratar eventos ausentes. La matemática que sigue explica y generaliza exactamente estas operaciones.
+\end{idea}
+
+
+
+
+\paragraph{Del conteo al modelo de probabilidad}
+Decir que una máquina asigna probabilidades obliga a precisar el objeto: sea $V$ un vocabulario finito de símbolos, $X_t\in V$ el símbolo en la posición $t$ y $X_{1:T}=(X_1,\ldots,X_T)$ una secuencia aleatoria; escribimos $x_{<t}=x_{1:t-1}$ para la historia. La notación $p(X_t=x\mid X_{1:t-1}=h)$ significa \emph{la probabilidad del siguiente símbolo $x$ dada una historia concreta $h$}. No es la probabilidad de que la máquina ``entienda'' una oración.
+
+\begin{ejemplo}[Volvamos al dibujo de las continuaciones]
+Si tras «El gato duerme sobre la» el vocabulario de juguete fuera $V_{\mathrm{ej}}=\{\text{alfombra},\text{cama},\text{mesa}\}$, una distribución válida es $(0.50,0.30,0.20)$. La probabilidad de «cama» en ese contexto sería $0.30$. Para un vocabulario real habría muchas más opciones, incluidas puntuación y símbolos especiales.
+\end{ejemplo}
+
+\paragraph{Regla de la cadena: de condicionales a oraciones enteras}
+Recordemos la definición de probabilidad condicional: si $\Pr(B)>0$,
+$\Pr(A\mid B)=\Pr(A\cap B)/\Pr(B)$, es decir, $\Pr(A\cap B)=\Pr(B)\Pr(A\mid B)$.
+Con $A=\{X_2=x_2\}$ y $B=\{X_1=x_1\}$ se obtiene $p(x_1,x_2)=p(x_1)p(x_2\mid x_1)$
+cuando $p(x_1)>0$. Para tres posiciones:
+\begin{align*}
+p(x_1,x_2,x_3)&=p(x_1,x_2)\,p(x_3\mid x_1,x_2)\\
+&=p(x_1)\,p(x_2\mid x_1)\,p(x_3\mid x_1,x_2).
+\end{align*}
+\begin{proposicion}[Regla de la cadena]\label{s01:prop:cadena}
+Sea $X_{1:T}$ una secuencia aleatoria con valores en $V^T$ y sea $x_{1:T}$ con
+$p(x_{1:T})>0$. Entonces todos los prefijos tienen probabilidad positiva y
+\[
+\boxed{\displaystyle p(x_{1:T})=p(x_1)\prod_{t=2}^T p(x_t\mid x_{<t}).}
+\]
+\end{proposicion}
+\begin{proof}
+\emph{Prefijos positivos.} Para $t\le T$, el evento $\{X_{1:T}=x_{1:T}\}$ está
+contenido en $\{X_{1:t}=x_{1:t}\}$; por monotonía de la probabilidad,
+$p(x_{1:t})\ge p(x_{1:T})>0$.
+\emph{Inducción en $T$.} Para $T=1$ la fórmula se reduce a $p(x_1)=p(x_1)$.
+Supongámosla cierta para $T-1$. Por la definición de probabilidad condicional,
+aplicable porque $p(x_{1:T-1})>0$, se tiene
+$p(x_{1:T})=p(x_{1:T-1})\,p(x_T\mid x_{<T})$; al sustituir $p(x_{1:T-1})$ por la
+hipótesis de inducción se obtiene la fórmula para $T$.
+\end{proof}
+\begin{observacion}[Hipótesis retirada]
+Si $p(x_{1:T})=0$, algún prefijo puede tener probabilidad cero y la condicional
+correspondiente no está definida por la fórmula de cociente. La igualdad
+$0=0$ se conserva eligiendo cualquier convención para esas condicionales, pero
+tales valores no son identificables a partir de datos (Complemento~\ref{s01:comp:cadena}).
+\end{observacion}
+Es una identidad de probabilidad, no un supuesto de aprendizaje profundo.
+\emph{Cada factor utiliza potencialmente toda la historia disponible}; una red
+neuronal causal puede parametrizarlo, pero un modelo de conteos con ventana corta
+utiliza una aproximación.
+\paragraph{Hipótesis de Markov: una simplificación, no una identidad}
+Para formular qué descarta un $n$-grama necesitamos una noción precisa de
+«información irrelevante».
+\begin{definicion}[Independencia condicional]\label{s01:def:ci}
+Sean $X$, $Y$, $Z$ variables aleatorias discretas. Se dice que $X$ y $Z$ son
+\emph{condicionalmente independientes dado} $Y$, y se escribe
+$X\perp Z\mid Y$, si para todos los valores con $p(y)>0$
+\[
+p(x,z\mid y)=p(x\mid y)\,p(z\mid y).
+\]
+Equivalentemente, $p(x\mid y,z)=p(x\mid y)$ siempre que $p(y,z)>0$: una vez
+conocido $Y$, conocer además $Z$ no cambia la distribución de $X$
+(demostración de la equivalencia en el Complemento~\ref{s01:comp:cadena}).
+\end{definicion}
+\begin{definicion}[Hipótesis de Markov de orden $m$]\label{s01:def:markov}
+Una secuencia $X_{1:T}$ satisface la \emph{hipótesis de Markov de orden $m$} si,
+para todo $t>m+1$, $X_t\perp X_{1:t-m-1}\mid X_{t-m:t-1}$. En ese caso
+$p(x_t\mid x_{<t})=p(x_t\mid x_{t-m:t-1})$ y la regla de la cadena usa solo los
+$m$ símbolos precedentes. Un $n$-grama corresponde a $m=n-1$: el bigrama retiene
+un símbolo y el trigrama dos.
+\end{definicion}
+En un modelo de bigramas aproximamos $p(x_t\mid x_{<t})$ mediante
+$q(x_t\mid x_{t-1})$. La aproximación es exacta cuando la secuencia satisface la
+hipótesis de Markov de orden uno; en otro caso descarta información.
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,circle,fill=azulclaro,minimum size=10mm}]
+\node[b] (x1) at (0,0){$X_1$};\node[b] (x2) at (3,0){$X_2$};\node[b] (x3) at (6,0){$X_3$};
+\draw[->,thick] (x1)--(x2);\draw[->,thick] (x2)--(x3);
+\draw[->,dashed,vino,thick] (x1) to[bend left=35] node[above,font=\scriptsize]{posible dependencia omitida} (x3);
+\end{tikzpicture}
+\end{center}
+\begin{ejemplo}[El límite de mirar solo el símbolo anterior]
+Sean $X_1,X_2$ monedas justas independientes y $X_3=X_1$. Entonces
+\[
+p(X_1=1,X_2=0,X_3=1)=\tfrac12\cdot\tfrac12\cdot1=\tfrac14.
+\]
+La aproximación de orden uno remplaza la tercera condicional por $p(X_3=1\mid X_2=0)=1/2$, y da $1/8$. La dependencia de $X_3$ con $X_1$ no queda explicada por $X_2$.
+\end{ejemplo}
+
+\paragraph{Por qué dividir por los conteos es máxima verosimilitud}
+Para un contexto fijo $h$ contamos $c_i$ continuaciones del símbolo $i$, con
+$i\in\{1,\ldots,K\}$ y $K=|V|$, y $N=\sum_ic_i$. Buscamos probabilidades no
+negativas que sumen uno; conviene nombrar el conjunto donde viven.
+\begin{definicion}[Símplex y soporte]\label{s01:def:simplex}
+El \emph{símplex} de distribuciones sobre $K$ categorías es
+$\Delta_{K-1}=\{q\in\mathbb R^K:\ q_i\ge0,\ \sum_iq_i=1\}$; su
+\emph{interior relativo} está formado por las $q$ con todas las $q_i>0$ y su
+\emph{borde}, por las que tienen alguna $q_i=0$. El \emph{soporte} de $q$ es
+$\operatorname{supp}(q)=\{i:q_i>0\}$.
+\end{definicion}
+\begin{proposicion}[Estimador de máxima verosimilitud categórico]\label{s01:prop:mle}
+\emph{Hipótesis:} (i) dado el contexto $h$, las $N$ continuaciones observadas
+$X_1,\ldots,X_N$ son independientes e idénticamente distribuidas con ley
+categórica $q\in\Delta_{K-1}$, es decir, $\Pr(X_s=i\mid q)=q_i$;
+(ii) $N>0$. Entonces la verosimilitud $L(q)=\Pr(x_{1:N}\mid q)$ alcanza su máximo
+en $\Delta_{K-1}$ en un único punto,
+\[
+\boxed{\widehat q_i=\frac{c_i}{N},\qquad i=1,\ldots,K.}
+\]
+\end{proposicion}
+\begin{proof}
+\emph{Paso 1 (verosimilitud).} Por la independencia (i),
+$L(q)=\prod_{s=1}^Nq_{x_s}=\prod_{i=1}^Kq_i^{c_i}$, porque el factor $q_i$ aparece
+una vez por cada observación igual a $i$. Si en lugar de la secuencia se observa
+solo el vector de conteos, la ley multinomial da
+$\frac{N!}{\prod_ic_i!}\prod_iq_i^{c_i}$: difiere en un factor que no depende de
+$q$ y tiene, por tanto, el mismo maximizador. Sea $S=\{i:c_i>0\}$ (no vacío por
+(ii)). La log-verosimilitud es $\ell(q)=\sum_{i\in S}c_i\ln q_i$, con valor
+$-\infty$ si $q_i=0$ para algún $i\in S$; los índices con $c_i=0$ no aportan
+factor porque $q_i^0=1$.
+
+\emph{Paso 2 (no conviene poner masa fuera de $S$).} Si
+$\varepsilon=\sum_{i\notin S}q_i\in(0,1)$, la distribución $q'$ con $q'_i=0$ para
+$i\notin S$ y $q'_i=q_i/(1-\varepsilon)$ para $i\in S$ pertenece al símplex y
+cumple $\ell(q')=\ell(q)-N\ln(1-\varepsilon)>\ell(q)$. Si $\varepsilon=1$, todas
+las $q_i$ de $S$ son nulas y $\ell(q)=-\infty$, de modo que cualquier distribución
+con soporte en $S$ es mejor. Luego un maximizador, si existe, se anula fuera de $S$.
+
+\emph{Paso 3 (existencia en el interior de la cara $S$).} Sea $\Delta_S$ el
+conjunto de las $q\in\Delta_{K-1}$ nulas fuera de $S$ y sea $q^0$ la uniforme
+sobre $S$. Para $q\in\Delta_S$ y cada $i\in S$, como $\ln q_j\le0$,
+$\ell(q)\le c_i\ln q_i$. En el conjunto $\Lambda=\{q\in\Delta_S:\ell(q)\ge\ell(q^0)\}$
+se tiene entonces $q_i\ge\exp(\ell(q^0)/c_i)>0$ para todo $i\in S$. Así, $\Lambda$
+es cerrado, acotado y está en la región donde $\ell$ es finita y continua; por el
+teorema de Weierstrass, $\ell$ alcanza en $\Lambda$ un máximo, que es máximo en
+todo $\Delta_S$ y tiene todas sus coordenadas de $S$ positivas.
+
+\emph{Paso 4 (condición de Lagrange).} Sea $q^*$ ese maximizador. Para cualquier
+dirección $v$ con $v_i=0$ fuera de $S$ y $\sum_{i\in S}v_i=0$, el punto $q^*+tv$
+está en $\Delta_S$ para $|t|$ pequeño, y la función $t\mapsto\ell(q^*+tv)$ tiene un
+máximo en $t=0$; su derivada se anula:
+$\sum_{i\in S}(c_i/q^*_i)\,v_i=0$. Con $v=e_i-e_j$ ($i,j\in S$) se obtiene
+$c_i/q^*_i=c_j/q^*_j=:\lambda$, es decir, $q^*_i=c_i/\lambda$. Sumando sobre $S$,
+$1=N/\lambda$, de modo que $\lambda=N$ y $q^*_i=c_i/N$. Esta es la condición del
+multiplicador de Lagrange para la restricción $\sum_iq_i=1$.
+
+\emph{Paso 5 (unicidad).} Todo maximizador se anula fuera de $S$ (paso 2) y,
+dentro de $\Delta_S$, satisface la condición del paso 4, que determina un único
+punto. Por tanto $\widehat q=c/N$ es el único maximizador.
+\end{proof}
+\begin{observacion}[Hipótesis retiradas]
+Si $N=0$, $\ell\equiv0$ y todas las $q$ maximizan: la fórmula no define una fila.
+Si se exigiera $q_i>0$ para todas las categorías y algún $c_i=0$, el supremo no se
+alcanzaría: solo se aproxima acercándose al borde. Si las observaciones no fueran
+independientes dado $h$, la verosimilitud no sería el producto del paso 1. La
+versión con multiplicadores para las restricciones de desigualdad $q_i\ge0$
+(condiciones de Karush--Kuhn--Tucker), la concavidad de $\ell$ y una segunda
+prueba basada en una desigualdad de la sección~\ref{s01:cap:informacion} están en el Complemento~\ref{s01:comp:mle}.
+\end{observacion}
+Los conteos cero reciben probabilidad cero. Esta proposición explica por qué las
+frecuencias relativas del inicio de esta sección no fueron una receta
+arbitraria. Si un contexto nunca aparece ($N=0$), necesitamos una política
+explícita: el \emph{retroceso} (backoff), que usa un contexto más corto, o una
+distribución \emph{a priori} sobre $q$, como la del apartado siguiente.
+\paragraph{Suavizado Dirichlet: qué ganamos y qué sacrificamos}\label{s01:dirichlet}
+El estimador anterior puede asignar ceros a eventos plausibles. El modelo
+bayesiano trata el vector $q$ como aleatorio y le asigna una distribución
+\emph{a priori} antes de ver los datos. Necesitamos una función auxiliar.
+\begin{definicion}[Función Gamma]\label{s01:def:gamma}
+Para $x>0$, $\Gamma(x)=\int_0^\infty t^{x-1}e^{-t}\,dt$. La integral converge,
+$\Gamma(1)=1$ y $\Gamma(x+1)=x\,\Gamma(x)$; en particular $\Gamma(n+1)=n!$
+(demostraciones en el Complemento~\ref{s01:comp:gamma}).
+\end{definicion}
+\begin{definicion}[Distribución de Dirichlet]\label{s01:def:dirichlet}
+Sean $\alpha_1,\ldots,\alpha_K>0$ y $A=\sum_i\alpha_i$. Un vector aleatorio
+$q\in\Delta_{K-1}$ tiene distribución $\mathrm{Dir}(\alpha_1,\ldots,\alpha_K)$ si
+$(q_1,\ldots,q_{K-1})$ tiene densidad, con $q_K=1-\sum_{i<K}q_i$,
+\[
+f(q\mid\boldsymbol\alpha)=\frac{\Gamma(A)}{\prod_{i=1}^K\Gamma(\alpha_i)}
+\prod_{i=1}^Kq_i^{\alpha_i-1}
+\]
+en el interior del símplex. La constante hace que la densidad integre uno; esto es
+la \emph{integral de Dirichlet},
+$\int_{\Delta_{K-1}}\prod_iq_i^{\beta_i-1}\,dq=\prod_i\Gamma(\beta_i)/\Gamma(\sum_i\beta_i)$
+para $\beta_i>0$, demostrada en el Complemento~\ref{s01:comp:gamma}.
+\end{definicion}
+El paso de la priori a la distribución después de observar los datos lo da el
+resultado siguiente.
+\begin{teorema}[Bayes para un parámetro con densidad y datos discretos]\label{s01:teo:bayes}
+Si $q$ tiene densidad $f(q)$ y, dado $q$, los datos discretos $x_{1:N}$ tienen
+probabilidad $\Pr(x_{1:N}\mid q)$, entonces, siempre que
+$\Pr(x_{1:N})=\int\Pr(x_{1:N}\mid q')f(q')\,dq'>0$, la densidad condicional de $q$
+dados los datos es
+\[
+f(q\mid x_{1:N})=\frac{\Pr(x_{1:N}\mid q)\,f(q)}{\int\Pr(x_{1:N}\mid q')\,f(q')\,dq'}.
+\]
+\end{teorema}
+\begin{proof}
+El par $(q,X_{1:N})$ tiene densidad conjunta $f(q)\Pr(x_{1:N}\mid q)$ respecto del
+producto de la medida de Lebesgue y la de conteo. La marginal de los datos se
+obtiene integrando en $q$, que es el denominador. La densidad condicional es, por
+definición, el cociente entre la conjunta y la marginal.
+\end{proof}
+\begin{proposicion}[Conjugación Dirichlet--categórica]\label{s01:prop:conjugacion}
+Bajo las hipótesis de la Proposición~\ref{s01:prop:mle}(i), ahora condicionadas al
+valor de $q$, y con priori $q\sim\mathrm{Dir}(\boldsymbol\alpha)$, la posterior es
+\[
+q\mid x_{1:N}\sim\mathrm{Dir}(c_1+\alpha_1,\ldots,c_K+\alpha_K).
+\]
+\end{proposicion}
+\begin{proof}
+(1) \emph{Priori con su constante:}
+$f(q)=\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{\alpha_i-1}$
+(Definición~\ref{s01:def:dirichlet}).
+(2) \emph{Verosimilitud:} $\Pr(x_{1:N}\mid q)=\prod_iq_i^{c_i}$ (paso 1 de la
+prueba de la Proposición~\ref{s01:prop:mle}).
+(3) \emph{Producto:}
+$\Pr(x_{1:N}\mid q)f(q)=\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{c_i+\alpha_i-1}$.
+(4) \emph{Núcleo:} como función de $q$, el producto es una constante por
+$\prod_iq_i^{\beta_i-1}$, con $\beta_i=c_i+\alpha_i>0$.
+(5) \emph{Normalización:} por la integral de Dirichlet,
+$\int\prod_iq_i^{\beta_i-1}dq=\prod_i\Gamma(\beta_i)/\Gamma(N+A)$, porque
+$\sum_i\beta_i=N+A$. Luego el denominador del Teorema~\ref{s01:teo:bayes} vale
+$\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\cdot\frac{\prod_i\Gamma(\beta_i)}{\Gamma(N+A)}>0$.
+(6) \emph{Conclusión:} al dividir, las constantes de la priori se cancelan y
+\[
+f(q\mid x_{1:N})=\frac{\Gamma(N+A)}{\prod_i\Gamma(c_i+\alpha_i)}\prod_iq_i^{c_i+\alpha_i-1},
+\]
+que es la densidad $\mathrm{Dir}(c_1+\alpha_1,\ldots,c_K+\alpha_K)$.
+\end{proof}
+\begin{proposicion}[Predictiva posterior]\label{s01:prop:predictiva}
+Si además la nueva observación $X_{N+1}$ es condicionalmente independiente de
+$X_{1:N}$ dado $q$ (Definición~\ref{s01:def:ci}) con $\Pr(X_{N+1}=i\mid q)=q_i$,
+entonces
+\[
+\boxed{\Pr(X_{N+1}=i\mid x_{1:N})=\frac{c_i+\alpha_i}{N+A}=\mathbb E[q_i\mid x_{1:N}].}
+\]
+\end{proposicion}
+\begin{proof}
+Por la ley de probabilidad total para densidades y la independencia condicional,
+$\Pr(X_{N+1}=i\mid x_{1:N})=\int\Pr(X_{N+1}=i\mid q)\,f(q\mid x_{1:N})\,dq=\int
+q_i\,f(q\mid x_{1:N})\,dq=\mathbb E[q_i\mid x_{1:N}]$. Con $\beta_j=c_j+\alpha_j$,
+multiplicar por $q_i$ eleva en uno el exponente de $q_i$. La integral de Dirichlet
+con $\beta_i+1$ en lugar de $\beta_i$ da
+\[
+\int q_i\,f(q\mid x_{1:N})\,dq
+=\frac{\Gamma(N+A)}{\prod_j\Gamma(\beta_j)}\cdot
+\frac{\Gamma(\beta_i+1)\prod_{j\ne i}\Gamma(\beta_j)}{\Gamma(N+A+1)}
+=\frac{\Gamma(\beta_i+1)}{\Gamma(\beta_i)}\cdot\frac{\Gamma(N+A)}{\Gamma(N+A+1)}
+=\frac{\beta_i}{N+A},
+\]
+donde el último paso usa $\Gamma(x+1)=x\Gamma(x)$ dos veces.
+\end{proof}
+\paragraph{Media, moda y predictiva no son lo mismo}
+La predictiva coincide con la \emph{media} posterior. La \emph{moda} posterior
+maximiza $\ln f(q\mid x_{1:N})=\text{cte}+\sum_i(\beta_i-1)\ln q_i$; es el mismo
+problema de la Proposición~\ref{s01:prop:mle} con los «conteos» $\beta_i-1$ (su
+prueba solo usa que los conteos sean reales no negativos con suma positiva). Si
+todos los $\beta_i\ge1$ y algún $\beta_i>1$, su solución es
+\[
+\text{moda}_i=\frac{c_i+\alpha_i-1}{N+A-K}.
+\]
+Si algún $\beta_i<1$, la densidad no está acotada cerca de $q_i=0$ y no hay moda
+(Complemento~\ref{s01:comp:dirichlet}).
+\begin{ejemplo}[Tres resúmenes de la misma posterior (cifras verificadas)]
+Con conteos $c=(6,3,1,0,0)$, $N=10$, $K=5$ y $\alpha_i=1$, la posterior es
+$\mathrm{Dir}(7,4,2,1,1)$: la media y la predictiva valen $(7,4,2,1,1)/15$, y la
+moda, $(6,3,1,0,0)/10$, coincide con el estimador de máxima verosimilitud. Con
+$\alpha_i=2$, la posterior $\mathrm{Dir}(8,5,3,2,2)$ tiene media $(8,5,3,2,2)/20$ y
+moda $(7,4,2,1,1)/15$. Comprobación numérica en
+\nolinkurl{verificaciones/verificar_complementos_s01.py}.
+\end{ejemplo}
+% [R3] Recuperado de v0.6 (l. 681-702).
+\paragraph{Suavizado como regularización: el papel del tamaño del vocabulario}
+Con $\alpha_i=\alpha$ para todo $i$ la predictiva se conoce como \emph{suavizado
+aditivo}. El peso total de los pseudoconteos es $K\alpha$, de modo que
+\[
+\frac{c_i+\alpha}{N+K\alpha}
+=\underbrace{\frac{N}{N+K\alpha}}_{\lambda}\frac{c_i}{N}
+ +\underbrace{\frac{K\alpha}{N+K\alpha}}_{1-\lambda}\frac1K.
+\]
+Esta identidad describe el suavizado como mezcla convexa entre el estimador
+empírico y la distribución uniforme. Es válida para $N>0$ y $\alpha>0$.
+Para $N=10$, $K=5$ y $\alpha=1$, $\lambda=2/3$; si se aumenta
+$K$ a 100, manteniendo $N$ y $\alpha$, $\lambda=1/11$. La masa que
+se introduce por suavizado depende fuertemente del vocabulario.
+% [R6] Recuperado de v0.6 (l. 837-844).
+En el contexto \texttt{b} de la cadena \texttt{abacabbacb}, con conteos $(2,1,0)$,
+$K=3$ y $\alpha=1/2$,
+\[
+\widehat P_{1/2}(\cdot\mid\texttt{b})=\biggl(\frac{2.5}{4.5},\frac{1.5}{4.5},
+\frac{0.5}{4.5}\biggr)=\left(\frac59,\frac13,\frac19\right).
+\]
+La masa para el símbolo no visto es $1/9$; para $\alpha=1$ sería $1/6$.
+El parámetro de suavizado cambia predicciones: se selecciona en validación,
+nunca en prueba. \textbf{No se promete mejor rendimiento} por añadir
+pseudoconteos. La dependencia respecto de $K$ se demuestra en el
+Complemento~\ref{s01:comp:dirichlet}.
+
+\subsection{El bit, la entropía y la calidad predictiva}\label{s01:cap:informacion}
+
+\begin{idea}[Tres conceptos, una misma unidad]
+La \emph{sorpresa} (o autoinformación) de observar un resultado de probabilidad
+$p(x)$ es $s(x)=-\log_2p(x)$; con logaritmo en base dos se mide en \emph{bits}.
+La \emph{entropía} $H_2(X)=\mathbb E[s(X)]$ es la sorpresa promedio antes
+ de conocerlo. Una tasa de compresión puede aproximar esa media en secuencias
+largas bajo las hipótesis de la codificación sin pérdida, es decir, de códigos que
+permiten reconstruir exactamente el mensaje
+\citep{shannon1948,cover2006,huffman1952}.
+\end{idea}
+
+\begin{figure}[htbp]\centering
+\begin{tikzpicture}[x=1cm,y=1cm,font=\footnotesize]
+\draw[->,thin,gris] (-.4,0)--(10.9,0) node[right]{resultado};
+\foreach \i/\x in {1/0.3,2/1.6,3/2.9,4/4.2}{
+  \fill[azul!68] (\x,0) rectangle ++(.72,1.6);
+  \node[below] at (\x+.36,0){$x_\i$};}
+\node[above,align=center] at (2.6,1.77){Cuatro resultados equiprobables\\$H_2=2$ bits};
+\foreach \h/\x in {3.10/6.3,.032/7.6,.032/8.9,.032/10.2}{
+  \fill[petroleo!85] (\x,0) rectangle ++(.72,\h);}
+\foreach \i/\x in {1/6.3,2/7.6,3/8.9,4/10.2}{\node[below] at (\x+.36,0){$x_\i$};}
+\node[above,align=center] at (8.7,3.25){Distribución $0.97,0.01,0.01,0.01$\\$H_2\approx0.242$ bits};
+\end{tikzpicture}
+\caption{Dos variables con el mismo número de resultados y distinta incertidumbre media. Escalas de altura proporcionales a cada distribución dentro de su panel.}\label{fig:c1:bit-distribuciones}
+\end{figure}
+
+Con cuatro opciones equiprobables bastan dos preguntas binarias para identificar
+exactamente el resultado. Si una opción tiene probabilidad $0.97$, la
+\emph{longitud promedio ideal de codificación} puede ser mucho menor que dos
+bits por símbolo: la entropía vale
+$-0.97\log_2(0.97)-3(0.01\log_2(0.01))\approx0.242$ bits.
+Esto \textbf{no} significa que cada observación aislada se codifique con una
+fracción de bit: los límites son promedios y dependen del régimen de
+codificación. Con logaritmos naturales se obtiene la unidad \emph{nat};
+$H_2=H_e/\ln2$, donde $H_e$ es la entropía en nats.
+
+\paragraph{¿Cómo sabemos si el modelo predice bien?}
+Supongamos que una secuencia observada recibe probabilidad $q(x_{1:T})$. Una pérdida natural es el negativo del logaritmo de esa probabilidad: $-\ln q(x_{1:T})$. Si una probabilidad es pequeña, la pérdida es grande; si $q=0$ para un resultado observado, la pérdida es infinita.
+\begin{center}
+\begin{tabular}{c|c|c}\toprule
+Probabilidad observada & $-\log_2q$ (bits) & Lectura\\\midrule
+$1$ & $0$ & Sin sorpresa\\
+$1/2$ & $1$ & Una decisión binaria ideal\\
+$1/4$ & $2$ & Más sorpresa\\
+$1/8$ & $3$ & Todavía más sorpresa\\\bottomrule
+\end{tabular}
+\end{center}
+La \emph{pérdida logarítmica total} de una cadena se obtiene sumando contribuciones por posición. Si los modelos comparten convenciones de inicio, fin y tokenización, la media $T^{-1}\sum_t-\log q(x_t\mid x_{<t})$ permite compararlos sobre la misma secuencia. Este capítulo distingue \emph{ejemplos construidos} de \emph{mediciones reales}; calcular una cifra no equivale a demostrar calidad predictiva fuera del ejemplo.
+
+\paragraph{Entropía: incertidumbre antes de observar el resultado}
+Sea $p=(p_1,\ldots,p_K)$ la distribución verdadera de un resultado aleatorio. La \emph{entropía en bits} es el promedio de la sorpresa $-\log_2p_i$ que aporta observar un resultado $i$:
+\[
+H_2(p)=-\sum_i p_i\log_2p_i,\qquad 0\log_2 0:=0.
+\]
+\begin{ejemplo}[Dos monedas que no sorprenden igual]
+Una moneda justa tiene $p=(1/2,1/2)$ y entropía de un bit. Una moneda con $p=(3/4,1/4)$ tiene entropía
+$-(3/4)\log_2(3/4)-(1/4)\log_2(1/4)\approx0.8113$ bits. La segunda es más predecible, en promedio, si conocemos su distribución.
+\end{ejemplo}
+\begin{proposicion}[Cotas de la entropía]\label{s01:prop:cotasH}
+Para toda distribución $p$ sobre $K$ categorías, $0\le H_2(p)\le\log_2K$. La cota
+inferior se alcanza si y solo si $p$ concentra toda su masa en una categoría; la
+superior, si y solo si $p$ es uniforme.
+\end{proposicion}
+\begin{proof}
+\emph{Cota inferior.} Si $0<p_i\le1$, $\log_2p_i\le0$ y el término
+$-p_i\log_2p_i$ es no negativo; los términos con $p_i=0$ valen cero por
+convención. La suma es nula si y solo si cada término lo es, es decir, si cada
+$p_i\in\{0,1\}$: una sola categoría con probabilidad uno.
+\emph{Cota superior.} Usamos la \emph{desigualdad de Jensen}: para $\varphi$
+cóncava en un intervalo y pesos $w_i\ge0$ que suman uno,
+$\sum_iw_i\varphi(x_i)\le\varphi(\sum_iw_ix_i)$; si $\varphi$ es estrictamente
+cóncava, hay igualdad solo cuando coinciden todos los $x_i$ con peso positivo
+(Lema~\ref{s01:lem:jensen}, demostrado en el Complemento~\ref{s01:comp:gibbs}).
+Sea $S=\operatorname{supp}(p)$. Como $\log_2$ es estrictamente cóncava, Jensen con
+pesos $p_i$ da
+\[
+H_2(p)=\sum_{i\in S}p_i\log_2\frac1{p_i}\le\log_2\Bigl(\sum_{i\in S}p_i\frac1{p_i}\Bigr)
+=\log_2|S|\le\log_2K.
+\]
+Hay igualdad en Jensen si y solo si $1/p_i$ es constante en $S$, y en la última
+desigualdad si y solo si $|S|=K$: ambas juntas equivalen a $p$ uniforme.
+\end{proof}
+\noindent Esta proposición permite interpretar la entropía antes de usarla como
+función de costo. Si se retira la finitud del número de categorías, la cota
+superior desaparece: una distribución sobre $\mathbb N$ puede tener entropía
+infinita.
+\paragraph{Entropía conjunta, entropía condicional e información mutua}
+\begin{definicion}[Entropías de dos variables e información mutua]\label{s01:def:condicional}
+Sean $X$, $Y$ discretas con ley conjunta $p(x,y)$. La \emph{entropía conjunta} es
+$H(X,Y)=-\sum_{x,y}p(x,y)\log p(x,y)$. La \emph{entropía condicional} es el
+promedio, según $p(y)$, de las entropías de las distribuciones condicionales:
+\[
+H(X\mid Y)=\sum_{y:\,p(y)>0}p(y)\,H(X\mid Y=y)=-\sum_{x,y}p(x,y)\log p(x\mid y).
+\]
+La \emph{información mutua} es $I(X;Y)=H(X)-H(X\mid Y)$.
+\end{definicion}
+Cuando se observa una señal ruidosa $Y$, la reducción \emph{media} de
+incertidumbre sobre $X$ es la información mutua: no toda observación revela
+completamente la fuente. En el Complemento~\ref{s01:comp:condicional} se demuestra
+que $I(X;Y)\ge0$, con igualdad si y solo si $X$ e $Y$ son independientes, y que
+$H(X,Y)=H(Y)+H(X\mid Y)$. Esta distinción prepara la interpretación de la entropía
+cruzada y la métrica de un modelo que predice con probabilidades $q$ diferentes de
+las frecuencias reales $p$.
+\paragraph{Entropía cruzada y KL: evaluar con probabilidades equivocadas}
+Ahora distinguimos dos papeles: $p$ describe de dónde provienen los datos; $q$ es
+el modelo que les asigna probabilidades.
+\begin{definicion}[Entropía cruzada y divergencia de Kullback--Leibler]\label{s01:def:kl}
+Sean $p,q\in\Delta_{K-1}$. Decimos que tienen \emph{soportes compatibles} si
+$\operatorname{supp}(p)\subseteq\operatorname{supp}(q)$. En ese caso, la
+\emph{entropía cruzada} y la \emph{divergencia de Kullback--Leibler} (KL) son
+\[
+H_2(p,q)=-\sum_{i:\,p_i>0}p_i\log_2q_i,\qquad
+D_{\mathrm{KL}}(p\|q)=\sum_{i:\,p_i>0}p_i\log_2\frac{p_i}{q_i};
+\]
+si los soportes no son compatibles, ambas valen $+\infty$. La entropía cruzada
+mide cuánto costaría codificar, en promedio, los datos de $p$ usando $q$.
+\end{definicion}
+\begin{proposicion}[Entropía cruzada = entropía + KL]\label{s01:prop:cruzada}
+Para $p,q\in\Delta_{K-1}$, $H_2(p,q)=H_2(p)+D_{\mathrm{KL}}(p\|q)$.
+\end{proposicion}
+\begin{proof}
+Si los soportes son compatibles, para cada $i$ con $p_i>0$ se tiene
+$-\log_2q_i=-\log_2p_i+\log_2(p_i/q_i)$; al multiplicar por $p_i$ y sumar se
+obtiene la identidad. Si no lo son, ambos lados valen $+\infty$, porque $H_2(p)$
+es finita (Proposición~\ref{s01:prop:cotasH}).
+\end{proof}
+\noindent La diferencia con el costo ideal $H_2(p)$ es, pues, la KL. Que esta sea
+no negativa, con igualdad si y solo si $q=p$, es la \emph{desigualdad de Gibbs}
+(Teorema~\ref{s01:teo:gibbs}); de ella se sigue que la entropía cruzada se minimiza
+exactamente en $q=p$.
+\begin{ejemplo}[Un ejemplo pequeño que se puede verificar]
+Tomemos $p=(1/2,1/4,1/4)$ y $q=(1/4,1/2,1/4)$. Entonces
+\begin{align*}
+H_2(p)&=-\tfrac12(-1)-\tfrac14(-2)-\tfrac14(-2)=1.5,\\
+H_2(p,q)&=-\tfrac12(-2)-\tfrac14(-1)-\tfrac14(-2)=1.75,\\
+D_{\rm KL}(p\|q)&=1.75-1.5=0.25\ \text{bits}.
+\end{align*}
+En el Complemento~\ref{s01:comp:gibbs} se demuestra que KL es no negativa (Teorema~\ref{s01:teo:gibbs}), que no es simétrica, que puede ser infinita y que no define una distancia métrica. La igualdad anterior no necesita ninguna red neuronal.
+\end{ejemplo}
+% [R5] Recuperado de v0.6 (l. 753-774), con la deducción explícita.
+\paragraph{De muestras a poblaciones: qué se demuestra realmente}
+Sea $q_\theta$ una familia de modelos y $x_{1:T}$ una secuencia observada. La
+\emph{pérdida empírica} es
+$\widehat R_T(q_\theta)=T^{-1}\sum_{t=1}^T-\ln q_\theta(x_t\mid x_{<t})$, donde el
+término $t=1$ es $-\ln q_\theta(x_1)$.
+\begin{proposicion}[Pérdida empírica y verosimilitud]\label{s01:prop:riesgo}
+Si $q_\theta(x_{1:T})>0$ para todo $\theta$ considerado, entonces
+$\arg\min_\theta\widehat R_T(q_\theta)=\arg\max_\theta q_\theta(x_{1:T})$.
+\end{proposicion}
+\begin{proof}
+Por la regla de la cadena (Proposición~\ref{s01:prop:cadena}) aplicada a $q_\theta$,
+$\sum_t\ln q_\theta(x_t\mid x_{<t})=\ln q_\theta(x_{1:T})$, de modo que
+$\widehat R_T(q_\theta)=-T^{-1}\ln q_\theta(x_{1:T})$. La función
+$u\mapsto-T^{-1}\ln u$ es estrictamente decreciente en $(0,\infty)$: minimizar
+la pérdida empírica equivale a maximizar la verosimilitud.
+\end{proof}
+\noindent Esto no prueba que $q_\theta=p$, ni establece por sí solo
+generalización. En un problema categórico con observaciones independientes de ley
+$p$ y soportes compatibles, la esperanza de $-\ln q(X)$ es, por definición,
+$H_e(p,q)$, y para $q$ fijo la ley de los grandes números garantiza
+$\widehat R_T(q)\to H_e(p,q)$ casi seguramente cuando esa esperanza es finita
+\citep[cap.~3]{cover2006}. En una secuencia dependiente la convergencia requiere
+hipótesis adicionales (por ejemplo, ergodicidad e integrabilidad), y en modelos
+elegidos con los mismos datos aparece además el sobreajuste. El paso de lo
+observado a una afirmación científica exige particiones, incertidumbre y una
+pregunta experimental bien definida.
+
+\paragraph{Perplejidad: deshacer la escala logarítmica}
+Las pérdidas en bits son sumas convenientes, pero pueden ser poco intuitivas. Si una secuencia tiene pérdida promedio $L_2$ en bits por evento ($L_e$ en nats), definimos la \emph{perplejidad} (perplexity, PPL) como
+\[
+\boxed{\mathrm{PPL}=2^{L_2}}\qquad \text{o, en nats,}\qquad \boxed{\mathrm{PPL}=e^{L_e}}.
+\]
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=azulclaro,align=center,text width=33mm,minimum height=12mm}]
+\node[b] (a) at (0,0){Probabilidades\\$1/2,1/4,1/8,1/2$};
+\node[b] (b) at (4.1,0){Información\\$1,2,3,1$ bits};
+\node[b] (c) at (8.2,0){Media $=1.75$\\PPL $=2^{1.75}$};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);
+\end{tikzpicture}
+\end{center}
+La perplejidad vale aproximadamente $3.364$. Es el equivalente uniforme de la pérdida media, no el número literal de palabras posibles ni una probabilidad de acierto. Si uno de los eventos observados recibe probabilidad cero, su PPL se vuelve infinita.
+% [R4] Recuperado de v0.6 (l. 704-726).
+Si $\rho_t=q(x_t\mid x_{<t})>0$ son las probabilidades asignadas a $T$ eventos
+observados, las propiedades del logaritmo dan
+\[
+\operatorname{PPL}
+=\exp\Bigl(-\frac1T\sum_{t=1}^T\ln\rho_t\Bigr)
+=\Bigl(\prod_{t=1}^T\frac1{\rho_t}\Bigr)^{1/T}.
+\]
+En consecuencia, la PPL es la \emph{media geométrica de las inversas}
+de las probabilidades asignadas a los eventos. Si todas son iguales a
+$1/K$, la PPL es $K$. Si en el ejemplo anterior la tercera probabilidad se reduce
+de $1/8$ a $1/16$ sin alterar las demás, la suma de bits pasa de $7$ a $8$ y la
+PPL de $2^{7/4}$ a $2^2=4$: se duplicó el código ideal de ese evento.
+
+\paragraph{¿Por qué no comparamos cualquier par de perplejidades?}
+Los tokens de dos tokenizadores no representan necesariamente el mismo número de caracteres. Por eso, antes de comparar resultados debemos fijar el texto, la tokenización, la normalización, los marcadores y cómo se calcula la probabilidad de la secuencia completa.
+\begin{definicion}[Bits por carácter]\label{s01:def:bpc}
+Sea $z$ un texto con $|z|$ caracteres, contados según una convención documentada
+(en este libro, puntos de código Unicode), y sea $q$ un modelo que asigna
+probabilidad a la secuencia completa de tokens $\tau(z)$ que representa $z$,
+incluidas las marcas de inicio y fin que la determinan. Los \emph{bits totales}
+son $\operatorname{bits}(z)=-\log_2q(\tau(z))$ y los \emph{bits por carácter}
+(BPC) son $\operatorname{BPC}(z;q)=\operatorname{bits}(z)/|z|$.
+\end{definicion}
+\noindent Si la PPL se calcula sobre exactamente los $T$ tokens de $\tau(z)$, se
+cumple $\operatorname{BPC}=\frac{T}{|z|}\log_2\operatorname{PPL}$; la demostración
+y sus condiciones están en el Complemento~\ref{s01:comp:ppl}.
+\begin{ejemplo}[Dos números que engañan si se omite la unidad]
+En el \emph{mismo texto de 100 caracteres}, supongamos que un modelo A utiliza 100 eventos con PPL $3.2$ y otro B utiliza 30 eventos con PPL $25$. Si ambos definen probabilidades coherentes de todo el texto y han tratado de forma compatible inicio y fin:
+\[
+\mathrm{BPC}_A=\frac{100\log_2(3.2)}{100}\approx1.678,
+\qquad
+\mathrm{BPC}_B=\frac{30\log_2(25)}{100}\approx1.393.
+\]
+B presenta una menor tasa bajo \emph{esas convenciones}, aunque tenga mayor PPL por token. Los números son ilustrativos; esta conversión no prueba una ventaja causal de su tokenizador. Las condiciones se demuestran en el Complemento~\ref{s01:comp:ppl} y los riesgos se discuten en la sección~\ref{s01:cap:investigacion}.
+\end{ejemplo}
+
+
+\paragraph{Preguntas metodológicas después de definir las métricas}
+\begin{center}
+\begin{tabularx}{\textwidth}{p{55mm}X}\toprule
+Pregunta & Idea matemática o metodológica\\\midrule
+¿BPE siempre disminuye el número de unidades? & Una fusión aplicada sustituye dos unidades por una; las reducciones efectivas dependen de los solapamientos.\\
+¿BPE produce mejores predicciones? & No se deduce de reducir longitud: es necesario evaluar modelos probabilísticos en prueba.\\
+¿Podemos comparar PPL entre segmentaciones? & No directamente por token; fijar texto, unidades y probabilidades de la cadena completa.\\
+¿El corpus técnico permite generalizar al español técnico? & Solo con muestreo adecuado, procedencia y dominio especificados.\\\bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Laboratorio y aplicaciones: comprobar antes de concluir}\label{s01:cap:laboratorios}\phantomsection\label{s01:lab:mat}
+% [R1] Recuperado de v0.6 (l. 38-42): se sitúa aquí porque usa BPC y BPE,
+% ya definidos en las secciones anteriores.
+\noindent\textbf{Dos preguntas, dos mediciones:} los bigramas de caracteres
+cuantifican una pérdida predictiva (BPC), mientras que el
+\hyperref[s01:lab:ic10]{microexperimento BPE} cuantifica tokens por palabra
+al cambiar el tokenizador. La segunda magnitud no mide por sí sola calidad
+probabilística; separar ambas evita una conclusión indebida sobre la pregunta de
+investigación de la sección~\ref{s01:cap:investigacion}.
+
+\paragraph{Caso A: del comentario de un usuario a una representación numérica}
+Supongamos que una aplicación recibe tres frases: «servicio muy bueno», «servicio bueno» y «servicio muy lento». Antes de clasificar cada una como valoración positiva o negativa, debemos hacer explícitas varias decisiones: si distinguimos mayúsculas, si eliminamos tildes, si preservamos espacios y si trabajamos con palabras o subpalabras.
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=azulclaro,minimum height=12mm,text width=31mm,align=center}]
+\node[b] (a) at (0,0){Texto\\servicio muy bueno};
+\node[b] (b) at (4.1,0){Tokens\\servicio $\mid$ muy $\mid$ bueno};
+\node[b] (c) at (8.2,0){Códigos\\$1,2,3$};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);
+\end{tikzpicture}
+\end{center}
+Definamos, solo para este caso, $V_A=\{\texttt{servicio},\texttt{muy},\texttt{bueno},\texttt{lento}\}$. La bolsa de palabras de la primera frase es $(1,1,1,0)$ y la de la tercera $(1,1,0,1)$. Esas representaciones permiten comparar \emph{frecuencias}, pero no explican por sí mismas cómo se determina la polaridad de una opinión. Clasificar es una tarea distinta de predecir el siguiente token; un sistema moderno puede combinar representaciones y un predictor de clases.
+
+\paragraph{Caso B: secuencia de eventos de un pozo, sin inventar datos reales}
+Imagine una bitácora simbólica con eventos \texttt{N} (operación normal), \texttt{A} (alarma) y \texttt{R} (revisión): \texttt{N N A R N A R}. Aquí las letras son \emph{etiquetas ficticias} y no representan mediciones de un pozo real. La secuencia tiene siete posiciones y seis transiciones:
+\[
+\texttt{N}\to\texttt{N},\quad \texttt{N}\to\texttt{A},\quad \texttt{A}\to\texttt{R},\quad \texttt{R}\to\texttt{N},\quad \texttt{N}\to\texttt{A},\quad \texttt{A}\to\texttt{R}.
+\]
+La matriz de conteos, con orden \texttt{N}, \texttt{A}, \texttt{R}, es
+\[
+C=\begin{pmatrix}1&2&0\\0&0&2\\1&0&0\end{pmatrix},\qquad
+\widehat P=\begin{pmatrix}1/3&2/3&0\\0&0&1\\1&0&0\end{pmatrix}.
+\]
+La interpretación correcta es modesta: \emph{en esta secuencia ficticia}, una alarma fue seguida por una revisión en las dos ocasiones observadas. No significa que una alarma en un sistema industrial real siempre produzca una revisión. Para esa afirmación se requerirían fuentes, datos, diseño y validación.
+
+\begin{idea}[Texto y series de tiempo]
+Una secuencia de eventos discretos puede estudiarse con una cadena de Markov. Una serie temporal de presión o temperatura contiene valores numéricos y puede requerir un modelo distinto. La conexión entre ambos cursos es estructural (dependencias y pronóstico), no la afirmación de que todas las secuencias se comportan como palabras.
+\end{idea}
+
+\paragraph{Un cálculo adicional con entropía y perplejidad}
+Para el contexto \texttt{A} de la bitácora de juguete, el estimador MLE asigna $(0,0,1)$, y la entropía de su continuación es cero: según ese modelo, no existe incertidumbre. Con suavizado aditivo $\alpha=1$, los conteos $(0,0,2)$ producen probabilidades $(1/5,1/5,3/5)$. Su entropía en bits es
+\[
+H=-2\cdot\tfrac15\log_2(\tfrac15)-\tfrac35\log_2(\tfrac35)\approx1.371.
+\]
+\textbf{¿Contradicción?} No. La entropía mide incertidumbre \emph{según una distribución específica}; al cambiar el modelo, cambia la entropía del modelo. No hemos demostrado una variación de la incertidumbre real del fenómeno.
+
+Un experimento evaluativo debe separar \emph{modelo ajustado} y \emph{datos de prueba}. Si una nueva transición observada fuera $\texttt{A}\to\texttt{N}$, bajo MLE produciría pérdida infinita, mientras que bajo el suavizado anterior costaría $-\log_2(1/5)=\log_2 5\approx2.322$ bits. La decisión de usar suavizado influye en la generalización y en la función de pérdida.
+
+\paragraph{Cómo evitar conclusiones precipitadas}
+Considere cuatro afirmaciones que se pueden discutir antes de emprender un proyecto:
+\begin{enumerate}
+\item «Una palabra aparece más veces en el corpus». \emph{Descriptiva}, siempre que se defina el corpus y la normalización.
+\item «Un tokenizador produce menos tokens por palabra». \emph{Medición comparativa} que exige textos y vocabularios fijados.
+\item «Un modelo produce menor perplejidad». \emph{Resultado dependiente del protocolo}: se deben declarar tokenización y unidad.
+\item «Este tokenizador produce mejores respuestas». \emph{Hipótesis causal o predictiva más fuerte}, que requiere controlar modelo, entrenamiento, datos y métricas de tarea.
+\end{enumerate}
+Estas diferencias separan una demostración pedagógica de una investigación reproducible. Conducen directamente a la última hora del seminario y al hito de dos áreas de interés.
+
+
+
+
+\paragraph{Del modelo estimado a las métricas de evaluación}
+En la sección~\ref{s01:cap:ngram} se calcularon, usando la cadena didáctica
+\texttt{abacabbacb}, la matriz de conteos, su versión suavizada y la
+probabilidad condicional $q(\texttt{bca}\mid\texttt{a})=1/35$.
+Si se establece además la distribución inicial uniforme
+$\pi_0(\texttt{a})=1/3$, el resultado ya demostrado es
+\[
+q(\texttt{abca})=\frac1{105}.
+\]
+\emph{Ahora usamos ese resultado, sin volver a estimar la matriz}, para medir
+cuánto cuesta codificar la secuencia y qué perplejidad produce:
+\[
+L=-\log_2q(\texttt{abca})=\log_2(105)\approx6.714246\ \text{bits},
+\]
+\[
+\mathrm{BPC}=\frac{L}{4}\approx1.678561,
+\qquad \mathrm{PPL}=2^{L/4}=105^{1/4}\approx3.201086.
+\]
+Los cuatro eventos incluyen el primer símbolo; si se evalúan únicamente
+las tres transiciones condicionadas en él, la pérdida media es
+$\log_2(35)/3$. La comparación entre esos denominadores aclara por qué
+la evaluación debe declarar la unidad y la probabilidad inicial.
+\begin{ejemplo}[El cero de MLE tiene una consecuencia evaluable]
+La matriz no suavizada asigna $\widehat P(\texttt{c}\mid\texttt{b})=0$ y por ello
+$q(\texttt{abca})=0$ cuando se exige esa transición; la pérdida logarítmica
+se vuelve infinita. El suavizado debe elegirse \emph{antes} de consultar
+la prueba, idealmente mediante validación separada.
+\end{ejemplo}
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small, every node/.style={align=center}]
+\node[draw=azul,fill=azulclaro,rounded corners,minimum width=3cm,minimum height=1cm] (t) at (0,0) {\textbf{Entrenamiento}\\10 símbolos};
+\node[draw=azul,fill=azulclaro,rounded corners,minimum width=3cm,minimum height=1cm] (c) at (4,0) {\textbf{Conteos}\\9 transiciones};
+\node[draw=verde,fill=verdeclaro,rounded corners,minimum width=3cm,minimum height=1cm] (p) at (8,0) {\textbf{Suavizado}\\filas de $P$};
+\node[draw=ocre,fill=ocreclaro,rounded corners,minimum width=3cm,minimum height=1cm] (e) at (8,-2) {\textbf{Prueba}\\$\texttt{abca}$};
+\node[draw=azul,fill=azulclaro,rounded corners,minimum width=3cm,minimum height=1cm] (r) at (2,-2) {\textbf{Evaluación}\\$\log_2 105$ bits};
+\draw[->,thick] (t)--(c);\draw[->,thick] (c)--(p);\draw[->,thick] (p)--(e);\draw[->,thick] (e)--(r);
+\end{tikzpicture}
+\caption{La prueba solo recibe un modelo previamente fijado. El flujo contrario constituye fuga de información.}
+\end{figure}
+
+
+
+\paragraph{Laboratorio computacional: de las ecuaciones al reporte}
+\phantomsection\label{s01:lab:comp}
+\begin{idea}[Pregunta de trabajo]
+\emph{¿Una tabla de transiciones estimada con lenguaje técnico asigna mayor
+probabilidad a bitácoras técnicas reservadas que una tabla estimada con prosa general?}
+Responder esta pregunta construida en pequeño ayuda a comprender qué medir,
+pero no demuestra nada sobre un tokenizador moderno ni sobre la población real
+de documentos industriales.
+\end{idea}
+\paragraph{L1. Inspeccionar el corpus antes de ajustar el modelo}
+El archivo \nolinkurl{experimentos/corpus_didactico.csv} contiene ocho documentos
+generales de entrenamiento, ocho técnicos de entrenamiento y seis técnicos
+de prueba; todas las frases fueron \textbf{redactadas para esta clase}.
+\textbf{No se descargaron informes de empresas ni se entrenó un LLM.}
+Las dos condiciones usan el mismo vocabulario de caracteres establecido
+\emph{solo con entrenamiento} y el mismo valor $\alpha=1$; los datos
+de prueba nunca intervienen en el ajuste ni en la selección del modelo.
+Se usan minúsculas y se quitan espacios de los extremos; el archivo se almacena
+en UTF-8 con caracteres precompuestos, sin normalización adicional.
+
+\paragraph{L2. Traducir ecuaciones a un algoritmo comprobable}
+Para cada documento $z=z_1\cdots z_{|z|}$, se añade el símbolo de inicio de secuencia
+$\langle\mathrm s\rangle$ (beginning of sequence, BOS) y se predice también el de fin $\langle/\mathrm s\rangle$ (end of sequence, EOS). La probabilidad
+predictiva de bigramas es
+\[
+\widehat P(v\mid u)=\frac{C(u,v)+\alpha}
+{\sum_w C(u,w)+\alpha|V_{\mathrm{sal}}|},\qquad \alpha=1,\qquad V_{\mathrm{sal}}=V\cup\{\langle/\mathrm s\rangle\}.
+\]
+La pérdida en bits para el documento completo es
+\[
+\operatorname{bits}(z)=-\sum_{t=1}^{|z|+1}\log_2 \widehat P(z_t\mid z_{t-1}),
+\qquad \operatorname{BPC}(z)=\frac{\operatorname{bits}(z)}{|z|}.
+\]
+Aquí $z_0=\langle\mathrm s\rangle$ y $z_{|z|+1}=\langle/\mathrm s\rangle$; la fórmula es la Definición~\ref{s01:def:bpc} aplicada a este modelo. El denominador
+cuenta los puntos de código del texto original (\emph{no} EOS).
+\textbf{Observación:} el alfabeto es el mismo y los modelos difieren en
+los datos de entrenamiento, no en el algoritmo de tokenización.
+
+\paragraph{L3. Ejecutar en dos lenguajes y localizar los resultados}
+Desde la carpeta de la sesión S01:
+\begin{verbatim}
+python codigo/representacion.py
+python codigo/s01.py
+python codigo/experimento_s01.py
+# En un equipo donde esté instalado R (configuración regional UTF-8):
+export LC_ALL=C.UTF-8
+Rscript codigo/representacion.R
+Rscript codigo/s01.R
+Rscript codigo/experimento_s01.R
+\end{verbatim}
+Los programas nuevos exportan los resultados a
+\nolinkurl{experimentos/resultados_python.csv} y
+\nolinkurl{experimentos/resultados_R.csv}. Python exporta también
+\nolinkurl{experimentos/resumen_python.json}. Si falta \texttt{Rscript},
+la ejecución R se deja \textbf{PENDIENTE}; no se informa una comparación
+entre lenguajes como completada. En la revisión v0.9 se ejecutaron los programas
+con R~4.3.3 y \nolinkurl{verificaciones/comparar_r_python.py} obtuvo concordancia
+exacta por documento (desviación máxima $0$ en BPC y en BPE), siempre que R se ejecute
+con una configuración regional UTF-8; con la configuración POSIX los caracteres
+acentuados se segmentan mal.
+
+\paragraph{L4. Interpretar un resultado ejecutado, no extrapolarlo}
+\begin{ejemplo}[Salida verificada por Python en este corpus sintético]
+Se obtuvieron $J=6$ diferencias pareadas
+$\Delta_j=\operatorname{BPC}_{\text{técnico}}(z_j)-
+\operatorname{BPC}_{\text{general}}(z_j)$; su promedio fue
+$\bar\Delta\approx-0.54025$ bits por carácter. Para describir cuánto variaría ese
+promedio usamos el \emph{bootstrap}, o remuestreo con reemplazo: una
+\emph{remuestra} elige $J$ índices de $\{1,\ldots,J\}$ al azar, con reemplazo, y
+calcula la media de las $\Delta_j$ elegidas. Con $J=6$ pueden enumerarse las
+$6^6=46656$ remuestras, todas igualmente probables. El \emph{intervalo percentil}
+nominal del 95\% está formado por los cuantiles $0.025$ y $0.975$ de esas medias
+(definición precisa en el Complemento~\ref{s01:comp:bootstrap}), y fue
+$[-0.66771,-0.42038]$.
+El intervalo \emph{describe el comportamiento de un procedimiento de
+remuestreo sobre seis frases construidas}, no la incertidumbre científica
+de una población de reportes: no hay muestreo representativo, comparación
+con modelos neuronales ni validación externa.
+\end{ejemplo}
+\paragraph{L5. De algoritmo a evidencia: registros obligatorios}
+El reporte contiene la versión del programa, datos y licencia,
+partición por documento, protocolo BOS/EOS, alfabeto, unidades,
+valores por documento, método del intervalo, limitaciones y
+una conclusión que no exceda lo medido. Cada cambio del corpus,
+semillas, modelado o tokenización requiere regenerar todas las tablas.
+El \hyperref[s01:lab:ic10]{microexperimento IC10} (IC10 es el código, en la matriz de investigación del curso, del problema «penalización de la tokenización en textos técnicos en español»; véase la sección~\ref{s01:cap:investigacion}) evalúa, por separado,
+la segmentación aprendida por dos tokenizadores BPE.
+\ifdefined\labcompstandalone
+La consigna del taller exige un reporte corto; el seminario de
+investigación explica que falta
+\else
+La \hyperref[s01:mod:taller]{consigna del taller} exige un reporte corto;
+el \hyperref[s01:mod:invest]{seminario de investigación} explica qué falta
+\fi
+para convertir una demostración en un estudio candidato a publicación.
+
+
+
+
+\textbf{Puente hacia el proyecto IC10.} Podemos investigar si ciertos términos técnicos ocupan más tokens por palabra que la prosa general. Esto ya es una medición falsable y puede ampliarse a BPC con modelos adecuadamente controlados. La tabla de fuentes de la sección~\ref{s01:cap:investigacion} identifica D01 (Wikipedia en español) y D02 (Proyecto Gutenberg) como corpus generales candidatos; ninguna cifra empírica sobre esos corpus se afirma en este capítulo.
+
+\paragraph{Microexperimento IC10: cambiar realmente el tokenizador}
+\phantomsection
+\label{s01:lab:ic10}
+\begin{idea}[Ahora, si cambiamos la representación, no el estimador de probabilidades]
+En el laboratorio anterior se compararon \emph{dos bigramas de caracteres}
+con distinta procedencia de datos. Aquello ilustra estimación de
+probabilidades. Aquí comparamos dos \emph{tokenizadores BPE} que aprenden
+fusiones diferentes, uno en prosa general y otro en prosa técnica, con el
+\textbf{mismo presupuesto de 20 fusiones}. Esta es una primera medición de
+la variable de representación que estudia IC10, sin afirmar que un
+modelo de lenguaje mejora por ello.
+\end{idea}
+\paragraph{Reglas transparentes}
+La unidad inicial de cada palabra es un punto de código Unicode; se añade
+el marcador $\langle/\mathrm w\rangle$ para no fusionar entre palabras. Cada paso combina
+el par de unidades adyacentes más frecuente del corpus de entrenamiento
+(con desempate lexicográfico). Las reglas se aplican, en el orden en que
+se aprendieron, a las \textbf{mismas seis frases técnicas de prueba}.
+La separación entrenamiento/prueba es por documento. Se conserva la
+normalización explícita: minúsculas, recorte externo de espacios y
+separación por blancos. No se eliminan acentos, ni se usa el texto de
+prueba para elegir fusiones. Este BPE didáctico no es el tokenizador de
+un modelo neuronal preentrenado.
+\paragraph{Resultado verificado en Python, datos sintéticos}
+\begin{center}\begin{tabular}{lrrr}\toprule
+Tokenizador & Palabras de prueba & Tokens en prueba & Tokens/palabra\\\midrule
+BPE entrenado con prosa general & 35 & 148 & 4.228571\\
+BPE entrenado con texto técnico & 35 & 127 & 3.628571\\\bottomrule
+\end{tabular}\end{center}
+La diferencia agregada es $127-148=-21$ tokens y
+$3.628571-4.228571=-0.600000$ tokens por palabra, bajo estas reglas.
+La tabla por documento se genera en
+\nolinkurl{experimentos/resultados_ic10_tokenizacion.csv}; las veinte
+fusiones de cada modelo, en \nolinkurl{experimentos/fusiones_ic10.csv}.
+\begin{verificacion}[Interpretación responsable]
+El resultado no permite afirmar que un modelo general tenga peor
+perplejidad ni que el tokenizador especializado mejore una tarea aplicada.
+Para contrastar \textbf{bits por carácter} entre tokenizadores se
+necesita asignar probabilidades normalizadas y compatibles a las mismas
+secuencias (incluyendo convenciones de fronteras y fin), y evaluar en
+textos reservados. Menos tokens significa \emph{otra segmentación}; no
+implica por sí solo menor entropía cruzada ni mejor generalización.
+\end{verificacion}
+\paragraph{Ejecución y reporte}
+\begin{verbatim}
+python codigo/ic10_tokenizadores.py
+# En un equipo con R instalado (configuración regional UTF-8):
+export LC_ALL=C.UTF-8
+Rscript codigo/ic10_tokenizadores.R
+python verificaciones/comparar_r_python.py
+\end{verbatim}
+El estudiante reporta las dos comparaciones por separado:
+\textbf{A)} corpus de entrenamiento frente a BPC de bigramas por
+caracteres; \textbf{B)} entrenamiento del tokenizador frente a tokens por
+palabra. Ambas son ilustrativas y no equivalen a un estudio industrial.
+
+% [R7] Recuperado de v0.6 (l. 932-952), con la notación de v0.9.
+\paragraph{Cierre del laboratorio matemático: predicciones que el código debe verificar}
+\phantomsection\label{s01:lab:mat:cierre}
+\begin{enumerate}
+\item Sobre \texttt{abacabbacb}, la fila suavizada del contexto \texttt{a} es
+$\left(\frac17,\frac37,\frac37\right)$, no $(1/6,\ldots)$:
+$N=4$, $K=3$ y $\alpha=1$.
+\item Para \texttt{abca}, la \emph{probabilidad condicionada en el primer
+símbolo} es el producto de tres transiciones. La probabilidad \emph{conjunta}
+incluye la masa inicial declarada. Mezclar ambos protocolos cambia la PPL.
+\item La identidad $H(p,q)=H(p)+D_{\mathrm{KL}}(p\Vert q)$ es una igualdad
+matemática (con convenciones de soporte), no una afirmación de que un modelo
+entrenado estima correctamente $p$.
+\item En una evaluación reproducible, la unidad de remuestreo es el documento;
+no se deben remuestrear caracteres relacionados como observaciones independientes.
+\end{enumerate}
+\noindent Estas predicciones están programadas en
+\nolinkurl{verificaciones/verificar_s01.py} y
+\nolinkurl{verificaciones/verificar_complementos_s01.py}.
+
+
+
+\begin{idea}[Tres capas: prompt, contexto y arnés]
+En un modelo generativo, el \emph{prompt} aporta la entrada inicial; el \emph{contexto} es la historia efectiva disponible, según la ventana y las reglas de truncamiento; el \emph{arnés} ejecuta y registra el procedimiento (muestreo, parada, validación, semillas y herramientas). Que los tres influyan en la salida no los convierte en la misma operación. Su estudio sistemático se retomará en sesiones posteriores.
+\end{idea}
+
+\subsection{Investigación aplicada y ejercicios de consolidación}\label{s01:cap:investigacion}
+
+\paragraph{Taller autónomo con reporte técnico breve}
+\phantomsection\label{s01:mod:taller}
+\begin{taller}[Finalidad y entrega]
+Demostrar, con cálculos y archivos regenerables, cómo las decisiones de
+representación afectan a un pequeño modelo de lenguaje. Entregar un
+\textbf{reporte de 2--3 páginas} (objetivo, datos, métodos, resultados,
+incertidumbre, limitaciones y relación con IC10), más scripts y CSV.
+\textbf{Todo es trabajo autónomo}; no se presuponen las horas del laboratorio
+dentro de la clase presencial. En S01 se conservan como hito de investigación
+\textbf{dos áreas de interés}, cada una con un párrafo.
+\end{taller}
+\paragraph{Actividad 1 [Representación]: una frase, cuatro objetos}
+Segmente ``el gato mira al perro'' en palabras y caracteres; construya
+unigramas, bigramas y trigramas; contraste bolsa de palabras con secuencia y
+escriba el vector one-hot del token \texttt{gato}. Repita el primer paso con
+una frase técnica. \emph{Autoverificación}: cinco palabras, cuatro pares,
+tres trigramas en la primera oración.
+\paragraph{Actividad 2 [Cálculo]: del conteo a la predicción}
+Con \texttt{abacabbacb} construya la matriz de transiciones, derive el
+estimador MLE e introduzca $\alpha=1$. Para \texttt{abca}, calcule la
+probabilidad de transición y la conjunta con $p(X_1=a)=1/3$.
+\emph{Autoverificación}: $P(b\mid a)=3/7$; probabilidad conjunta $1/105$.
+\paragraph{Actividad 3 [Demostración]: medir lo que se predice}
+Demuestre la identidad entre entropía cruzada y KL con las condiciones de
+soporte; calcule KL de $(1/2,1/4,1/4)$ respecto de
+$(1/4,1/2,1/4)$. Para las probabilidades observadas
+$(1/2,1/4,1/8,1/2)$, calcule PPL. Compare dos tokenizadores con
+$(T_A,\mathrm{PPL}_A)=(100,3.2)$ y $(T_B,\mathrm{PPL}_B)=(30,25)$
+sobre un mismo texto de 100 caracteres, indicando qué supuestos permiten
+interpretar el BPC. \emph{Autoverificación}: KL $=0.25$ bits y
+PPL $=2^{7/4}$.
+\paragraph{Actividad 4 [Algoritmos]: BPE, R y Python}
+Ejecute seis fusiones BPE sobre la tabla \emph{casa, casas, cosa, cosas,
+caso} con las frecuencias y reglas indicadas en la sección~\ref{s01:cap:tokens}. Ejecute después:
+\begin{verbatim}
+python codigo/s01.py
+python codigo/experimento_s01.py
+python codigo/ic10_tokenizadores.py
+Rscript codigo/s01.R
+Rscript codigo/experimento_s01.R
+Rscript codigo/ic10_tokenizadores.R
+\end{verbatim}
+Compruebe las sumas de las filas, las longitudes BPE y las seis filas
+pareadas del CSV. Compare también, sobre las mismas seis frases
+de prueba, el BPE general con el técnico mediante 20 fusiones en ambos;
+produzca \nolinkurl{resultados_ic10_tokenizacion.csv} y explique las diferencias.
+Si no tiene R, indique \textbf{PENDIENTE} en el reporte,
+sin inventar que los números se reprodujeron en ambos lenguajes.
+\paragraph{Actividad 5 [Aplicación e investigación]: entregar evidencia}
+Use \nolinkurl{experimentos/corpus_didactico.csv} para reconstruir
+\nolinkurl{experimentos/resultados_python.csv}; complete la
+\textbf{plantilla de reporte} en \nolinkurl{reportes/reporte_s01.tex}.
+Incluya la tabla BPE con tokens por palabra y distinga la comparación
+de tokenizadores de la comparación de predictores por caracteres.
+Interprete la diferencia media de BPC y el intervalo bootstrap por
+\emph{documento}, explicando por qué ni el tamaño de muestra ni el origen
+del corpus permiten inferencia para textos industriales reales.
+Proponga una versión de IC10 que sí sea falsable con documentos y
+comparaciones externas. Finalmente, formule dos áreas de interés,
+con un párrafo justificado por cada una.
+\begin{verificacion}[Lista de control antes de entregar]
+\begin{enumerate}
+\item Los datos no se mezclan entre ajuste y prueba; se identifica cada
+unidad de observación.
+\item Se reportan todas las probabilidades de la cadena, incluido EOS,
+y se cuenta explícitamente la unidad del denominador BPC.
+\item Cada resultado se etiqueta como \emph{calculado}, \emph{ejecutado
+con datos sintéticos} o \emph{pendiente de validación empírica}.
+\item Se entregan código, CSV, versión de lenguaje, interpretación,
+limitaciones y dos áreas de interés.
+\end{enumerate}
+\end{verificacion}
+\paragraph{Extensiones opcionales, fuera del núcleo S01}
+Calcule intervalo de confianza mediante bootstrap jerárquico con varios
+documentos por fuente; incorpore una evaluación BPC de modelos probabilísticos sobre tokens
+BPE con distribuciones comparables; compare
+vocabularios fijados por entrenamiento con distintos tamaños; pruebe
+suavizado $\alpha\in\{1/2,1,2\}$ exclusivamente en validación; diseñe una
+réplica externa para dos dominios técnicos con control de licencias.
+
+
+
+
+\paragraph{De la utilidad práctica al objetivo de publicación Q1}
+\phantomsection\label{s01:mod:invest}
+\begin{investigacion}[Una meta ambiciosa con etapas verificables]
+La trayectoria de los tres cursos tendrá como objetivo
+\textbf{preparar un manuscrito competitivo para una revista del primer
+cuartil (Q1) de una categoría pertinente}. Q1 es una clasificación
+bibliométrica dependiente de \emph{base, categoría y año}; no es garantía
+de aceptación ni un sustituto de la calidad del método.
+En \textbf{este primer curso} se exige un protocolo, una línea base,
+resultados preliminares honestos y un informe técnico reproducible.
+No se exigirá enviar el artículo en S12. La novedad, el alcance externo y
+las validaciones adicionales corresponden a la trayectoria de investigación
+posterior y a la selección de revista.
+\end{investigacion}
+\paragraph{Qué problema puede llegar a interesar a una revista exigente}
+Los experimentos de \hyperref[s01:lab:comp]{bigramas de caracteres}
+y \hyperref[s01:lab:ic10]{tokenización BPE} enseñan preguntas distintas:
+el primero compara pérdida predictiva con tokenización fija; el segundo
+mide longitud tokenizada, sin evaluar probabilidades de un modelo.
+Ninguno constituye novedad publicable. Una ruta posible desde IC10 es estudiar
+\emph{bajo qué condiciones} la segmentación de textos técnicos en español
+aumenta el costo de representación y, cuando se controla el modelo de
+probabilidad y su capacidad, altera la calidad predictiva o el desempeño
+de tareas del dominio. Es necesario contrastar la hipótesis con la literatura
+vigente y establecer qué mecanismo o efecto no ha sido caracterizado.
+\paragraph{Qué garantías faltarán para un artículo candidato a Q1}
+\begin{enumerate}
+\item \textbf{Vacío verificable en la literatura:} revisión sistemática de trabajos
+pertinentes; plantear una contribución diferenciada de la ingeniería rutinaria.
+\item \textbf{Datos pertinentes y auditables:} varias fuentes y dominios si la
+pregunta lo exige, permisos y licencias, documentos fechados y prueba reservada.
+\item \textbf{Comparaciones fuertes:} tokenizadores con presupuesto de vocabulario
+controlado y modelos probabilísticos bien definidos; baselines de carácter,
+subpalabra y modelo preentrenado; coste/latencia donde corresponda.
+\item \textbf{Diseño reproducible:} normalización definida, corpus separados por
+documento, evidencia de ausencia de duplicados/fuga, experimentos pareados,
+varias semillas y control de selección múltiple.
+\item \textbf{Validez externa:} réplica en otros documentos o instituciones
+cuando los permisos lo permitan; ablaciones, análisis de errores y discusión
+de los resultados nulos o negativos.
+\item \textbf{Comunicación científica:} figuras regeneradas desde los datos,
+reporte de tamaño de efecto e incertidumbre, materiales compartibles y
+justificación del alcance real de la contribución.
+\end{enumerate}
+\begin{puente}[De la S01 a las sesiones posteriores]
+\textbf{S01:} explorar dos áreas y practicar el reporte. \textbf{S02--S04:}
+reducir candidatos y comprender mecanismos. \textbf{S05:} seleccionar el
+problema con una rúbrica. \textbf{S06:} medir la línea base. \textbf{S07:}
+prerregistrar la prueba. \textbf{S08--S11:} ejecutar, medir, analizar
+sensibilidad y errores. \textbf{S12:} informe técnico, repositorio y revisión
+por pares. \textbf{Cursos II--III:} experimentos completos, validación
+externa y manuscrito sometible, con objetivo Q1 condicionado a la
+aportación y al ajuste con la revista.
+\end{puente}
+\paragraph{Producto de S01}
+\textbf{A entregar:} un párrafo por cada una de dos áreas de interés
+(problemática, relevancia, datos candidatos y riesgo); no es aún la ficha
+del problema definitivo. El pequeño informe del taller muestra que el
+estudiante puede \emph{producir y criticar evidencia}; no constituye el
+artículo científico.
+
+\paragraph{Seminario de investigación: las preguntas comienzan hoy}
+
+\begin{investigacion}[Meta intelectual de la última hora]
+No se pretende seleccionar un tema definitivo ni entregar un experimento acabado.
+Se pretende aprender a distinguir una demostración tecnológica de una pregunta
+contrastable y a identificar \textbf{dos áreas de interés}, con un párrafo razonado
+por área. La ficha formal será en S05; la línea base medida, en S06; y el
+prerregistro, en S07. Esta pauta procede del documento de investigación del curso,
+\emph{Integración e investigación aplicada}, capítulo 3 (2026).
+\end{investigacion}
+
+\paragraph{Problema inicial: tokenización de lenguaje técnico en español}
+
+Una herramienta puede fragmentar \emph{empacadura}, \emph{revestidor},
+\emph{pérdida de circulación} o \emph{9 5/8 pulgadas} de maneras distintas.
+Esta observación sugiere una pregunta, pero aún no constituye una hipótesis
+científica: ¿una tokenización especializada necesita menos unidades por término,
+y qué costo tiene ese ahorro en una predicción probabilística razonable?
+
+La matriz institucional identifica este hilo como \textbf{IC10}: penalización de
+la tokenización en textos técnicos en español. Los observables propuestos son
+\emph{tokens por palabra} y \emph{bits por carácter}; el catálogo vincula la
+primera exploración con D01 y D02. El documento proporciona \emph{referencias de
+fuentes de datos}, no un corpus descargado y preparado para la clase.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+ q/.style={draw=azul,fill=azulclaro,rounded corners,align=center,text width=3.2cm,minimum height=13mm}]
+\node[q] (p) at (0,0) {\textbf{Pregunta}\\¿Qué se fragmenta?};
+\node[q] (h) at (4.2,0) {\textbf{Hipótesis}\\un dominio cambia la tasa};
+\node[q] (m) at (8.4,0) {\textbf{Medida}\\tokens/palabra; BPC};
+\node[q] (d) at (8.4,-2.0) {\textbf{Datos}\\corpus con licencia};
+\node[q] (v) at (4.2,-2.0) {\textbf{Validación}\\documentos reservados};
+\node[q] (r) at (0,-2.0) {\textbf{Resultado}\\efecto e incertidumbre};
+\draw[->,thick] (p)--(h);\draw[->,thick] (h)--(m);\draw[->,thick] (m)--(d);\draw[->,thick] (d)--(v);\draw[->,thick] (v)--(r);
+\end{tikzpicture}
+\caption{Estructura mínima de una pregunta experimental para la trayectoria de investigación.}
+\end{figure}
+
+\paragraph{Cuatro distinciones que hacen investigable la pregunta}
+
+\textbf{1. Variable observable.} La fracción de palabras partidas en subunidades
+no es idéntica a los bits por carácter. La primera caracteriza la representación;
+la segunda resume una pérdida probabilística si el modelo permite computarla.
+\textbf{2. Tratamiento.} Entrenar un nuevo BPE modifica la segmentación; cambiar
+simultáneamente arquitectura, número de parámetros y corpus no permite atribuir
+una mejora solo a la segmentación.
+\textbf{3. Unidad experimental.} Debe ser, cuando sea posible, el documento o
+el informe, no cada subfragmento del mismo archivo; de lo contrario,
+los intervalos basados en tokens individuales sobrestiman la precisión.
+\textbf{4. Generalización.} Un vocabulario reducido para diez términos elegidos a mano
+no es evidencia de efecto promedio en un dominio. Es una demostración inicial.
+
+\begin{ejemplo}[Cómo pasar de observación a hipótesis falsable]
+\textbf{Observación ilustrativa:} un tokenizador general parte el término
+\emph{revestidor} en más fragmentos que otro entrenado en textos de petróleo.
+\textbf{Hipótesis operacional futura:} sobre informes técnicos reservados,
+con normalización y tamaño de vocabulario previamente fijados,
+la diferencia media pareada de tokens por palabra es mayor que cero.
+\textbf{Evaluación:} informar media, intervalo de confianza por remuestreo de
+documentos y posibles fallas en términos que no estaban en el vocabulario.
+No se informa un resultado numérico porque los datos no han sido descargados
+ni el experimento ejecutado.
+\end{ejemplo}
+
+\paragraph{Fuentes candidatas, derechos y riesgos}
+
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}p{1.2cm}p{3.3cm}Xp{2.6cm}@{}}\toprule
+ID & Fuente del catálogo & Uso inicial posible & Precaución\\\midrule
+D01 & Wikipedia (eswiki) & Corpus amplio de artículos en español y temas científicos & Atribución y condiciones de reutilización según volcado/licencia\\
+D02 & Proyecto Gutenberg & Obras en español para contraste con prosa técnica & Derecho de autor según país y obra; condiciones del portal\\
+D03 & Volve, Equinor & Candidato posterior para texto y series de petróleo & Verificar presencia de texto, autorización y licencia de los archivos\\\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Ubicaciones de origen:} \url{https://dumps.wikimedia.org/eswiki/},
+\url{https://www.gutenberg.org/} y
+\url{https://www.equinor.com/energy/volve-data-sharing}.
+La fuente de la licencia debe verificarse antes de redistribuir; la existencia
+de un catálogo no equivale a disponer de permiso para todo uso. La página de
+condiciones de Gutenberg señala explícitamente la necesidad de examinar los
+derechos en el país del usuario, además de los términos de la obra.
+
+\paragraph{Conexión con Series de Tiempo y con otras áreas}
+
+El objeto probabilístico $p(x_{1:T})$ aparece en ambos cursos. Una cadena de
+Markov utiliza una matriz de transición; un modelo de lenguaje tabular cuenta
+símbolos y estima esas transiciones. La similitud no implica que un LLM sea una
+cadena homogénea finita: sus condicionales pueden depender de una ventana amplia
+y de una función parametrizada por una red.
+
+Además de IC10, la matriz incluye problemas que conectan texto y pronóstico:
+PG02 (eventos de perforación), FI01 (tono de noticias y volatilidad) y EE01
+(demanda eléctrica con eventos textuales). Son \emph{posibilidades de exploración},
+no compromisos de ejecución en la S01. En trabajos de pronóstico con modelos
+preentrenados habrá que controlar también la fuga temporal y lo que el modelo
+pueda haber memorizado; una partición cronológica de nuestros archivos no elimina
+por sí sola ese riesgo.
+
+\paragraph{Guion de discusión de la última hora}
+
+\begin{enumerate}
+\item ¿Qué hipótesis distingue una comparación de tokenizadores de una
+ comparación de modelos completos? Dar una variable que se pueda medir.
+\item ¿Qué evidencia refutaría la hipótesis en vez de confirmarla?
+\item ¿Qué datos hay hoy, cuáles requieren autorización y qué licencias
+ pueden condicionar la investigación?
+\item ¿Qué cambia si la unidad de análisis es un documento y no un token?
+\item ¿Cómo se formularía una pregunta que conecte texto fechado con una
+ serie temporal, evitando que la información futura entre en el entrenamiento?
+\end{enumerate}
+\begin{investigacion}[Hito autónomo S01]
+Cada estudiante entrega \textbf{dos áreas de interés}, un párrafo argumentado
+por área. En cada párrafo se solicita: relevancia del problema, una posible
+fuente de datos, una variable que eventualmente podría medirse y una cautela.
+No se exige entrenar un modelo ni comprometer una hipótesis definitiva.
+Esta secuencia anticipa los cinco candidatos de S02 y la decisión formal de S05.
+\end{investigacion}
+
+% Movido desde «Demostraciones y profundización matemática» (v0.8, l. 1111-1115 y 1544-1559).
+\paragraph{Selección y evaluación separadas}
+La elección de $\alpha$, $n$ o las fusiones BPE sobre la prueba destruye la
+interpretación de prueba como evidencia final independiente. La recomendación
+es separar por documento antes de ajustar cualquier representación y realizar
+validación de hiperparámetros solo sobre el conjunto de validación.
+
+\paragraph{Cuidado con una supuesta ventaja metodológica}
+
+Un tokenizador puede producir menos unidades por palabra sin que
+su modelo probabilístico correspondiente alcance menor pérdida de
+predicción; la arquitectura, la cantidad de datos y el tratamiento
+de caracteres pueden alterar esa relación. Por eso conviene separar
+métricas \emph{descriptivas de segmentación} de métricas \emph{predictivas}.
+Si comparamos dos modelos completos, podremos describir diferencias
+de tasa; si queremos atribuir la diferencia a BPE, habrá que diseñar un
+experimento en el que los otros factores se mantengan comparables.
+
+Esta cautela también explica por qué la matriz IC10 es una \emph{semilla}
+de investigación, no un resultado preestablecido. Un resultado nulo,
+negativo o contrario a la hipótesis puede ser científicamente útil si
+la medición fue defendible. El paso siguiente, en S02, será revisar
+candidatos y disponibilidad de datos antes de elegir un problema.
+
+\paragraph{Del curso a una evidencia reproducible}
+
+El repositorio del proyecto conservará configuración de entornos, fuentes,
+transformaciones, semillas, pruebas y salidas regenerables. Las tablas de resultados
+no deben editarse a mano. En ejercicios con IA generativa deberá declararse su
+uso; toda derivación matemática deberá ser defendible y toda cita verificable.
+Los proyectos con datos personales requieren procedimientos de anonimización y,
+si corresponde, autorizaciones. Una herramienta que responde correctamente a una
+pregunta de demostración no constituye una evidencia científica.
+
+\subsection{Ejercicios de S01}\label{s01:cap:ejercicios}
+Los problemas remiten a los resultados del texto y de los complementos.
+\paragraph{Ejercicios matemáticos}
+
+\noindent Estos ejercicios consolidan resultados de la clase y corresponden al
+trabajo autónomo, no al tiempo presencial. Las soluciones justificadas se distribuyen en el solucionario docente independiente.
+\begin{enumerate}
+\item \textbf{[Derivación]} Demuestre la regla de la cadena para $T=4$ (Proposición~\ref{s01:prop:cadena}).
+Para $X_1,X_2$ Bernoulli$(1/2)$ independientes y $X_3=X_1$,
+contraste $p(1,0,1)$ con la aproximación de orden uno.
+\emph{Autoverificación:} $1/4$ frente a $1/8$.
+\item \textbf{[Cálculo]} Para $c=(6,3,1,0,0)$ y $K=5$,
+calcule la predictiva (Proposición~\ref{s01:prop:predictiva}) usando dos distribuciones \emph{a priori} simétricas:
+Dirichlet con parámetros unitarios y Dirichlet con parámetros $1/2$.
+Compare la masa sobre categorías no vistas.
+\emph{Autoverificación:} $1/15$ frente a $1/25$ en cada categoría nula.
+\item \textbf{[Demostración]} Pruebe la desigualdad de Gibbs (Teorema~\ref{s01:teo:gibbs}) desde $\ln t\le t-1$,
+justifique cuándo se da la igualdad y deduzca
+$H(p,q)=H(p)+D_{\rm KL}(p\|q)$.
+\emph{Autoverificación:} KL es no negativa, pero generalmente asimétrica.
+\item \textbf{[Cálculo]} Un predictor asigna a cuatro resultados observados
+$(1/2,1/4,1/8,1/2)$. Calcule pérdida total, pérdida media y
+PPL. Repita cuando la tercera probabilidad sea $1/16$.
+\emph{Autoverificación:} PPL inicial $2^{7/4}$, final $4$.
+\item \textbf{[Aplicación]} En un mismo texto de 100 caracteres, A
+produce 100 tokens con PPL 3.2 y B 30 tokens con PPL 25.
+Convierta a bits totales y BPC y enumere cuatro condiciones necesarias
+para interpretar una diferencia.
+\emph{Autoverificación:} BPC(A) $\approx1.6781$;
+BPC(B) $\approx1.3932$.
+\end{enumerate}
+\paragraph{Problemas de profundización}
+\begin{enumerate}
+\item[(S1.A)] Para una cadena de Markov homogénea, relacione su
+entropía condicional $H(X_t\mid X_{t-1})$ con las tasas de
+codificación cuando existe una distribución estacionaria.
+\item[(S1.B)] A partir de la Proposición~\ref{s01:prop:bpe}, formalice por qué una frecuencia bruta de pares solapados
+no es la reducción de longitud de una fusión BPE.
+\item[(S1.C)] \emph{Semilla IC10:} formule una hipótesis falsable que
+compare tasa de segmentación en corpus general y técnico, e indique
+qué control haría falta para atribuir un efecto al tokenizador.
+\end{enumerate}
+
+
+
+
+
+
+\paragraph{Preguntas de nivel matemático}
+\begin{enumerate}
+\item Pruebe la concavidad de $H(p)$ usando el Hessiano restringido al
+interior del símplex.
+\item Rehaga para $T=3$, con todos los pasos, la regla de la cadena de KL (Proposición~\ref{s01:prop:cadenaKL}) a partir de las factorizaciones
+$p(x_{1:T})$ y $q(x_{1:T})$.
+\item Estudie el límite $\alpha\to\infty$ del estimador suavizado
+con $K$ fijo, e interprete el resultado.
+\item Dé un ejemplo donde dos modelos tengan igual pérdida en bits por
+carácter y perplejidades por token distintas.
+\item Explique por qué la validación aleatoria por caracteres es
+incorrecta cuando el corpus contiene documentos muy similares.
+\end{enumerate}
+
+\subsection{Vocabulario de consulta y lecturas}\label{s01:cap:vocabulario}
+\begin{center}\small
+\begin{tabularx}{\textwidth}{p{34mm}X}\toprule
+Concepto & Interpretación útil para regresar al texto\\\midrule
+LLM & Familia parametrizada de distribuciones condicionales sobre el siguiente símbolo (sección~\ref{s01:cap:comunicacion}).\\
+Token & Unidad discreta de representación definida por el tokenizador (Definición~\ref{s01:def:vocabulario}).\\
+BPE & Codificación por pares de bytes: fusiones iterativas del par adyacente más frecuente (Definición~\ref{s01:def:bpe}).\\
+$n$-grama & Modelo que predice con los $n-1$ símbolos anteriores; Markov de orden $n-1$ (Definición~\ref{s01:def:markov}).\\
+Independencia condicional & $X\perp Z\mid Y$: conocido $Y$, $Z$ no altera la ley de $X$ (Definición~\ref{s01:def:ci}).\\
+Cadena de Markov & Secuencia cuyo siguiente estado depende de la historia solo a través del estado actual; homogénea si la matriz de transición no cambia con $t$ (Complemento~\ref{s01:comp:markov}).\\
+Símplex, soporte & Conjunto de distribuciones sobre $K$ categorías; categorías con probabilidad positiva (Definición~\ref{s01:def:simplex}).\\
+MLE & Estimación por máxima verosimilitud: $\widehat q_i=c_i/N$ (Proposición~\ref{s01:prop:mle}).\\
+Dirichlet & Distribución sobre el símplex; priori conjugada de la categórica (Definición~\ref{s01:def:dirichlet}, Proposición~\ref{s01:prop:conjugacion}).\\
+Bit, sorpresa & $s(x)=-\log_2p(x)$, medida en bits.\\
+Entropía & Sorpresa promedio de una distribución (Proposición~\ref{s01:prop:cotasH}).\\
+Entropía cruzada, KL & Pérdida esperada al usar $q$ con datos de $p$; exceso sobre la entropía (Definición~\ref{s01:def:kl}).\\
+Perplejidad (PPL) & Exponencial de la pérdida media logarítmica por unidad declarada.\\
+BPC & Bits por carácter: bits totales del texto entre su número de caracteres (Definición~\ref{s01:def:bpc}).\\
+Bootstrap & Remuestreo con reemplazo de las unidades observadas para describir la variabilidad de un estadístico (Complemento~\ref{s01:comp:bootstrap}).\\\bottomrule
+\end{tabularx}
+\end{center}
+\paragraph{Lecturas fundamentales y ampliación}
+La formulación original de información y fuentes discretas se encuentra en
+\citet{shannon1948}; el estudio de la predictibilidad del inglés, en
+\citet{shannon1951}. Para representar contexto mediante aprendizaje neuronal,
+véase \citet{bengio2003neural}. Estas referencias están reunidas en la
+bibliografía general del libro.
+
+\subsection{Complementos matemáticos de S01}\label{s01:comp}
+Esta subsección reúne las demostraciones completas y los resultados auxiliares
+de la sesión. Reorganiza, sin pérdida de contenido, la antigua sección
+«Demostraciones y profundización matemática» (v0.8) y añade las deducciones que
+allí solo se enunciaban. Los complementos están ordenados de modo que cada uno
+usa solo resultados anteriores; al final de cada uno se indica dónde se usa en el
+texto principal.
+
+% ---------------------------------------------------------------- C1
+\complemento{Distribuciones finitas, símplex y convenciones}{s01:comp:simplex}
+Sea $\{1,\ldots,K\}$ un conjunto de $K$ categorías (al aplicarlo a un vocabulario,
+$K=|V|$). El símplex es
+$\Delta_{K-1}=\{p\in\mathbb R^K:p_i\ge0,\sum_i p_i=1\}$.
+Su interior relativo exige $p_i>0$. El soporte es
+$\operatorname{supp}(p)=\{i:p_i>0\}$.
+\begin{lema}\label{s01:lem:simplex}
+$\Delta_{K-1}$ es convexo, cerrado y acotado; por tanto, compacto.
+\end{lema}
+\begin{proof}
+Es la intersección de los semiespacios cerrados $\{p_i\ge0\}$ con el hiperplano
+cerrado $\{\sum_ip_i=1\}$, luego es cerrado. Cada coordenada cumple $0\le p_i\le1$,
+luego es acotado; en $\mathbb R^K$, cerrado y acotado equivale a compacto
+(Heine--Borel). Si $p,p'\in\Delta_{K-1}$ y $\lambda\in[0,1]$, las coordenadas de
+$\lambda p+(1-\lambda)p'$ son no negativas y suman $\lambda+(1-\lambda)=1$.
+\end{proof}
+\begin{lema}\label{s01:lem:xlogx}
+$\lim_{x\downarrow0}x\ln x=0$.
+\end{lema}
+\begin{proof}
+Con $x=e^{-u}$, $x\to0^+$ equivale a $u\to+\infty$ y $x\ln x=-u\,e^{-u}$. Por la
+serie de la exponencial, $e^u\ge u^2/2$ para $u\ge0$, de donde
+$0\le u\,e^{-u}\le2/u\to0$.
+\end{proof}
+La convención $0\log0=0$ está motivada por el Lema~\ref{s01:lem:xlogx}: hace
+continua en $[0,1]$ la función $x\mapsto -x\log x$. Cuando $q_i=0$ y $p_i>0$,
+$-p_i\log q_i=+\infty$.
+\begin{observacion}[Hipótesis retirada]
+Con infinitas categorías el conjunto de distribuciones deja de ser compacto en
+la topología coordenada: la sucesión $p^{(k)}=e_k$ (toda la masa en la categoría
+$k$) no tiene subsucesiones convergentes a una distribución. Los argumentos de
+existencia por compacidad de la Proposición~\ref{s01:prop:mle} dejan de valer.
+\end{observacion}
+\volvera{la Definición~\ref{s01:def:simplex}, la Proposición~\ref{s01:prop:mle} y la definición de entropía (sección~\ref{s01:cap:informacion})}
+
+% ---------------------------------------------------------------- C2
+\complemento{Regla de la cadena, independencia condicional y memoria finita}{s01:comp:cadena}
+\paragraph{Regla de la cadena con cuidado del soporte}
+La Proposición~\ref{s01:prop:cadena} se demostró por inducción. Una variante
+equivalente: si $p(x_{1:T})>0$, todos los prefijos son positivos y
+\[
+p(x_{1:T})=p(x_1)\prod_{t=2}^T\frac{p(x_{1:t})}{p(x_{1:t-1})},
+\]
+porque los factores de prefijos se cancelan telescópicamente; cada cociente es,
+por definición, $p(x_t\mid x_{<t})$.
+Para prefijos de probabilidad cero, las condicionales pueden elegirse por
+convención; la representación de la ley conjunta sigue siendo válida donde
+está definida. Esto evita atribuir contenido probabilístico a expresiones
+condicionales que no son identificables por datos.
+
+\paragraph{Dos formas de la independencia condicional}
+\begin{lema}\label{s01:lem:ci}
+Sea $y$ con $p(y)>0$. Son equivalentes:
+(a) $p(x,z\mid y)=p(x\mid y)\,p(z\mid y)$ para todos $x,z$;
+(b) $p(x\mid y,z)=p(x\mid y)$ para todo $x$ y todo $z$ con $p(y,z)>0$.
+\end{lema}
+\begin{proof}
+Obsérvese que $p(y,z)>0$ equivale a $p(z\mid y)>0$, porque $p(y)>0$.
+(a)$\Rightarrow$(b): si $p(z\mid y)>0$,
+$p(x\mid y,z)=p(x,z\mid y)/p(z\mid y)=p(x\mid y)$.
+(b)$\Rightarrow$(a): si $p(z\mid y)>0$,
+$p(x,z\mid y)=p(x\mid y,z)\,p(z\mid y)=p(x\mid y)\,p(z\mid y)$; si
+$p(z\mid y)=0$, ambos lados de (a) valen cero, porque
+$p(x,z\mid y)\le p(z\mid y)$.
+\end{proof}
+\noindent Si se retira la condición $p(y,z)>0$ en (b), la condicional
+$p(x\mid y,z)$ no está definida y la equivalencia carece de sentido.
+
+\paragraph{Markov no es una consecuencia de la factorización}
+La hipótesis de orden $m$ afirma
+$X_t\perp X_{1:t-m-1}\mid X_{t-m:t-1}$ bajo las condiciones de la ley
+(Definición~\ref{s01:def:markov}).
+La notación de independencia condicional es una propiedad de la distribución;
+una ventana de longitud $m$ en un algoritmo es una \emph{decisión de modelado}.
+Por ejemplo, si $X_1,X_2$ son monedas justas independientes y $X_3=X_1$,
+el modelo de orden uno pierde información relevante para el último paso: en el
+Complemento~\ref{s01:comp:condicional} se calcula que la pérdida es exactamente
+un bit de incertidumbre.
+
+\paragraph{Número de parámetros de una tabla condicional}
+Para $K$ símbolos y una historia de longitud $m$ (por tanto, $K^m$ contextos
+posibles), cada contexto posee $K-1$ grados de libertad; la tabla completa usa
+$K^m(K-1)$ parámetros libres. \emph{Justificación:} la distribución condicional de
+cada contexto es un punto de $\Delta_{K-1}$, determinado por $K-1$ coordenadas
+libres, porque la última es $1$ menos la suma de las demás; los $K^m$ contextos
+se eligen por separado. Este conteo presupone que cada contexto se trata
+independientemente, que no hay simetrías ni parámetros compartidos, y que todas
+las filas pueden variar. Las redes neuronales comparten parámetros y no se cuentan
+de esta forma.
+\volvera{la Proposición~\ref{s01:prop:cadena} y las Definiciones~\ref{s01:def:ci} y~\ref{s01:def:markov}}
+
+% ---------------------------------------------------------------- C3
+\complemento{Jensen, Gibbs, entropía y divergencia KL}{s01:comp:gibbs}
+\paragraph{Entropía como esperanza}
+Para una distribución finita $p$, la sorpresa de $i$ es
+$s_p(i)=-\log_2p_i$ y $H_2(p)=\mathbb E_p[s_p(X)]$.
+Con base natural se mide en nats. La relación es
+$H_2(p)=H_e(p)/\ln2$, porque $\log_2u=\ln u/\ln2$; el mismo factor relaciona
+$D_{\mathrm{KL}}$ en bits y en nats, de modo que su signo no depende de la base.
+La entropía mide incertidumbre bajo $p$;
+la entropía cruzada $H(p,q)$ mide pérdida media al codificar datos de $p$
+con probabilidades $q$.
+
+\begin{lema}\label{s01:lem:lnz}
+Para todo $z>0$, $\ln z\le z-1$, con igualdad si y solo si $z=1$.
+\end{lema}
+\begin{proof}
+Sea $g(z)=z-1-\ln z$. Entonces $g'(z)=1-1/z$, negativa en $(0,1)$ y positiva en
+$(1,\infty)$: $g$ decrece estrictamente hasta $z=1$ y crece estrictamente después.
+Su mínimo global es $g(1)=0$, alcanzado solo en $z=1$.
+\end{proof}
+
+\begin{lema}[Desigualdad de Jensen, versión finita]\label{s01:lem:jensen}
+Sea $\varphi$ cóncava en un intervalo $I$, $x_1,\ldots,x_n\in I$ y pesos
+$w_i\ge0$ con $\sum_iw_i=1$. Entonces
+$\sum_iw_i\varphi(x_i)\le\varphi\bigl(\sum_iw_ix_i\bigr)$. Si $\varphi$ es
+estrictamente cóncava, hay igualdad si y solo si todos los $x_i$ con $w_i>0$
+coinciden.
+\end{lema}
+\begin{proof}
+Inducción en $n$. Para $n=1$ es trivial; para $n=2$ es la definición de
+concavidad. Supongamos el resultado para $n-1$ y sea $w_n<1$ (si $w_n=1$ no hay
+nada que probar). Con $w'_i=w_i/(1-w_n)$ para $i<n$, que son pesos que suman uno, y
+$\bar x'=\sum_{i<n}w'_ix_i\in I$,
+\[
+\sum_{i=1}^nw_i\varphi(x_i)=(1-w_n)\sum_{i<n}w'_i\varphi(x_i)+w_n\varphi(x_n)
+\le(1-w_n)\varphi(\bar x')+w_n\varphi(x_n)
+\le\varphi\bigl((1-w_n)\bar x'+w_nx_n\bigr),
+\]
+por la hipótesis de inducción y por la concavidad para dos puntos. El último
+argumento es $\sum_iw_ix_i$. Si $\varphi$ es estrictamente cóncava, la igualdad
+exige igualdad en ambos pasos: la primera obliga a que los $x_i$ ($i<n$, $w_i>0$)
+coincidan, y entonces son iguales a $\bar x'$; la segunda, si $0<w_n<1$, obliga
+a $\bar x'=x_n$.
+\end{proof}
+\noindent La función $\log_2$ es estrictamente cóncava en $(0,\infty)$ porque su
+segunda derivada, $-1/(u^2\ln2)$, es negativa. Jensen falla para funciones no
+cóncavas: con $\varphi(u)=u^2$ y dos puntos distintos, la desigualdad se invierte.
+
+\paragraph{Desigualdad de Gibbs con masas nulas}
+\begin{teorema}[Desigualdad de Gibbs]\label{s01:teo:gibbs}
+$D_{\rm KL}(p\|q)\ge0$, con igualdad si y solo si $p=q$.
+\end{teorema}
+\begin{proof}
+Si existe $i$ con $p_i>0=q_i$, la divergencia es
+infinita. En el otro caso, usando $\ln z\le z-1$ (Lema~\ref{s01:lem:lnz}),
+\[
+-D_{\rm KL}(p\|q)=\sum_{i:p_i>0}p_i\ln\frac{q_i}{p_i}
+\le\sum_{i:p_i>0}(q_i-p_i)\le0.
+\]
+La última desigualdad se debe a que $\sum_{i:p_i>0}q_i\le1=\sum_ip_i$.
+Para la igualdad, la desigualdad logarítmica exige $q_i=p_i$ en todo el
+soporte y la última desigualdad exige que $q$ no tenga masa fuera de él.
+Concluimos $p=q$.
+\end{proof}
+\noindent La prueba usa la base natural; en bits la divergencia se divide por
+$\ln2>0$ y la conclusión es la misma.
+
+\paragraph{Límites y casos de igualdad de la entropía}
+La Proposición~\ref{s01:prop:cotasH} se demostró con Jensen. Una segunda prueba de
+la cota superior usa Gibbs: con $u$ uniforme sobre $K$ categorías,
+\[
+D_{\rm KL}(p\|u)=\sum_{i:p_i>0}p_i\log_2\frac{p_i}{1/K}
+=\sum_{i:p_i>0}p_i\log_2p_i+\log_2K\sum_ip_i=\log_2K-H_2(p)\ge0,
+\]
+y la igualdad ocurre exactamente para $p=u$, por el caso de igualdad del
+Teorema~\ref{s01:teo:gibbs}.
+
+\paragraph{Entropía cruzada y KL}
+Si los soportes son compatibles,
+\[
+H(p,q)=-\sum_ip_i\log q_i
+=-\sum_ip_i\log p_i+\sum_ip_i\log\frac{p_i}{q_i}
+=H(p)+D_{\rm KL}(p\|q).
+\]
+Por tanto $q=p$ minimiza la entropía cruzada sobre \emph{todas} las
+distribuciones posibles. Si se optimiza una familia restringida $q_\theta$,
+se obtiene el mejor elemento de esa familia según el criterio, no
+necesariamente la distribución real.
+
+\paragraph{La pérdida logarítmica es una regla de puntuación estrictamente propia}
+La pérdida logarítmica es una regla de puntuación propia: su riesgo
+esperado se minimiza al informar la distribución verdadera.
+En efecto, $\mathbb E_p[-\ln q(X)]=H_e(p,q)=H_e(p)+D_{\mathrm{KL}}(p\|q)$, que por
+el Teorema~\ref{s01:teo:gibbs} es mayor que $H_e(p)$ para toda $q\ne p$: la regla es
+\emph{estrictamente} propia. Por ello tiene sentido usarla para evaluar predicciones
+probabilísticas, pero no sustituye métricas de exactitud, fidelidad o
+utilidad operacional cuando esas son las preguntas científicas.
+
+\paragraph{KL no es una métrica}
+Para $p=(3/4,1/4)$ y $q=(1/2,1/2)$,
+\[
+D_{\rm KL}(p\|q)=1-H_2(p)\approx0.188722\text{ bits},
+\quad D_{\rm KL}(q\|p)=\tfrac12\log_2(4/3)\approx0.207519.
+\]
+La falta de simetría basta para concluir que KL no es una métrica.
+Es frecuente usar una divergencia simétrica como Jensen--Shannon:
+$\mathrm{JS}(p,q)=\tfrac12D_{\rm KL}(p\|m)+\tfrac12D_{\rm KL}(q\|m)$,
+con $m=(p+q)/2$. No se necesita JS en la S01, pero permite situar KL
+entre otros objetos de la teoría de la información.
+\volvera{las Proposiciones~\ref{s01:prop:cotasH}, \ref{s01:prop:cruzada} y~\ref{s01:prop:riesgo}, y en los Complementos~\ref{s01:comp:mle}, \ref{s01:comp:condicional} y~\ref{s01:comp:kl}}
+
+% ---------------------------------------------------------------- C4
+\complemento{Máxima verosimilitud categórica: existencia, concavidad y condiciones KKT}{s01:comp:mle}
+Sea $c_i\ge0$, $N=\sum c_i>0$, $S=\{i:c_i>0\}$ y
+$\ell(q)=\sum_{i\in S}c_i\ln q_i$ en $\Delta_{K-1}$, con valor $-\infty$ si
+$q_i=0$ para algún $i\in S$.
+
+\paragraph{Concavidad}
+En el conjunto abierto donde $q_i>0$ para todo $i\in S$, $\ell$ es dos veces
+derivable y su hessiano es diagonal, con entradas $-c_i/q_i^2<0$ para $i\in S$ y
+$0$ en las demás coordenadas: es semidefinido negativo, luego $\ell$ es cóncava, y
+estrictamente cóncava en las coordenadas de $S$. Con la convención
+$\ln0=-\infty$, $\ell$ es cóncava en todo el símplex como función con valores en
+$[-\infty,0]$.
+
+\paragraph{Existencia}
+$\Delta_{K-1}$ es compacto (Lema~\ref{s01:lem:simplex}) y $\ell$ es semicontinua
+superiormente: es continua donde es finita y tiende a $-\infty$ cuando alguna
+$q_i\to0$ con $i\in S$. Toda función semicontinua superiormente alcanza su máximo en
+un compacto, lo que da una segunda prueba del paso~3 de la
+Proposición~\ref{s01:prop:mle}. Si se impusiera artificialmente $q_i>0$ para todos
+los índices, el dominio dejaría de ser compacto y el supremo podría no alcanzarse.
+
+\paragraph{Condiciones de Karush--Kuhn--Tucker}
+\begin{teorema}[Condiciones KKT para un problema cóncavo con restricciones afines]\label{s01:teo:kkt}
+Sea $f$ cóncava y derivable en un abierto $D\subseteq\mathbb R^K$, y considérese
+maximizar $f(q)$ sujeto a $g_j(q)\le0$ ($j=1,\ldots,J$) y $\sum_iq_i=1$, con $g_j$
+afines. Un punto factible $q^*\in D$ es óptimo si y solo si existen
+$\mu_j\ge0$ y $\lambda\in\mathbb R$ con
+$\nabla f(q^*)=\sum_j\mu_j\nabla g_j(q^*)+\lambda\mathbf 1$ (estacionariedad) y
+$\mu_jg_j(q^*)=0$ para todo $j$ (holgura complementaria).
+\end{teorema}
+\noindent La suficiencia se debe a la concavidad; la necesidad vale porque las
+restricciones son afines \citep[sec.~5.5.3]{boyd2004convex}.
+\emph{Aplicación.} Como $\ell=-\infty$ fuera de
+$D=\{q:q_i>0\ \forall i\in S\}$, el óptimo está en $D$. Tomamos
+$g_i(q)=-q_i\le0$. La estacionariedad es
+$\partial\ell/\partial q_i=-\mu_i+\lambda$:
+\begin{itemize}
+\item para $i\in S$: $c_i/q_i=\lambda-\mu_i$; como $q_i>0$, la holgura
+complementaria $\mu_iq_i=0$ obliga a $\mu_i=0$ y $q_i=c_i/\lambda$;
+\item para $i\notin S$: $0=\lambda-\mu_i$, de modo que $\mu_i=\lambda$.
+\end{itemize}
+Sumando sobre $S$, $\lambda=N>0$. Entonces $\mu_i=N>0$ para $i\notin S$, y la
+holgura complementaria $\mu_iq_i=0$ fuerza $q_i=0$. El punto $\widehat q=c/N$, con
+multiplicadores $\lambda=N$ y $\mu_i=N\cdot\mathbf 1[i\notin S]$, cumple las
+condiciones; por la suficiencia es óptimo. Los multiplicadores positivos aparecen
+exactamente en las categorías no observadas: allí la restricción $q_i\ge0$ está
+activa, y el multiplicador mide cuánto aumentaría $\ell$ si se relajara.
+
+\paragraph{Segunda prueba, mediante Gibbs}
+Para $q\in\Delta_{K-1}$ con $q_i>0$ en $S$,
+\[
+\ell(q)-\ell(\widehat q)=\sum_{i\in S}c_i\ln\frac{q_i}{\widehat q_i}
+=N\sum_{i\in S}\widehat q_i\ln\frac{q_i}{\widehat q_i}
+=-N\,D_{\mathrm{KL}}(\widehat q\|q)\le0
+\]
+(divergencia en nats), con igualdad si y solo si $q=\widehat q$
+(Teorema~\ref{s01:teo:gibbs}). Si $q_i=0$ para algún $i\in S$, $\ell(q)=-\infty$.
+Esta prueba da a la vez optimalidad global y unicidad, incluido el borde del
+símplex. Que los índices con $c_i=0$ reciban masa nula es una consecuencia, no
+una convención.
+\volvera{la Proposición~\ref{s01:prop:mle} y en el cálculo de la moda de Dirichlet (sección~\ref{s01:cap:ngram})}
+
+% ---------------------------------------------------------------- C5
+\complemento{Función Gamma, función Beta e integral de Dirichlet}{s01:comp:gamma}
+\begin{lema}[Propiedades de $\Gamma$]\label{s01:lem:gamma}
+Para $x>0$ la integral $\Gamma(x)=\int_0^\infty t^{x-1}e^{-t}\,dt$ converge;
+además $\Gamma(1)=1$, $\Gamma(x+1)=x\Gamma(x)$ y $\Gamma(n+1)=n!$ para
+$n\in\mathbb N$.
+\end{lema}
+\begin{proof}
+\emph{Convergencia.} En $(0,1]$, $t^{x-1}e^{-t}\le t^{x-1}$ y
+$\int_0^1t^{x-1}dt=1/x<\infty$ porque $x>0$. En $[1,\infty)$, la función
+$t^{x-1}e^{-t/2}$ es continua y tiende a cero, luego está acotada por una
+constante $C_x$; así $t^{x-1}e^{-t}\le C_xe^{-t/2}$, que es integrable.
+\emph{$\Gamma(1)$.} $\int_0^\infty e^{-t}dt=1$.
+\emph{Recurrencia.} Integrando por partes en $[\varepsilon,R]$ con $u=t^x$ y
+$dv=e^{-t}dt$,
+$\int_\varepsilon^Rt^xe^{-t}dt=\bigl[-t^xe^{-t}\bigr]_\varepsilon^R
++x\int_\varepsilon^Rt^{x-1}e^{-t}dt$. Como $x>0$, el término de borde tiende a
+cero cuando $\varepsilon\to0$ y $R\to\infty$; en el límite,
+$\Gamma(x+1)=x\Gamma(x)$.
+\emph{Factorial.} Por inducción: $\Gamma(1)=0!=1$ y
+$\Gamma(n+1)=n\Gamma(n)=n\,(n-1)!=n!$.
+\end{proof}
+\noindent Si $x\le0$, la integral diverge cerca de $t=0$, porque
+$\int_0^1t^{x-1}dt=\infty$; por eso los parámetros de Dirichlet deben ser
+positivos. Referencia clásica: \citet{artin1964gamma}.
+
+\begin{lema}[Función Beta]\label{s01:lem:beta}
+Para $a,b>0$, $\mathrm B(a,b)=\int_0^1v^{a-1}(1-v)^{b-1}\,dv$ converge y
+\[
+\mathrm B(a,b)=\frac{\Gamma(a)\Gamma(b)}{\Gamma(a+b)}.
+\]
+\end{lema}
+\begin{proof}
+La convergencia se comprueba como en el Lema~\ref{s01:lem:gamma}, cerca de $0$ y
+de $1$. Como el integrando es no negativo, el teorema de Tonelli permite escribir el
+producto de integrales como integral doble:
+$\Gamma(a)\Gamma(b)=\int_0^\infty\!\int_0^\infty s^{a-1}t^{b-1}e^{-(s+t)}\,ds\,dt$.
+El cambio de variables $s=uv$, $t=u(1-v)$ es una biyección diferenciable de
+$(0,\infty)\times(0,1)$ en $(0,\infty)^2$, con inversa $u=s+t$, $v=s/(s+t)$, y
+su jacobiano es
+$\det\begin{pmatrix}v&u\\1-v&-u\end{pmatrix}=-u$, de valor absoluto $u$. Por tanto
+\[
+\Gamma(a)\Gamma(b)=\int_0^\infty\!\!\int_0^1(uv)^{a-1}\bigl(u(1-v)\bigr)^{b-1}e^{-u}\,u\,dv\,du
+=\int_0^\infty u^{a+b-1}e^{-u}du\int_0^1v^{a-1}(1-v)^{b-1}dv,
+\]
+que es $\Gamma(a+b)\,\mathrm B(a,b)$.
+\end{proof}
+
+\begin{teorema}[Integral de Dirichlet]\label{s01:teo:dirint}
+Sean $K\ge2$, $\beta_1,\ldots,\beta_K>0$, $\Omega_{K-1}=\{(q_1,\ldots,q_{K-1}):
+q_i>0,\ \sum_{i<K}q_i<1\}$ y $q_K=1-\sum_{i<K}q_i$. Entonces
+\[
+I_K(\boldsymbol\beta)=\int_{\Omega_{K-1}}\prod_{i=1}^Kq_i^{\beta_i-1}\,dq_1\cdots dq_{K-1}
+=\frac{\prod_{i=1}^K\Gamma(\beta_i)}{\Gamma\bigl(\sum_{i=1}^K\beta_i\bigr)}.
+\]
+\end{teorema}
+\begin{proof}
+Inducción en $K$. Para $K=2$, $I_2=\int_0^1q_1^{\beta_1-1}(1-q_1)^{\beta_2-1}dq_1
+=\mathrm B(\beta_1,\beta_2)$, y el Lema~\ref{s01:lem:beta} da la fórmula.
+Sea $K\ge3$ y supongamos la fórmula para $K-1$. Fijemos $(q_1,\ldots,q_{K-2})$ y
+sea $s=1-\sum_{i\le K-2}q_i\in(0,1)$. Por Tonelli podemos integrar primero en
+$q_{K-1}\in(0,s)$, donde $q_K=s-q_{K-1}$. Con $q_{K-1}=sv$,
+\[
+\int_0^sq_{K-1}^{\beta_{K-1}-1}(s-q_{K-1})^{\beta_K-1}dq_{K-1}
+=s^{\beta_{K-1}+\beta_K-1}\,\mathrm B(\beta_{K-1},\beta_K).
+\]
+Queda $I_K(\boldsymbol\beta)=\mathrm B(\beta_{K-1},\beta_K)\int_{\Omega_{K-2}}
+\prod_{i\le K-2}q_i^{\beta_i-1}\,s^{(\beta_{K-1}+\beta_K)-1}\,dq_1\cdots dq_{K-2}$.
+La integral restante es $I_{K-1}$ con parámetros
+$(\beta_1,\ldots,\beta_{K-2},\beta_{K-1}+\beta_K)$, porque $s$ desempeña el papel
+de la última coordenada. Por la hipótesis de inducción y el Lema~\ref{s01:lem:beta},
+\[
+I_K(\boldsymbol\beta)=\frac{\Gamma(\beta_{K-1})\Gamma(\beta_K)}{\Gamma(\beta_{K-1}+\beta_K)}
+\cdot\frac{\prod_{i\le K-2}\Gamma(\beta_i)\,\Gamma(\beta_{K-1}+\beta_K)}{\Gamma(\sum_i\beta_i)}
+=\frac{\prod_{i=1}^K\Gamma(\beta_i)}{\Gamma(\sum_i\beta_i)}.
+\qedhere
+\]
+\end{proof}
+\noindent Si algún $\beta_i\le0$, la integral diverge cerca de $q_i=0$. Las
+fórmulas de este complemento se comprobaron numéricamente para varios valores de
+$x$, $(a,b)$ y $\boldsymbol\beta$ en
+\nolinkurl{verificaciones/verificar_complementos_s01.py}.
+\volvera{las Definiciones~\ref{s01:def:gamma} y~\ref{s01:def:dirichlet} y en las Proposiciones~\ref{s01:prop:conjugacion} y~\ref{s01:prop:predictiva}}
+
+% ---------------------------------------------------------------- C6
+\complemento{Modelo Dirichlet--categórico: moda, compromiso y tamaño del vocabulario}{s01:comp:dirichlet}
+La posterior (Proposición~\ref{s01:prop:conjugacion}) y la predictiva
+(Proposición~\ref{s01:prop:predictiva}) se dedujeron completas en el texto
+principal. Con la notación $\beta_i=c_i+\alpha_i$, la identidad de momentos de
+Dirichlet es $\mathbb E[q_i\mid c]=(\alpha_i+c_i)/(A+N)$.
+Así, la predicción posterior de un símbolo nuevo es la media posterior;
+no coincide necesariamente con la moda posterior.
+\begin{proposicion}[Moda de una Dirichlet]\label{s01:prop:moda}
+Sea $q\sim\mathrm{Dir}(\beta_1,\ldots,\beta_K)$. (a) Si todos los $\beta_i\ge1$ y
+algún $\beta_i>1$, la densidad alcanza su máximo en un único punto,
+$q_i=(\beta_i-1)/(\sum_j\beta_j-K)$. (b) Si algún $\beta_i<1$, la densidad no está
+acotada y no hay moda. (c) Si todos los $\beta_i=1$, la densidad es constante y
+todo punto del símplex es moda.
+\end{proposicion}
+\begin{proof}
+(a) El logaritmo es estrictamente creciente, así que basta maximizar
+$\sum_i(\beta_i-1)\ln q_i$. Es el problema de la Proposición~\ref{s01:prop:mle}
+con conteos reales $\beta_i-1\ge0$ de suma positiva, y su prueba solo usa esas
+propiedades; la solución única es $(\beta_i-1)/\sum_j(\beta_j-1)$.
+(b) Si $\beta_i<1$, al acercar $q_i$ a cero con las demás coordenadas positivas,
+el factor $q_i^{\beta_i-1}$ tiende a $+\infty$.
+(c) Con todos los exponentes nulos, la densidad es la constante $\Gamma(K)$.
+\end{proof}
+
+\paragraph{Suavizado como estimación de compromiso}
+Cuando $\alpha_i=\alpha$,
+\[
+\frac{c_i+\alpha}{N+K\alpha}
+=\frac{N}{N+K\alpha}\frac{c_i}{N}+
+\frac{K\alpha}{N+K\alpha}\frac1K.
+\]
+Esto muestra una retracción hacia la distribución uniforme, no una garantía
+de buena generalización. La afirmación «si $K$ crece, la masa agregada aumenta»
+de v0.8 se precisa así:
+\begin{proposicion}[Masa asignada a categorías no vistas]\label{s01:prop:masa}
+Sean $N>0$, $\alpha>0$ y $K_+=|\{i:c_i>0\}|$ el número de categorías observadas.
+Con suavizado aditivo, la masa predictiva total de las categorías no vistas es
+$m(K)=(K-K_+)\alpha/(N+K\alpha)$, que crece estrictamente con $K$ y tiende a uno
+cuando $K\to\infty$.
+\end{proposicion}
+\begin{proof}
+Cada una de las $K-K_+$ categorías no vistas recibe $\alpha/(N+K\alpha)$, por la
+Proposición~\ref{s01:prop:predictiva}. Tratando $K$ como variable real,
+\[
+m'(K)=\frac{\alpha(N+K\alpha)-(K-K_+)\alpha\cdot\alpha}{(N+K\alpha)^2}
+=\frac{\alpha(N+K_+\alpha)}{(N+K\alpha)^2}>0,
+\]
+y $m(K)=\frac{(1-K_+/K)\alpha}{N/K+\alpha}\to1$.
+\end{proof}
+\noindent Con $N=10$, $K_+=3$ y $\alpha=1$, la masa de lo no visto es $2/15$ para
+$K=5$ y $97/110$ para $K=100$ (cifras verificadas): un vocabulario grande con
+pseudoconteo fijo entrega casi toda la probabilidad a lo nunca observado.
+
+\paragraph{Selección y evaluación separadas}
+La elección de $\alpha$, $n$ o las fusiones BPE sobre prueba destruye la
+interpretación de la prueba como evidencia final independiente; este principio
+metodológico se desarrolla en la sección~\ref{s01:cap:investigacion}.
+\volvera{el apartado «Suavizado Dirichlet» (sección~\ref{s01:cap:ngram})}
+
+% ---------------------------------------------------------------- C7
+\complemento{Entropía conjunta y condicional, información mutua y contexto}{s01:comp:condicional}
+\paragraph{Entropía condicional y regla de la cadena de la entropía}
+La entropía conjunta de dos símbolos satisface
+\[
+H(X_1,X_2)=H(X_1)+H(X_2\mid X_1).
+\]
+Esto se demuestra al expandir
+$-\sum_{i,j}p(i,j)\log_2 p(i,j)$ y usar
+$p(i,j)=p(i)p(j\mid i)$:
+\[
+\begin{split}
+H(X_1,X_2)&=-\sum_{i,j}p(i,j)\log_2p(i)\\
+&\quad-\sum_{i,j}p(i,j)\log_2p(j\mid i)\\
+&=H(X_1)+\sum_i p(i)H(X_2\mid X_1=i).
+\end{split}
+\]
+En el primer sumando se usó $\sum_jp(i,j)=p(i)$. El promedio
+$\sum_i p(i)H(X_2\mid X_1=i)$ es la entropía condicional
+(Definición~\ref{s01:def:condicional}): mide cuánto falta por conocer sobre $X_2$
+cuando se conoce el estado precedente.
+\begin{proposicion}[Regla de la cadena de la entropía]\label{s01:prop:cadenaH}
+Para una secuencia $X_{1:T}$ con valores finitos,
+$H(X_{1:T})=\sum_{t=1}^TH(X_t\mid X_{<t})$, donde
+$H(X_t\mid X_{<t})=-\sum_{x_{1:t}}p(x_{1:t})\log p(x_t\mid x_{<t})$ y el término
+$t=1$ es $H(X_1)$.
+\end{proposicion}
+\begin{proof}
+Para cada $x_{1:T}$ con $p(x_{1:T})>0$, la Proposición~\ref{s01:prop:cadena} da
+$\log p(x_{1:T})=\sum_t\log p(x_t\mid x_{<t})$. Multiplicamos por $-p(x_{1:T})$ y
+sumamos; las sumas son finitas y pueden intercambiarse. El sumando $t$ depende solo
+de $x_{1:t}$; al sumar primero sobre $x_{t+1:T}$ queda
+$-\sum_{x_{1:t}}p(x_{1:t})\log p(x_t\mid x_{<t})=H(X_t\mid X_{<t})$.
+\end{proof}
+
+\begin{proposicion}[No negatividad de la información mutua]\label{s01:prop:im}
+$I(X;Y)=D_{\mathrm{KL}}\bigl(p_{XY}\,\|\,p_Xp_Y\bigr)\ge0$, con igualdad si y solo
+si $X$ e $Y$ son independientes.
+\end{proposicion}
+\begin{proof}
+En el soporte de $p_{XY}$, $p(x,y)/(p(x)p(y))=p(x\mid y)/p(x)$, de modo que
+$D_{\mathrm{KL}}(p_{XY}\|p_Xp_Y)=\sum_{x,y}p(x,y)\log p(x\mid y)-\sum_{x,y}p(x,y)\log p(x)
+=-H(X\mid Y)+H(X)$. Los soportes son compatibles, porque $p(x,y)>0$ implica
+$p(x)p(y)>0$. El Teorema~\ref{s01:teo:gibbs} da la no negatividad y el caso de
+igualdad $p_{XY}=p_Xp_Y$.
+\end{proof}
+
+\paragraph{Por qué ampliar el contexto puede reducir la incertidumbre óptima}
+Sea $X$ el próximo símbolo, $Y$ el último símbolo observado y $Z$
+una porción anterior del contexto. La teoría de la información
+establece
+\[
+H(X\mid Y,Z)\le H(X\mid Y).
+\]
+No es una afirmación acerca de que \emph{cualquier modelo entrenado}
+con más contexto rendirá mejor. Es una desigualdad sobre las verdaderas
+entropías condicionales de una distribución fija.
+\begin{proposicion}[Condicionar no aumenta la entropía]\label{s01:prop:condicionar}
+$H(X\mid Y,Z)\le H(X\mid Y)$, con igualdad si y solo si $X\perp Z\mid Y$.
+\end{proposicion}
+\begin{proof}
+Definamos la información mutua condicional
+\begin{align*}
+I(X;Z\mid Y)
+&=\mathbb E_{Y,Z}\Bigl[D_{\rm KL}\bigl(
+ p(X\mid Y,Z)\,\|\,p(X\mid Y)
+\bigr)\Bigr]\\
+&=\sum_{y,z:\,p(y,z)>0}p(y,z)\sum_xp(x\mid y,z)\log\frac{p(x\mid y,z)}{p(x\mid y)}.
+\end{align*}
+Los soportes son compatibles: si $p(x\mid y)=0$, entonces $p(x,y,z)=0$ para todo
+$z$. \emph{Expansión:} como $p(y,z)p(x\mid y,z)=p(x,y,z)$,
+\[
+I(X;Z\mid Y)=\sum_{x,y,z}p(x,y,z)\log p(x\mid y,z)-\sum_{x,y,z}p(x,y,z)\log p(x\mid y).
+\]
+El primer sumando es $-H(X\mid Y,Z)$. En el segundo, el logaritmo no depende de
+$z$ y $\sum_zp(x,y,z)=p(x,y)$, de modo que vale $-H(X\mid Y)$. Por tanto
+$I(X;Z\mid Y)=H(X\mid Y)-H(X\mid Y,Z)$.
+\emph{Signo:} cada divergencia interior es no negativa (Teorema~\ref{s01:teo:gibbs}),
+luego $I(X;Z\mid Y)\ge0$.
+\emph{Igualdad:} ocurre si y solo si cada divergencia interior es nula, es decir,
+$p(\cdot\mid y,z)=p(\cdot\mid y)$ siempre que $p(y,z)>0$, que es la forma~(b) de la
+independencia condicional (Lema~\ref{s01:lem:ci}).
+\end{proof}
+
+\begin{ejemplo}[Una dependencia que el último símbolo no explica]
+En la construcción $X_1$ y $X_2$ Bernoulli$(1/2)$ independientes y
+$X_3=X_1$, se tiene
+\[
+H(X_3\mid X_2)=1\ \text{bit},
+\qquad H(X_3\mid X_1,X_2)=0.
+\]
+La historia más amplia elimina toda incertidumbre \emph{verdadera}
+sobre $X_3$, mientras que el bigrama conserva un bit de incertidumbre:
+$I(X_3;X_1\mid X_2)=1$ bit.
+En muestras pequeñas, sin embargo, estimar más contextos puede aumentar
+la varianza y empeorar la predicción en prueba. Allí reaparece el
+compromiso entre capacidad del modelo, datos y suavizado.
+\end{ejemplo}
+La transición de este resultado a los Transformers es conceptual:
+el acceso a contexto amplio \emph{permite} representar dependencias
+que los bigramas descartan, pero aprenderlas de forma fiable exige
+datos, parametrización, optimización y evaluación, asuntos de S02--S05.
+\volvera{la Definición~\ref{s01:def:condicional}, en la hipótesis de Markov (Definición~\ref{s01:def:markov}) y en el Complemento~\ref{s01:comp:markov}}
+
+% ---------------------------------------------------------------- C8
+\complemento{Divergencia sobre secuencias y procesamiento de datos}{s01:comp:kl}
+\paragraph{KL entre distribuciones sobre secuencias}
+\begin{proposicion}[Regla de la cadena de la KL]\label{s01:prop:cadenaKL}
+Sean $p,q$ leyes sobre $V^T$ con $\operatorname{supp}(p)\subseteq\operatorname{supp}(q)$. Entonces
+\[
+D_{\rm KL}(p(x_{1:T})\|q(x_{1:T}))=
+\sum_{t=1}^T\mathbb E_p\left[
+D_{\rm KL}\bigl(p(X_t\mid X_{<t})\|q(X_t\mid X_{<t})\bigr)\right].
+\]
+\end{proposicion}
+\begin{proof}
+Sea $x_{1:T}$ con $p(x_{1:T})>0$; entonces $q(x_{1:T})>0$ y, por la
+Proposición~\ref{s01:prop:cadena}, todos los prefijos son positivos bajo ambas
+leyes. Factorizando ambas probabilidades,
+$\ln\frac{p(x_{1:T})}{q(x_{1:T})}=\sum_{t=1}^T\ln\frac{p(x_t\mid x_{<t})}{q(x_t\mid x_{<t})}$.
+Tomamos esperanza bajo $p$ e intercambiamos la suma finita con la esperanza. El
+sumando $t$ depende solo de $x_{1:t}$:
+\[
+\mathbb E_p\Bigl[\ln\frac{p(X_t\mid X_{<t})}{q(X_t\mid X_{<t})}\Bigr]
+=\sum_{x_{<t}:\,p(x_{<t})>0}p(x_{<t})\sum_{x_t}p(x_t\mid x_{<t})
+\ln\frac{p(x_t\mid x_{<t})}{q(x_t\mid x_{<t})},
+\]
+que es la esperanza de la divergencia entre las condicionales.
+\end{proof}
+\noindent La fórmula es una versión de la regla de la cadena para KL, y enlaza la
+modelación de secuencias con las diferencias de pérdida condicional. Si los
+soportes no son compatibles, el lado izquierdo es infinito y la factorización deja
+de estar definida en algunos prefijos.
+
+\paragraph{La desigualdad de la suma logarítmica}
+\begin{lema}[Suma logarítmica]\label{s01:lem:sumalog}
+Sean $a_1,\ldots,a_n\ge0$ y $b_1,\ldots,b_n\ge0$, con $b_i>0$ siempre que $a_i>0$,
+$A=\sum_ia_i>0$ y $B=\sum_ib_i$. Entonces
+\[
+\sum_{i:\,a_i>0}a_i\ln\frac{a_i}{b_i}\ge A\ln\frac AB,
+\]
+con igualdad si y solo si $a_i/b_i=A/B$ para todo $i$ con $b_i>0$ y $a_i=0$
+siempre que $b_i=0$.
+\end{lema}
+\begin{proof}
+Sean $p_i=a_i/A$ y $r_i=b_i/B$, que son distribuciones con soportes compatibles.
+Entonces
+$\sum_ia_i\ln\frac{a_i}{b_i}=A\sum_ip_i\Bigl(\ln\frac{p_i}{r_i}+\ln\frac AB\Bigr)
+=A\,D_{\mathrm{KL}}(p\|r)+A\ln\frac AB\ge A\ln\frac AB$,
+por el Teorema~\ref{s01:teo:gibbs}, con igualdad si y solo si $p=r$.
+\end{proof}
+
+\paragraph{La información no aumenta al agrupar categorías}
+
+Supongamos que un experimento observa tres categorías, pero un instrumento
+solo informa si ocurrió $a$ o si ocurrió alguna de las otras dos.
+La transformación $f: \{a,b,c\}\to\{a,\mathrm{otro}\}$ agrupa
+los resultados $b$ y $c$. Para
+$p=(1/2,1/4,1/4)$ y $q=(1/4,1/2,1/4)$, teníamos
+$D_{\rm KL}(p\|q)=1/4$ bit. Después de la agregación,
+\[
+ p_f=(1/2,1/2),\qquad q_f=(1/4,3/4),
+\]
+y la divergencia entre las distribuciones observables es
+\[
+\begin{split}
+D_{\rm KL}(p_f\|q_f)
+&=\frac12\log_2\frac{1/2}{1/4}
++\frac12\log_2\frac{1/2}{3/4}\\
+&=\frac12+\frac12\log_2\frac23
+\approx0.207519\ \text{bits}.
+\end{split}
+\]
+Ha disminuido respecto del $0.25$ original. Este ejemplo particular
+ilustra una propiedad general de la KL denominada \emph{procesamiento de
+datos}: al aplicar una transformación determinista común a los
+resultados, no aumenta la divergencia.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+ node/.style={draw=azul,rounded corners,fill=azulclaro,minimum width=17mm,minimum height=8mm}]
+\node[node](a)at(0,1){$a$};\node[node](b)at(0,0){$b$};\node[node](c)at(0,-1){$c$};
+\node[node](yes)at(6,0.8){$a$};\node[node](oth)at(6,-0.8){otro};
+\draw[->] (a)--(yes);\draw[->] (b)--(oth);\draw[->] (c)--(oth);
+\node at (3,-1.8) {La observación final olvida la distinción entre $b$ y $c$.};
+\end{tikzpicture}
+\caption{La agregación pierde información sobre la diferencia entre dos leyes.}
+\end{figure}
+
+\begin{proposicion}[Procesamiento de datos determinista]\label{s01:prop:procesamiento}
+Sea $f$ una función de las categorías y $p_f$, $q_f$ las leyes de $f(X)$ bajo $p$ y
+$q$. Entonces $D_{\mathrm{KL}}(p_f\|q_f)\le D_{\mathrm{KL}}(p\|q)$.
+\end{proposicion}
+\begin{proof}
+Si los soportes de $p$ y $q$ no son compatibles, el lado derecho es infinito. En
+otro caso, sea $\mathcal A_y=f^{-1}(y)$. La desigualdad de suma logarítmica
+(Lema~\ref{s01:lem:sumalog}), aplicada en cada bloque con $p_f(y)>0$, permite
+escribir
+\[
+\sum_{i\in \mathcal A_y}p_i\ln\frac{p_i}{q_i}
+\ge\left(\sum_{i\in \mathcal A_y}p_i\right)
+\ln\frac{\sum_{i\in \mathcal A_y}p_i}{\sum_{i\in \mathcal A_y}q_i}
+=p_f(y)\ln\frac{p_f(y)}{q_f(y)}.
+\]
+Sumando en las categorías agregadas se obtiene
+$D_{\rm KL}(p\|q)\ge D_{\rm KL}(p_f\|q_f)$.
+\end{proof}
+\noindent La prueba exige las convenciones habituales de soporte, y no afirma
+que ambas divergencias tengan que ser diferentes: podrían coincidir.
+Este resultado es útil en investigación aplicada cuando un reporte
+técnico se reduce a etiquetas de eventos; esa reducción puede eliminar
+diferencias que existían a nivel textual.
+\volvera{la sección~\ref{s01:cap:informacion} (Proposición~\ref{s01:prop:cruzada}) y en el ejemplo de agregación de etiquetas}
+
+% ---------------------------------------------------------------- C9
+\complemento{Cadenas de Markov finitas: distribución estacionaria y tasa de entropía}{s01:comp:markov}
+\paragraph{Definiciones}
+Una \emph{cadena de Markov homogénea} sobre un conjunto finito de $K$ estados, con
+\emph{matriz de transición} $P$ (estocástica: $P_{ij}\ge0$ y $\sum_jP_{ij}=1$) y
+distribución inicial $\pi_0$, es una secuencia con
+$\Pr(X_{1:T}=x_{1:T})=\pi_0(x_1)\prod_{t=2}^TP_{x_{t-1}x_t}$; satisface la
+hipótesis de Markov de orden uno (Definición~\ref{s01:def:markov}). Es
+\emph{irreducible} si para todo par $(i,j)$ existe $t$ con $(P^t)_{ij}>0$, y
+\emph{aperiódica} si $\gcd\{t:(P^t)_{ii}>0\}=1$ para todo $i$. Una
+\emph{distribución estacionaria} es un vector fila $\pi\in\Delta_{K-1}$ con
+$\pi P=\pi$.
+
+\begin{teorema}[Matrices estrictamente positivas]\label{s01:teo:estacionaria}
+Si $\delta=\min_{i,j}P_{ij}>0$, existe una única distribución estacionaria $\pi$;
+cumple $\pi_j\ge\delta$ para todo $j$ y, para toda distribución inicial $\pi_0$,
+$\|\pi_0P^t-\pi\|_1\le2(1-K\delta)^t$.
+\end{teorema}
+\begin{proof}
+\emph{Contracción.} Como cada fila suma uno, $K\delta\le1$. Sea $\eta\in\mathbb R^K$
+con $\sum_i\eta_i=0$. Para cada $j$,
+$(\eta P)_j=\sum_i\eta_iP_{ij}=\sum_i\eta_i(P_{ij}-\delta)$, porque
+$\sum_i\eta_i\delta=0$. Como $P_{ij}-\delta\ge0$,
+\[
+\|\eta P\|_1\le\sum_j\sum_i|\eta_i|(P_{ij}-\delta)=\sum_i|\eta_i|(1-K\delta)
+=(1-K\delta)\|\eta\|_1.
+\]
+\emph{Existencia.} Sea $\mu_t=\pi_0P^t$, que está en $\Delta_{K-1}$ porque $P$ es
+estocástica. Con $\eta=\mu_1-\mu_0$, que suma cero,
+$\|\mu_{t+1}-\mu_t\|_1=\|\eta P^t\|_1\le(1-K\delta)^t\|\eta\|_1\le2(1-K\delta)^t$.
+Si $K\delta<1$, la serie geométrica muestra que $(\mu_t)$ es de Cauchy y converge a
+algún $\pi$, que está en $\Delta_{K-1}$ porque el símplex es cerrado
+(Lema~\ref{s01:lem:simplex}). Por continuidad de $\mu\mapsto\mu P$,
+$\pi P=\lim\mu_tP=\lim\mu_{t+1}=\pi$. Si $K\delta=1$, todas las filas son uniformes
+y $\pi=\mu_1$ es estacionaria.
+\emph{Unicidad y convergencia.} Si $\pi$ y $\pi'$ son estacionarias,
+$\|\pi-\pi'\|_1=\|(\pi-\pi')P\|_1\le(1-K\delta)\|\pi-\pi'\|_1$, lo que obliga a
+$\pi=\pi'$ porque $K\delta>0$. Además
+$\|\pi_0P^t-\pi\|_1=\|(\pi_0-\pi)P^t\|_1\le(1-K\delta)^t\|\pi_0-\pi\|_1\le2(1-K\delta)^t$.
+\emph{Positividad.} $\pi_j=\sum_i\pi_iP_{ij}\ge\delta\sum_i\pi_i=\delta$.
+\end{proof}
+\noindent Para matrices con ceros el resultado general es el siguiente: una cadena
+finita irreducible tiene una única distribución estacionaria, con todas sus
+componentes positivas; si además es aperiódica, $\pi_0P^t\to\pi$ para toda
+$\pi_0$ \citep[secs.~1.7--1.8]{norris1997markov}. Sin irreducibilidad puede haber
+varias estacionarias, por ejemplo con dos estados absorbentes. Sin aperiodicidad,
+$\pi_0P^t$ puede oscilar, como con $P=\left(\begin{smallmatrix}0&1\\1&0\end{smallmatrix}\right)$.
+
+\paragraph{¿Qué se puede concluir de una cadena de Markov?}
+El modelo suavizado del ejemplo principal puede estudiarse como una cadena
+homogénea de tres estados, con distribución inicial $\pi_0$ y matriz
+\[
+P=\begin{pmatrix}1/7&3/7&3/7\\1/2&1/3&1/6\\2/5&2/5&1/5\end{pmatrix}.
+\]
+Por construcción, $P_{ij}\ge0$ y $\sum_jP_{ij}=1$; cada fila define
+una probabilidad. Como todas las entradas son estrictamente positivas
+($\delta=1/7$), la cadena es irreducible y aperiódica: desde cualquier estado se
+llega a cualquier otro en un paso, y cada estado admite una transición a sí mismo.
+El Teorema~\ref{s01:teo:estacionaria} garantiza una única distribución
+estacionaria $\pi$, con componentes al menos $1/7$, y la convergencia con factor
+$1-3/7=4/7$ por paso.
+
+Para calcularla, escribimos $\pi=(u,v,w)$ y resolvemos
+\[
+\begin{cases}
+ u=\tfrac17u+\tfrac12v+\tfrac25w,\\
+ v=\tfrac37u+\tfrac13v+\tfrac25w,\\
+ w=\tfrac37u+\tfrac16v+\tfrac15w,\\
+ u+v+w=1.
+\end{cases}
+\]
+Cualquiera de las tres primeras ecuaciones es consecuencia de las otras dos: al
+sumarlas se obtiene $u+v+w=u+v+w$, porque cada fila de $P$ suma uno. Usamos la
+primera, la tercera y la normalización. La primera equivale a
+$\frac67u=\frac12v+\frac25w$; al multiplicar por $70$, $60u=35v+28w$. La tercera
+equivale a $\frac45w=\frac37u+\frac16v$; al multiplicar por $210$,
+$168w=90u+35v$. Sustituyendo $35v=60u-28w$ en esta última, $168w=150u-28w$, es
+decir, $196w=150u$ y $w=\frac{75}{98}u$. Entonces
+$35v=60u-28\cdot\frac{75}{98}u=\frac{270}{7}u$, y $v=\frac{54}{49}u=\frac{108}{98}u$.
+Así $(u,v,w)$ es proporcional a $(98,108,75)$, cuya suma es $281$; la
+normalización da
+\[
+\boxed{\pi=\left(\frac{98}{281},\frac{108}{281},\frac{75}{281}\right).}
+\]
+Se verifica, por ejemplo, que
+\[
+\frac{98}{281}\frac17+\frac{108}{281}\frac12
++\frac{75}{281}\frac25
+=\frac{14+54+30}{281}=\frac{98}{281}.
+\]
+El mismo procedimiento verifica las otras dos coordenadas (comprobación exacta en
+racionales en \nolinkurl{verificaciones/verificar_complementos_s01.py}).
+Este cálculo revela la distinción entre \emph{probabilidad de transición}
+y \emph{probabilidad de ocupación a largo plazo}: no son iguales por
+definición. Una distribución inicial arbitraria evoluciona como
+$\pi_t=\pi_0P^t$ y se aproxima a la estacionaria bajo las hipótesis
+mencionadas. En lenguaje real, las probabilidades condicionadas suelen
+cambiar con el contexto y no existe necesariamente una matriz homogénea
+fija en ese sentido.
+
+\begin{puente}
+Este es el punto de contacto directo con el curso paralelo de Series
+de Tiempo: cadenas de Markov, matrices estocásticas, distribución invariante
+y pronóstico condicional. Más adelante podremos comparar esta representación
+con modelos ocultos de Markov y modelos de estado, pero en S01 no es
+necesario introducir sus algoritmos.
+\end{puente}
+
+\paragraph{Tasa de entropía de una cadena estacionaria}
+\begin{proposicion}[Tasa de entropía]\label{s01:prop:tasa}
+Sea una cadena homogénea con matriz $P$ y $X_1\sim\pi$, con $\pi$ estacionaria.
+Entonces $H(X_{1:T})=H(\pi)+(T-1)\,H_\infty(P,\pi)$, con
+\[
+H_\infty(P,\pi)=-\sum_{i}\pi_i\sum_{j}P_{ij}\log_2P_{ij},
+\]
+y en consecuencia $\lim_{T\to\infty}T^{-1}H(X_{1:T})=H_\infty(P,\pi)$.
+\end{proposicion}
+\begin{proof}
+(a) \emph{Regla de la cadena de la entropía} (Proposición~\ref{s01:prop:cadenaH}):
+$H(X_{1:T})=H(X_1)+\sum_{t=2}^TH(X_t\mid X_{<t})$.
+(b) \emph{Propiedad de Markov:} $p(x_t\mid x_{<t})=P_{x_{t-1}x_t}$, así que
+$H(X_t\mid X_{<t})=-\sum_{x_{1:t}}p(x_{1:t})\log_2P_{x_{t-1}x_t}
+=-\sum_{i,j}\Pr(X_{t-1}=i,X_t=j)\log_2P_{ij}=H(X_t\mid X_{t-1})$.
+(c) \emph{Estacionariedad:} si $X_s\sim\pi$, entonces $X_{s+1}\sim\pi P=\pi$; por
+inducción, $X_{t-1}\sim\pi$ y $\Pr(X_{t-1}=i,X_t=j)=\pi_iP_{ij}$, de donde
+$H(X_t\mid X_{t-1})=H_\infty(P,\pi)$ para todo $t\ge2$.
+Como $X_1\sim\pi$, $H(X_1)=H(\pi)$. Sumando,
+$H(X_{1:T})=H(\pi)+(T-1)H_\infty$; al dividir por $T$, el término $H(\pi)/T$
+tiende a cero.
+\end{proof}
+\noindent Hay dos lecciones: el costo de representar el símbolo inicial
+no desaparece en una cadena corta y la entropía marginal $H(\pi)$
+no coincide necesariamente con la entropía condicional media. Para la matriz
+suavizada anterior, $H(\pi)\approx1.568836$ bits y
+$H_\infty(P,\pi)\approx1.472301$ bits (cifras verificadas): conocer el estado
+previo reduce poco la incertidumbre, porque las filas de $P$ son parecidas.
+Si la cadena no arranca en la estacionaria, el paso (c) falla para $t$ pequeño,
+pero el Teorema~\ref{s01:teo:estacionaria} hace que el límite no cambie en el caso
+estrictamente positivo.
+
+\begin{ejemplo}[Un contraste con números sencillos]
+Si las transiciones son independientes del estado anterior y cada fila
+es $(1/2,1/2)$, entonces $H(X_t\mid X_{t-1})=1$ bit y la cadena
+no aprovecha memoria. En cambio, para
+$P=\left(\begin{smallmatrix}0.9&0.1\\0.1&0.9\end{smallmatrix}\right)$
+la estacionaria es uniforme, $H(X_t)=1$ bit, pero
+\[
+H(X_t\mid X_{t-1})=-0.9\log_20.9-0.1\log_20.1\approx0.4690
+\text{ bits}.
+\]
+El conocimiento del estado anterior reduce la incertidumbre de
+la siguiente observación sin cambiar la distribución marginal.
+\end{ejemplo}
+\volvera{el Caso B y las métricas de \texttt{abca} (sección~\ref{s01:cap:laboratorios}) y en el Complemento~\ref{s01:comp:condicional}}
+
+% ---------------------------------------------------------------- C10
+\complemento{Perplejidad, bits por carácter, códigos y longitud de las secuencias}{s01:comp:ppl}
+\paragraph{La perplejidad como transformación de la pérdida}
+Para una realización observada y $\rho_t=q(x_t\mid x_{<t})>0$,
+\[
+\operatorname{PPL}=\exp\left(-\frac1T\sum_{t=1}^T\ln \rho_t\right)
+=\left(\prod_{t=1}^T\frac1{\rho_t}\right)^{1/T}.
+\]
+La igualdad se obtiene aplicando $\exp(-\frac1T\sum\ln\rho_t)=\prod_t\exp(-\ln\rho_t)^{1/T}$
+y $\exp(-\ln\rho_t)=1/\rho_t$. Si $\rho_t=0$
+para algún evento observado, la pérdida y la perplejidad son infinitas.
+Si todos los eventos reciben probabilidad $1/K$, la PPL vale
+$\bigl(K^T\bigr)^{1/T}=K$.
+
+\paragraph{Producto de probabilidades y probabilidad inicial}
+Una matriz de transición por sí sola solo especifica las probabilidades
+condicionales de pasos consecutivos. Para dar una ley sobre cadenas de
+longitud $T$ se debe fijar $\pi_0=p(X_1)$ o condicionar explícitamente al símbolo
+inicial. Si la prueba \texttt{abca} tiene transición total $1/35$ bajo
+$\alpha=1$ y la inicial es uniforme, su probabilidad conjunta es $1/105$.
+Este detalle afecta el número de factores $T$ y el denominador de la PPL.
+
+\paragraph{Bits por carácter: condiciones de la definición}
+En la Definición~\ref{s01:def:bpc}, si $\tau$ es una tokenización reversible y la
+probabilidad cubre el texto completo y todas las marcas que lo determinan, el BPC
+representa una tasa ideal por carácter. De otro modo puede faltar información para
+reconstruir el texto. El nombre BPC requiere especificar si se cuentan
+puntos de código Unicode, bytes o grafemas y cómo se tratan saltos de línea.
+
+\begin{proposicion}[Relación entre PPL y BPC bajo una tokenización fijada]\label{s01:prop:pplbpc}
+Si la segmentación $\tau(z)$ contiene $T$ tokens, $q(\tau(z))=\prod_{t=1}^T\rho_t$
+y la perplejidad en base 2 se calculó sobre exactamente esos $T$ eventos, entonces
+$\operatorname{BPC}(z;q)=\frac{T}{|z|}\log_2\operatorname{PPL}_q$.
+\end{proposicion}
+\begin{proof}
+Por definición, $\operatorname{PPL}_q=2^{L_2}$ con
+$L_2=-\frac1T\sum_t\log_2\rho_t=-\frac1T\log_2q(\tau(z))=\operatorname{bits}(z)/T$.
+Luego $\operatorname{bits}(z)=T\log_2\operatorname{PPL}_q$, y al dividir por $|z|$
+se obtiene la fórmula.
+\end{proof}
+\noindent La fórmula es algebraica; no autoriza mezclar valores de PPL, $T$ y $|z|$
+provenientes de convenciones o textos distintos. En el ejemplo A/B de la
+sección~\ref{s01:cap:informacion}, $\operatorname{BPC}_A=\frac{100}{100}\log_2 3.2$
+y $\operatorname{BPC}_B=\frac{30}{100}\log_2 25$.
+
+\paragraph{Soporte, símbolos desconocidos y final de secuencia}
+
+El suavizado aditivo distribuye masa positiva entre los $K$ símbolos
+incluidos en el vocabulario del modelo. \emph{No asigna automáticamente}
+probabilidad a cualquier símbolo que no pertenezca a ese vocabulario.
+En un modelo de palabras entrenado con $V$, una palabra nueva necesita
+una decisión de representación: sustituirse por un símbolo
+$\langle\mathrm{UNK}\rangle$, segmentarse en unidades menores o
+admitirse mediante algún mecanismo adicional.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+ box/.style={draw=azul,fill=azulclaro,rounded corners,align=center,text width=3.1cm,minimum height=9mm}]
+\node[box](a)at(0,0){Palabra de prueba\\\texttt{revestidor}};
+\node[box](b)at(4.1,1){Vocabulario de palabras\\\texttt{<UNK>}};
+\node[box](c)at(4.1,-1){Vocabulario subléxico\\varias unidades};
+\draw[->,thick] (a)--(b);\draw[->,thick] (a)--(c);
+\end{tikzpicture}
+\caption{Dos políticas distintas para un símbolo no visto; no son intercambiables.}
+\end{figure}
+
+Si además la longitud de la cadena es variable, necesitamos fijar
+cómo termina la secuencia. Una construcción usual introduce un símbolo
+de fin $\langle/\mathrm{s}\rangle$ y asigna probabilidades a las
+transiciones hasta encontrarlo. De este modo, bajo hipótesis de
+terminación adecuadas, el modelo determina una ley sobre cadenas
+finitas de longitudes variables. Si se omite la probabilidad de parar,
+la suma de probabilidades de cadenas completas puede no estar
+bien definida.
+
+\begin{ejemplo}[Parada con probabilidad geométrica]
+Considérese un generador que emite un símbolo ordinario con probabilidad
+$1-r$ y termina con probabilidad $r\in(0,1)$ en cada paso, con decisiones
+independientes. Si $M$ es el número de símbolos ordinarios previos al fin,
+el evento $\{M=n\}$ consiste en $n$ continuaciones seguidas de una parada; por la
+independencia,
+\[
+P(M=n)=(1-r)^nr,\quad n=0,1,2,\ldots
+\]
+La probabilidad de que haya al menos $t_{\max}$ símbolos es la cola de una serie
+geométrica,
+$P(M\ge t_{\max})=\sum_{n\ge t_{\max}}(1-r)^nr=r\frac{(1-r)^{t_{\max}}}{1-(1-r)}=(1-r)^{t_{\max}}$.
+Para la media usamos la fórmula de las colas: como los términos son no negativos,
+puede intercambiarse el orden de suma en
+$\sum_nnP(M=n)=\sum_n\sum_{k=1}^nP(M=n)=\sum_{k\ge1}P(M\ge k)$, de donde
+\[
+\mathbb E[M]=\sum_{k\ge1}(1-r)^k=\frac{1-r}{r}.
+\]
+Al limitar la generación a un máximo de $t_{\max}$ símbolos mediante un arnés,
+la probabilidad de truncamiento es $P(M\ge t_{\max})=(1-r)^{t_{\max}}$.
+Esta cuenta es una idealización explícita: en un LLM real la probabilidad
+de fin depende de la historia y la política de decodificación. Si las decisiones
+no fueran independientes o $r$ cambiara con el paso, $M$ no sería geométrica.
+\end{ejemplo}
+
+\paragraph{Códigos ideales y límites de interpretación}
+
+La cantidad $-\log_2q(x)$ se interpreta como longitud de código ideal
+según $q$. Esto motiva tanto la entropía como la divergencia KL:
+si los datos siguen $p$ pero se utiliza $q$,
+\[
+\mathbb E_p[-\log_2q(X)]-\mathbb E_p[-\log_2p(X)]
+=D_{\rm KL}(p\|q),
+\]
+por la Proposición~\ref{s01:prop:cruzada}.
+Es el exceso esperado de longitud ideal, no una promesa de que
+cualquier compresor real tenga exactamente esa longitud en un archivo.
+Los códigos binarios de longitud entera deben cumplir restricciones
+como la \emph{desigualdad de Kraft}: existe un código binario de prefijo (ninguna
+palabra es inicio de otra) con longitudes $\ell_1,\ldots,\ell_K$ si y solo si
+$\sum_i2^{-\ell_i}\le1$ \citep[cap.~5]{cover2006}. Además, agregan sobrecostos de
+cabecera, fronteras y representación.
+
+\begin{ejemplo}[Cuando la entropía no es el costo de un símbolo concreto]
+Para $p=(1/2,1/4,1/4)$, el símbolo de probabilidad $1/2$ contribuye
+$1$ bit si ocurre, mientras que cada símbolo de probabilidad $1/4$
+contribuye $2$ bits. La entropía $1.5$ bits es un \emph{promedio esperado},
+no la longitud de cada realización. Con un código de prefijo
+$\{0,10,11\}$ las longitudes individuales son exactamente $(1,2,2)$,
+cumplen Kraft con igualdad ($\frac12+\frac14+\frac14=1$)
+y el promedio coincide con 1.5 bits.
+\end{ejemplo}
+\volvera{la definición de perplejidad, la Definición~\ref{s01:def:bpc}, el ejemplo A/B (sección~\ref{s01:cap:informacion}) y las métricas de \texttt{abca} (sección~\ref{s01:cap:laboratorios})}
+
+% ---------------------------------------------------------------- C11
+\complemento{BPE: reducción exacta y ausencia de optimalidad global}{s01:comp:bpe}
+\paragraph{Codificación por pares de bytes: reducción local}
+Sea un corpus representado por palabras $w$ con frecuencias $f(w)$ y
+segmentaciones $s_w$, y sea $L=\sum_wf(w)\,|s_w|$ su longitud ponderada.
+\begin{proposicion}[Reducción exacta]\label{s01:prop:bpe}
+Si la fusión del par $(u,v)$ efectúa $k_w$ sustituciones no solapadas en la
+palabra $w$, la longitud ponderada disminuye exactamente en
+$\sum_wf(w)\,k_w$, el número de sustituciones efectivas ponderadas.
+\end{proposicion}
+\begin{proof}
+Cada sustitución reemplaza dos unidades consecutivas por una, lo que reduce en uno
+la longitud de $s_w$. Como las sustituciones no se solapan, actúan sobre posiciones
+disjuntas y sus reducciones se suman: $|s_w|$ disminuye en $k_w$. Al ponderar por
+$f(w)$ y sumar sobre las palabras se obtiene el resultado.
+\end{proof}
+Cada reemplazo \emph{no solapado} de $u,v$ por $uv$ disminuye
+el número de símbolos en una unidad. Si se ejecutan $k$ reemplazos,
+la longitud total desciende exactamente $k$. Para el par $(a,a)$ en
+$\texttt{aaaaa}$ se cuentan cuatro apariciones solapadas pero solo dos
+reemplazos no solapados de izquierda a derecha: la disminución es dos.
+Por ello, una implementación que cuenta pares brutos debe separar
+``frecuencia'' de ``reemplazos efectivos''.
+% [R8] Recuperado de v0.6 (l. 1235-1242).
+Una fila del registro tiene dos contadores posibles: frecuencia bruta
+del par y número de sustituciones efectivas. Cuando existen
+solapamientos no tienen por qué coincidir. La comprobación correcta es
+\[
+\text{longitud anterior}-\text{longitud nueva}
+=\text{número de sustituciones efectivas ponderadas}.
+\]
+En las seis fusiones del corpus \emph{casa}, \emph{casas}, \emph{cosa},
+\emph{cosas}, \emph{caso}, las reducciones $16,11,11,9,9,6$ coinciden con las
+sustituciones efectivas de cada paso (verificado).
+
+\paragraph{Por qué BPE no prueba un óptimo global}
+El algoritmo elige, en cada paso, el par de mayor frecuencia y toma una
+decisión local. Aunque disminuye la longitud inmediatamente, cambiar las
+fusiones tempranas cambia el conjunto de pares futuros; por ello la
+propiedad local no implica optimalidad global con un presupuesto dado de
+fusiones. También debe documentarse la política de desempate.
+\begin{ejemplo}[Contraejemplo verificado con dos fusiones]
+Considérese el corpus \emph{bdac} (4), \emph{ebac} (4), \emph{bad} (5) y
+\emph{feb} (4), segmentado en caracteres y sin marcador de fin. Su longitud
+ponderada es $4\cdot4+4\cdot4+3\cdot5+3\cdot4=59$. Las frecuencias iniciales son
+$(b,a)=9$, $(a,c)=8$, $(e,b)=8$, $(a,d)=5$ y $4$ para los demás pares; no hay
+empates en el máximo.
+\begin{itemize}
+\item \emph{Ruta voraz:} fusiona $(b,a)$ (reducción 9). En \emph{ebac} el par
+$(a,c)$ desaparece, porque \texttt{a} queda dentro de \texttt{ba}, y la frecuencia
+de $(a,c)$ cae a 4; el nuevo máximo es $(ba,d)=5$. Longitud final:
+$59-9-5=45$.
+\item \emph{Ruta óptima:} fusionar $(a,c)$ (reducción 8) y después $(e,b)$, cuyos
+dos usos siguen intactos (reducción 8). Longitud final: $59-8-8=43$.
+\end{itemize}
+Con presupuesto de dos fusiones, BPE deja $45>43$ unidades. La búsqueda exhaustiva
+de las rutas, la ausencia de empates y las longitudes están en
+\nolinkurl{verificaciones/verificar_complementos_s01.py}. El ejemplo es
+\textbf{ILUSTRATIVO}: muestra una posibilidad lógica, no la frecuencia del fenómeno
+en corpus reales.
+\end{ejemplo}
+\volvera{la Definición~\ref{s01:def:bpe} y en la tabla de fusiones (sección~\ref{s01:cap:tokens})}
+
+% ---------------------------------------------------------------- C12
+\complemento{Incertidumbre experimental: diferencias pareadas y bootstrap}{s01:comp:bootstrap}
+Supongamos que se quiere comparar dos procedimientos A y B en $J$
+documentos reservados. Si $L_{A,j}$ y $L_{B,j}$ denotan las pérdidas
+en el mismo documento $j$, definimos
+\[
+\Delta_j=L_{A,j}-L_{B,j},\qquad \bar\Delta=\frac1J\sum_{j=1}^J\Delta_j.
+\]
+Un análisis pareado retiene la estructura de comparación: cada documento
+aporta una diferencia. Si las unidades documentales son razonablemente
+independientes, su error estándar clásico es $s_\Delta/\sqrt J$, donde
+\[
+s_\Delta^2=\frac1{J-1}\sum_{j=1}^J(\Delta_j-\bar\Delta)^2.
+\]
+Este error estándar y los intervalos que se construyen con él no
+resultan válidos por el mero hecho de tener millones de tokens: los
+símbolos dentro de un mismo documento comparten dependencias.
+
+En investigación con textos técnicos, varios documentos del mismo pozo,
+incidente o empresa también pueden estar correlacionados. En ese caso la
+unidad de remuestreo puede necesitar elevarse hasta el pozo, incidente o
+fuente, según la pregunta y el proceso de muestreo. Una comparación que
+ignora esto puede aparentar una precisión mayor de la real.
+
+\begin{ejemplo}[Diferencias pareadas construidas para ilustrar el método]
+Considérense cuatro documentos con diferencias en BPC
+$(-0.20,0.10,-0.10,0.00)$, calculadas como A menos B.
+Su promedio es $-0.05$ BPC. Los cuadrados respecto de la media son
+$0.0225,0.0225,0.0025,0.0025$; la suma es $0.05$.
+La varianza muestral es $0.05/3\approx0.01667$ y el error estándar
+$\sqrt{0.01667/4}\approx0.06455$. Con solo cuatro documentos,
+el valor puntual no debe venderse como efecto establecido. El ejemplo es
+\textbf{ILUSTRATIVO}, no procede de una prueba real.
+\end{ejemplo}
+
+\begin{definicion}[Bootstrap pareado e intervalo percentil]\label{s01:def:bootstrap}
+Dadas las diferencias $\Delta_1,\ldots,\Delta_J$, una \emph{remuestra bootstrap}
+es $(\Delta_{i_1},\ldots,\Delta_{i_J})$, con índices $i_1,\ldots,i_J$
+independientes y uniformes en $\{1,\ldots,J\}$; su estadístico es la media
+$\bar\Delta^*=J^{-1}\sum_k\Delta_{i_k}$. La \emph{distribución bootstrap} es la ley
+de $\bar\Delta^*$ dados los datos. Como hay $M=J^J$ vectores de índices igualmente
+probables, puede enumerarse exactamente cuando $J$ es pequeño. Sean
+$s_{(1)}\le\cdots\le s_{(M)}$ las $M$ medias ordenadas, $h=(M-1)p$ y
+$\ell=\lfloor h\rfloor$; el \emph{cuantil empírico} de orden $p$ es
+$Q(p)=s_{(\ell+1)}+(h-\ell)\bigl(s_{(\ell+2)}-s_{(\ell+1)}\bigr)$, por interpolación
+lineal (con $s_{(M+1)}:=s_{(M)}$). El \emph{intervalo percentil} nominal de nivel
+$1-\gamma$ es $[Q(\gamma/2),Q(1-\gamma/2)]$.
+\end{definicion}
+\noindent El procedimiento se debe a \citet{efron1979}; una exposición completa está
+en \citet{efron1993}. En el laboratorio, $J=6$, $M=6^6=46656$, $\bar\Delta\approx-0.54025$
+y el intervalo del 95\% es $[-0.66771,-0.42038]$; el verificador lo reproduce con
+la misma regla de cuantiles que \nolinkurl{codigo/experimento_s01.py}.
+\begin{observacion}[Hipótesis y alcance]
+El calificativo «nominal» indica que la cobertura del 95\% es una propiedad
+asintótica, que requiere unidades independientes e idénticamente distribuidas y
+un número de unidades grande; con seis frases sintéticas no hay garantía de
+cobertura. Si las unidades remuestreadas no son las unidades independientes (por
+ejemplo, caracteres de un mismo documento), la distribución bootstrap subestima la
+variabilidad y el intervalo resulta demasiado estrecho.
+\end{observacion}
+\volvera{el apartado L4 del laboratorio computacional (sección~\ref{s01:cap:laboratorios})}

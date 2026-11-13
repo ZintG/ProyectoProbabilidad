@@ -1,0 +1,113 @@
+\chapter*{Parte II. De una frase a los bigramas y a las probabilidades}
+\addcontentsline{toc}{chapter}{Parte II. Tokenización, n-gramas y conteos}
+\section*{7. Unigramas, bigramas y trigramas: primero con palabras}
+Tomemos la oración \textbf{«el gato mira al perro»}. Separamos por espacios y obtenemos cinco tokens: \texttt{el}, \texttt{gato}, \texttt{mira}, \texttt{al}, \texttt{perro}. Los \emph{unigramas} son las unidades individuales; los \emph{bigramas} son pares \emph{consecutivos}; los \emph{trigramas} son grupos de tres unidades consecutivas.
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\small},t/.style={draw=azul,fill=azulclaro,minimum width=22mm,minimum height=9mm,rounded corners}]
+\foreach \x/\w in {0/el,2.35/gato,4.7/mira,7.05/al,9.4/perro} {\node[t] at (\x,0){\w};}
+\draw[very thick,verde](-1,-.72)--(3.35,-.72);\node[font=\scriptsize,verde] at (1.18,-1.0){bigrama: el gato};
+\draw[very thick,vino](3.7,.68)--(10.5,.68);\node[font=\scriptsize,vino] at (7.1,1.0){trigrama: mira al perro};
+\end{tikzpicture}
+\end{center}
+\begin{center}
+\begin{tabular}{lll}\toprule
+Unigramas (5) & Bigramas (4) & Trigramas (3)\\\midrule
+el & el gato & el gato mira\\
+gato & gato mira & gato mira al\\
+mira & mira al & mira al perro\\
+al & al perro & \\
+perro & & \\\bottomrule
+\end{tabular}
+\end{center}
+\noindent\textbf{Regla general:} con $T$ tokens y sin añadir marcadores, existen $T-n+1$ ventanas de longitud $n$ si $1\le n\le T$. La colección de ventanas conserva el orden \emph{dentro de cada ventana}, pero no necesariamente el orden entre ventanas si se usa una representación de bolsa.
+
+\section*{8. ¿En qué difieren secuencia, conjunto y bolsa?}
+Consideremos \texttt{gato gato perro}. Como secuencia es una lista ordenada de tres entradas. Como conjunto de tipos distintos, $\{\texttt{gato},\texttt{perro}\}$, pierde multiplicidades y orden. Una \emph{bolsa de palabras} conserva frecuencias: \texttt{gato}: 2, \texttt{perro}: 1, pero no el orden. Una \emph{bolsa de bigramas} cuenta ventanas de dos tokens conservando su identidad de par, aunque descarta sus posiciones. No son nociones intercambiables.
+\begin{center}
+\begin{tikzpicture}[font=\small, b/.style={draw=azul,rounded corners,minimum width=35mm,minimum height=10mm,align=center,fill=azulclaro}]
+\node[b] at (0,0){Secuencia\\\texttt{gato,gato,perro}};
+\node[b] at (4.3,0){Conjunto\\\texttt{\{gato,perro\}}};
+\node[b] at (8.6,0){Bolsa\\\texttt{gato:2,perro:1}};
+\end{tikzpicture}
+\end{center}
+\noindent\textbf{Pregunta:} ¿pueden «el gato muerde al perro» y «el perro muerde al gato» compartir una misma bolsa de palabras? Sí. Sus bigramas, en cambio, contienen información local diferente.
+
+\section*{9. Ahora usemos tres símbolos: una cadena que podemos contar completa}
+Pasamos a un ejemplo pequeño para hacer cuentas sin ordenador. La cadena \texttt{abacabbacb} tiene diez posiciones y, si no usamos marcadores de inicio y fin, nueve transiciones. La escribimos numerando sus posiciones:
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\small},token/.style={draw=azul,rounded corners=2pt,fill=azulclaro,minimum width=9mm,minimum height=9mm}]
+\foreach \i/\v in {1/a,2/b,3/a,4/c,5/a,6/b,7/b,8/a,9/c,10/b} {
+\node[token] at ({(\i-1)*1.03},0) (t\i) {\texttt{\v}};
+\node[font=\scriptsize,gris] at ({(\i-1)*1.03},.75) {\i};
+}
+\foreach \i in {1,...,9} {\pgfmathtruncatemacro\j{\i+1} \draw[->,verde,thin] (t\i.south east) to[bend right=25] (t\j.south west);}
+\end{tikzpicture}
+\end{center}
+\begin{center}
+\begin{tabular}{c|ccccccccc}\toprule
+Posición inicial &1&2&3&4&5&6&7&8&9\\\midrule
+Bigrama & ab&ba&ac&ca&ab&bb&ba&ac&cb\\\bottomrule
+\end{tabular}
+\end{center}
+En esta tabla, el primer símbolo del par es el \emph{contexto} y el segundo es la \emph{continuación}. Contemos transiciones sin ninguna fórmula:
+\begin{center}
+\begin{tabular}{c|ccc|c}\toprule
+Contexto $\downarrow$ / siguiente $\to$ & $a$&$b$&$c$&Total\\\midrule
+$a$&0&2&2&4\\
+$b$&2&1&0&3\\
+$c$&1&1&0&2\\\midrule
+Total&3&4&2&9\\\bottomrule
+\end{tabular}
+\end{center}
+\textbf{De la tabla a la matriz:} ahora sí tiene sentido escribir
+\[
+C=\begin{pmatrix}0&2&2\\2&1&0\\1&1&0\end{pmatrix},
+\qquad\sum_{i,j}C_{ij}=9.
+\]
+La matriz no añade un concepto nuevo: \emph{es simplemente la misma tabla, sin rótulos}. Las filas y columnas se ordenan como $a,b,c$.
+
+\section*{10. ¿Cómo se convierte un conteo en una predicción?}
+Si hemos visto cuatro continuaciones después de $a$, dos fueron $b$ y dos fueron $c$. La frecuencia relativa de $b$ en ese contexto es $2/4=1/2$; para $c$ también $1/2$. Para $a$ fue $0/4=0$.
+\begin{center}
+\begin{tikzpicture}[font=\small,>=Stealth]
+\node[draw,circle,fill=azulclaro,minimum size=12mm] (a) at (0,0) {$a$};
+\node[draw,circle,fill=verdeclaro,minimum size=10mm] (b) at (4,1.2) {$b$};
+\node[draw,circle,fill=verdeclaro,minimum size=10mm] (c) at (4,-1.2) {$c$};
+\draw[->,thick,verde] (a)--node[above] {$2/4$}(b);
+\draw[->,thick,verde] (a)--node[below] {$2/4$}(c);
+\node[align=left] at (8,0){Contexto: $a$\\Siguiente: $b$ o $c$\\Probabilidades: $0.5,0.5$};
+\end{tikzpicture}
+\end{center}
+Si dividimos cada fila de $C$ por su total, obtenemos una \emph{matriz de transición}:
+\[
+\widehat P=\begin{pmatrix}0&1/2&1/2\\2/3&1/3&0\\1/2&1/2&0\end{pmatrix}.
+\]
+Cada fila suma uno. La entrada $(i,j)$ se interpreta como probabilidad estimada del siguiente símbolo $j$ cuando el anterior fue $i$. A este estimador de probabilidades por frecuencias se le llama \emph{máxima verosimilitud} (MLE): derivaremos el nombre en la siguiente parte.
+
+\section*{11. Un problema real para nuestro modelo pequeño: lo no observado}
+La transición $b\to c$ no apareció en la cadena. El modelo por frecuencias le asigna probabilidad cero. Sin embargo, que no haya ocurrido en una muestra \emph{no demuestra} que sea imposible en textos nuevos.
+\begin{center}
+\begin{tikzpicture}[font=\small,>=Stealth]
+\node[draw,rounded corners,fill=azulclaro,minimum height=10mm] (d) at (0,0){Entrenamiento: \texttt{abacabbacb}};
+\node[draw,rounded corners,fill=vinoclaro,minimum height=10mm] (p) at (5.5,0){Prueba: \texttt{abca}};
+\draw[->,thick] (d)--node[above,align=center,font=\scriptsize]{modelo de\\bigramas}(p);
+\node[font=\small,vino] at (5.5,-.9){En prueba aparece $b\to c$: MLE da $0$};
+\end{tikzpicture}
+\end{center}
+Esta dificultad motiva el \emph{suavizado}: reservar algo de probabilidad para resultados ausentes de la muestra. Con pseudoconteo $\alpha=1$ y tres símbolos:
+\[
+\widehat P_{\alpha=1}=\begin{pmatrix}1/7&3/7&3/7\\1/2&1/3&1/6\\2/5&2/5&1/5\end{pmatrix}.
+\]
+\textbf{Verificación a mano:} en la fila $a$ contamos $(0,2,2)$ y añadimos uno a cada columna: $(1,3,3)$. El denominador es $4+3=7$, no $6$. En la fila $b$, $(2,1,0)\mapsto(3,2,1)$ y dividimos por $6$.
+
+\section*{12. ¿Qué predice exactamente un modelo de bigramas?}
+Para \texttt{abca}, bajo el modelo suavizado, podemos evaluar las transiciones $a\to b$, $b\to c$, $c\to a$:
+\[
+\Pr(b\mid a)\Pr(c\mid b)\Pr(a\mid c)=\frac37\cdot\frac16\cdot\frac25=\frac1{35}.
+\]
+Este producto es la \emph{probabilidad condicional de las tres continuaciones dado el primer símbolo}. Para obtener la probabilidad conjunta de la secuencia hay que multiplicar también la probabilidad inicial. Por ejemplo, si $\Pr(X_1=a)=1/3$, entonces $\Pr(\texttt{abca})=1/105$. No debemos llamar \emph{conjunta} a $1/35$.
+
+\begin{idea}[Lo que ya sabemos]
+Sin usar cálculo avanzado hemos definido una unidad (token), formado ventanas (bigramas), construido un conteo, interpretado una probabilidad condicional y detectado por qué un modelo necesita tratar eventos ausentes. La matemática que sigue explica y generaliza exactamente estas operaciones.
+\end{idea}
+\clearpage

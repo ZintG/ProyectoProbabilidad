@@ -1,0 +1,55 @@
+
+\chapter*{Microexperimento IC10: cambiar realmente el tokenizador}
+\phantomsection\addcontentsline{toc}{chapter}{Microexperimento IC10: tokenizadores comparables}
+\label{lab:ic10}
+\begin{idea}[Ahora si cambiamos la representacion, no el estimador de probabilidades]
+En el laboratorio anterior se compararon \emph{dos bigramas de caracteres}
+con distinta procedencia de datos. Aquello ilustra estimacion de
+probabilidades. Aqui comparamos dos \emph{tokenizadores BPE} que aprenden
+fusiones diferentes, uno en prosa general y otro en prosa tecnica, con el
+\textbf{mismo presupuesto de 20 fusiones}. Esta es una primera medicion de
+la variable de representacion que estudia IC10, sin afirmar que un
+modelo de lenguaje mejora por ello.
+\end{idea}
+\section*{Reglas transparentes}
+La unidad inicial de cada palabra es un punto de código Unicode; se añade
+un marcador \texttt{</w>} para no fusionar entre palabras. Cada paso combina
+el par de unidades adyacentes mas frecuente del corpus de entrenamiento
+(con desempate lexicografico). Las reglas se aplican, en el orden en que
+se aprendieron, a las \textbf{mismas seis frases tecnicas de prueba}.
+La separacion entrenamiento/prueba es por documento. Se conserva la
+normalizacion explicita: minusculas, recorte externo de espacios y
+separacion por blancos. No se eliminan acentos, ni se usa el texto de
+prueba para elegir fusiones. Este BPE didactico no es el tokenizador de
+un modelo neuronal preentrenado.
+\section*{Resultado verificado en Python, datos sinteticos}
+\begin{center}\begin{tabular}{lrrr}\toprule
+Tokenizador & Palabras de prueba & Tokens en prueba & Tokens/palabra\\\midrule
+BPE entrenado con prosa general & 35 & 148 & 4.228571\\
+BPE entrenado con texto tecnico & 35 & 127 & 3.628571\\\bottomrule
+\end{tabular}\end{center}
+La diferencia agregada es $127-148=-21$ tokens y
+$3.628571-4.228571=-0.600000$ tokens por palabra, bajo estas reglas.
+La tabla por documento se genera en
+\nolinkurl{experimentos/resultados_ic10_tokenizacion.csv}; las veinte
+fusiones de cada modelo, en \nolinkurl{experimentos/fusiones_ic10.csv}.
+\begin{verificacion}[Interpretacion responsable]
+El resultado no permite afirmar que un modelo general tenga peor
+perplejidad ni que el tokenizador especializado mejore una tarea aplicada.
+Para contrastar \textbf{bits por caracter} entre tokenizadores se
+necesita asignar probabilidades normalizadas y compatibles a las mismas
+secuencias (incluyendo convenciones de fronteras y fin), y evaluar en
+textos reservados. Menos tokens significa \emph{otra segmentacion}; no
+implica por si solo menor entropia cruzada ni mejor generalizacion.
+\end{verificacion}
+\section*{Ejecucion y reporte}
+\begin{verbatim}
+python codigo/ic10_tokenizadores.py
+# En un equipo con R instalado:
+Rscript codigo/ic10_tokenizadores.R
+python verificaciones/comparar_r_python.py
+\end{verbatim}
+El estudiante reporta las dos comparaciones por separado:
+\textbf{A)} corpus de entrenamiento frente a BPC de bigramas por
+caracteres; \textbf{B)} entrenamiento del tokenizador frente a tokens por
+palabra. Ambas son ilustrativas y no equivalen a un estudio industrial.

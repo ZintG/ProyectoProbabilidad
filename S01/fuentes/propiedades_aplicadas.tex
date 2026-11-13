@@ -1,0 +1,99 @@
+\chapter*{Dos propiedades que conectan información y modelado}
+\addcontentsline{toc}{chapter}{Propiedades que conectan información y modelado}
+
+\section*{La información no aumenta al agrupar categorías}
+\addcontentsline{toc}{section}{Agregación y divergencia KL}
+Supongamos que un experimento observa tres categorías, pero un instrumento
+solo informa si ocurrió $a$ o si ocurrió alguna de las otras dos.
+La transformación $f: \{a,b,c\}\to\{a,\mathrm{otro}\}$ agrupa
+los resultados $b$ y $c$. Para
+$p=(1/2,1/4,1/4)$ y $q=(1/4,1/2,1/4)$, teníamos
+$D_{\rm KL}(p\|q)=1/4$ bit. Después de la agregación,
+\[
+ p_f=(1/2,1/2),\qquad q_f=(1/4,3/4),
+\]
+y la divergencia entre las distribuciones observables es
+\[
+\begin{split}
+D_{\rm KL}(p_f\|q_f)
+&=\frac12\log_2\frac{1/2}{1/4}
++\frac12\log_2\frac{1/2}{3/4}\\
+&=\frac12+\frac12\log_2\frac23
+\approx0.207519\ \text{bits}.
+\end{split}
+\]
+Ha disminuido respecto del $0.25$ original. Este ejemplo particular
+ilustra una propiedad general de la KL denominada \emph{procesamiento de
+datos}: al aplicar una transformación determinista común a los
+resultados, no aumenta la divergencia.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+ node/.style={draw=azul,rounded corners,fill=azulclaro,minimum width=17mm,minimum height=8mm}]
+\node[node](a)at(0,1){$a$};\node[node](b)at(0,0){$b$};\node[node](c)at(0,-1){$c$};
+\node[node](yes)at(6,0.8){$a$};\node[node](oth)at(6,-0.8){otro};
+\draw[->] (a)--(yes);\draw[->] (b)--(oth);\draw[->] (c)--(oth);
+\node at (3,-1.8) {La observación final olvida la distinción entre $b$ y $c$.};
+\end{tikzpicture}
+\caption{La agregación pierde información sobre la diferencia entre dos leyes.}
+\end{figure}
+
+\textbf{Justificación.} Si $A_y=f^{-1}(y)$, la desigualdad de suma logarítmica
+permite escribir
+\[
+\sum_{i\in A_y}p_i\ln\frac{p_i}{q_i}
+\ge\left(\sum_{i\in A_y}p_i\right)
+\ln\frac{\sum_{i\in A_y}p_i}{\sum_{i\in A_y}q_i}.
+\]
+Sumando en las categorías agregadas se obtiene
+$D_{\rm KL}(p\|q)\ge D_{\rm KL}(p_f\|q_f)$.
+La prueba exige las convenciones habituales de soporte, y no afirma
+que ambas divergencias tengan que ser diferentes: podrían coincidir.
+Este resultado es útil en investigación aplicada cuando un reporte
+técnico se reduce a etiquetas de eventos; esa reducción puede eliminar
+diferencias que existían a nivel textual.
+
+\section*{Por qué ampliar el contexto puede reducir la incertidumbre óptima}
+\addcontentsline{toc}{section}{Condicionar reduce la entropía en promedio}
+Sea $X$ el próximo símbolo, $Y$ el último símbolo observado y $Z$
+una porción anterior del contexto. La teoría de la información
+establece
+\[
+H(X\mid Y,Z)\le H(X\mid Y).
+\]
+No es una afirmación acerca de que \emph{cualquier modelo entrenado}
+con más contexto rendirá mejor. Es una desigualdad sobre las verdaderas
+entropías condicionales de una distribución fija.
+
+Para justificarla, definamos la información mutua condicional:
+\[
+I(X;Z\mid Y)
+=\mathbb E_{Y,Z}\Bigl[D_{\rm KL}\bigl(
+ p(X\mid Y,Z)\,\|\,p(X\mid Y)
+\bigr)\Bigr].
+\]
+Por Gibbs, el integrando es no negativo en cada contexto del soporte.
+Al expandir los logaritmos también se obtiene
+\[
+I(X;Z\mid Y)=H(X\mid Y)-H(X\mid Y,Z).
+\]
+Combinando ambas igualdades deducimos la desigualdad.
+La igualdad ocurre si $X$ y $Z$ son condicionalmente independientes dado $Y$.
+
+\begin{ejemplo}[Una dependencia que el último símbolo no explica]
+En la construcción $X_1$ y $X_2$ Bernoulli$(1/2)$ independientes y
+$X_3=X_1$, se tiene
+\[
+H(X_3\mid X_2)=1\ \text{bit},
+\qquad H(X_3\mid X_1,X_2)=0.
+\]
+La historia más amplia elimina toda incertidumbre \emph{verdadera}
+sobre $X_3$, mientras que el bigrama conserva un bit de incertidumbre.
+En muestras pequeñas, sin embargo, estimar más contextos puede aumentar
+la varianza y empeorar la predicción en prueba. Allí reaparece el
+compromiso entre capacidad del modelo, datos y suavizado.
+\end{ejemplo}
+La transición de este resultado a los Transformers es conceptual:
+el acceso a contexto amplio \emph{permite} representar dependencias
+que los bigramas descartan, pero aprenderlas de forma fiable exige
+datos, parametrización, optimización y evaluación, asuntos de S02--S05.

@@ -1,0 +1,128 @@
+\chapter*{Seminario de investigación: las preguntas comienzan hoy}
+\addcontentsline{toc}{chapter}{Seminario de investigación y proyecto}
+\begin{investigacion}[Meta intelectual de la última hora]
+No se pretende seleccionar un tema definitivo ni entregar un experimento acabado.
+Se pretende aprender a distinguir una demostración tecnológica de una pregunta
+contrastable y a identificar \textbf{dos áreas de interés}, con un párrafo razonado
+por área. La ficha formal será en S05; la línea base medida, en S06; y el
+prerregistro, en S07. Esta pauta procede del documento de investigación del curso,
+\emph{Integración e investigación aplicada}, capítulo 3 (2026).
+\end{investigacion}
+
+\section*{Problema inicial: tokenización de lenguaje técnico en español}
+\addcontentsline{toc}{section}{Una pregunta científica nacida de la teoría}
+Una herramienta puede fragmentar \emph{empacadura}, \emph{revestidor},
+\emph{pérdida de circulación} o \emph{9 5/8 pulgadas} de maneras distintas.
+Esta observación sugiere una pregunta, pero aún no constituye una hipótesis
+científica: ¿una tokenización especializada necesita menos unidades por término,
+y qué costo tiene ese ahorro en una predicción probabilística razonable?
+
+La matriz institucional identifica este hilo como \textbf{IC10}: penalización de
+la tokenización en textos técnicos en español. Los observables propuestos son
+\emph{tokens por palabra} y \emph{bits por carácter}; el catálogo vincula la
+primera exploración con D01 y D02. El documento proporciona \emph{referencias de
+fuentes de datos}, no un corpus descargado y preparado para la clase.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+ q/.style={draw=azul,fill=azulclaro,rounded corners,align=center,text width=3.2cm,minimum height=13mm}]
+\node[q] (p) at (0,0) {\textbf{Pregunta}\\¿Qué se fragmenta?};
+\node[q] (h) at (4.2,0) {\textbf{Hipótesis}\\un dominio cambia la tasa};
+\node[q] (m) at (8.4,0) {\textbf{Medida}\\tokens/palabra; BPC};
+\node[q] (d) at (8.4,-2.0) {\textbf{Datos}\\corpus con licencia};
+\node[q] (v) at (4.2,-2.0) {\textbf{Validación}\\documentos reservados};
+\node[q] (r) at (0,-2.0) {\textbf{Resultado}\\efecto e incertidumbre};
+\draw[->,thick] (p)--(h);\draw[->,thick] (h)--(m);\draw[->,thick] (m)--(d);\draw[->,thick] (d)--(v);\draw[->,thick] (v)--(r);
+\end{tikzpicture}
+\caption{Estructura mínima de una pregunta experimental para la trayectoria de investigación.}
+\end{figure}
+
+\section*{Cuatro distinciones que hacen investigable la pregunta}
+\addcontentsline{toc}{section}{Del prototipo a la investigación aplicada}
+\textbf{1. Variable observable.} La fracción de palabras partidas en subunidades
+no es idéntica a los bits por carácter. La primera caracteriza la representación;
+la segunda resume una pérdida probabilística si el modelo permite computarla.
+\textbf{2. Tratamiento.} Entrenar un nuevo BPE modifica la segmentación; cambiar
+simultáneamente arquitectura, número de parámetros y corpus no permite atribuir
+una mejora solo a la segmentación.
+\textbf{3. Unidad experimental.} Debe ser, cuando sea posible, el documento o
+el informe, no cada subfragmento del mismo archivo; de lo contrario,
+los intervalos basados en tokens individuales sobrestiman la precisión.
+\textbf{4. Generalización.} Un vocabulario reducido para diez términos elegidos a mano
+no es evidencia de efecto promedio en un dominio. Es una demostración inicial.
+
+\begin{ejemplo}[Cómo pasar de observación a hipótesis falsable]
+\textbf{Observación ilustrativa:} un tokenizador general parte el término
+\emph{revestidor} en más fragmentos que otro entrenado en textos de petróleo.
+\textbf{Hipótesis operacional futura:} sobre informes técnicos reservados,
+con normalización y tamaño de vocabulario previamente fijados,
+la diferencia media pareada de tokens por palabra es mayor que cero.
+\textbf{Evaluación:} informar media, intervalo de confianza por remuestreo de
+documentos y posibles fallas en términos que no estaban en el vocabulario.
+No se informa un resultado numérico porque los datos no han sido descargados
+ni el experimento ejecutado.
+\end{ejemplo}
+
+\section*{Fuentes candidatas, derechos y riesgos}
+\addcontentsline{toc}{section}{Fuentes y límites de la evidencia}
+\begin{center}\small
+\begin{tabularx}{\linewidth}{@{}p{1.2cm}p{3.3cm}Xp{2.6cm}@{}}\toprule
+ID & Fuente del catálogo & Uso inicial posible & Precaución\\\midrule
+D01 & Wikipedia (eswiki) & Corpus amplio de artículos en español y temas científicos & Atribución y condiciones de reutilización según volcado/licencia\\
+D02 & Proyecto Gutenberg & Obras en español para contraste con prosa técnica & Derecho de autor según país y obra; condiciones del portal\\
+D03 & Volve, Equinor & Candidato posterior para texto y series de petróleo & Verificar presencia de texto, autorización y licencia de los archivos\\\bottomrule
+\end{tabularx}
+\end{center}
+\textbf{Ubicaciones de origen:} \url{https://dumps.wikimedia.org/eswiki/},
+\url{https://www.gutenberg.org/} y
+\url{https://www.equinor.com/energy/volve-data-sharing}.
+La fuente de la licencia debe verificarse antes de redistribuir; la existencia
+de un catálogo no equivale a disponer de permiso para todo uso. La página de
+condiciones de Gutenberg señala explícitamente la necesidad de examinar los
+derechos en el país del usuario, además de los términos de la obra.
+
+\section*{Conexión con Series de Tiempo y con otras áreas}
+\addcontentsline{toc}{section}{Puente hacia Series de Tiempo}
+El objeto probabilístico $p(x_{1:T})$ aparece en ambos cursos. Una cadena de
+Markov utiliza una matriz de transición; un modelo de lenguaje tabular cuenta
+símbolos y estima esas transiciones. La similitud no implica que un LLM sea una
+cadena homogénea finita: sus condicionales pueden depender de una ventana amplia
+y de una función parametrizada por una red.
+
+Además de IC10, la matriz incluye problemas que conectan texto y pronóstico:
+PG02 (eventos de perforación), FI01 (tono de noticias y volatilidad) y EE01
+(demanda eléctrica con eventos textuales). Son \emph{posibilidades de exploración},
+no compromisos de ejecución en la S01. En trabajos de pronóstico con modelos
+preentrenados habrá que controlar también la fuga temporal y lo que el modelo
+pueda haber memorizado; una partición cronológica de nuestros archivos no elimina
+por sí sola ese riesgo.
+
+\section*{Guion de discusión de la última hora}
+\addcontentsline{toc}{section}{Preguntas que articulan la discusión}
+\begin{enumerate}
+\item ¿Qué hipótesis distingue una comparación de tokenizadores de una
+ comparación de modelos completos? Dar una variable que se pueda medir.
+\item ¿Qué evidencia refutaría la hipótesis en vez de confirmarla?
+\item ¿Qué datos hay hoy, cuáles requieren autorización y qué licencias
+ pueden condicionar la investigación?
+\item ¿Qué cambia si la unidad de análisis es un documento y no un token?
+\item ¿Cómo se formularía una pregunta que conecte texto fechado con una
+ serie temporal, evitando que la información futura entre en el entrenamiento?
+\end{enumerate}
+\begin{investigacion}[Hito autónomo S01]
+Cada estudiante entrega \textbf{dos áreas de interés}, un párrafo argumentado
+por área. En cada párrafo se solicita: relevancia del problema, una posible
+fuente de datos, una variable que eventualmente podría medirse y una cautela.
+No se exige entrenar un modelo ni comprometer una hipótesis definitiva.
+Esta secuencia anticipa los cinco candidatos de S02 y la decisión formal de S05.
+\end{investigacion}
+
+\section*{Del curso a una evidencia reproducible}
+\addcontentsline{toc}{section}{Qué registrar desde la primera experiencia}
+El repositorio del proyecto conservará configuración de entornos, fuentes,
+transformaciones, semillas, pruebas y salidas regenerables. Las tablas de resultados
+no deben editarse a mano. En ejercicios con IA generativa deberá declararse su
+uso; toda derivación matemática deberá ser defendible y toda cita verificable.
+Los proyectos con datos personales requieren procedimientos de anonimización y,
+si corresponde, autorizaciones. Una herramienta que responde correctamente a una
+pregunta de demostración no constituye una evidencia científica.

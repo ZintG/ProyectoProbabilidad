@@ -1,0 +1,31 @@
+\documentclass[11pt,a4paper,oneside]{report}
+\def\documentonombre{Guía de clase S01 · revisión pedagógica v0.4}
+\input{preambulo}
+\begin{document}
+\begin{center}
+{\Huge\bfseries\color{azul} Del texto a la probabilidad}\\[9pt]
+{\LARGE El lenguaje como secuencia: de contar palabras a evaluar predicciones}\\[7pt]
+{\large Guía de clase · Sesión 01}\\[5pt]
+Maestría en Matemáticas Aplicadas · Modelos de Lenguaje de Gran Escala\\[5pt]
+\textbf{Versión pedagógica S01 v0.4 · octubre de 2026}
+\end{center}
+\begin{idea}[Una invitación]
+¿Cómo puede un sistema sugerir la siguiente palabra, encontrar el tema de un informe o reconocer patrones en datos ordenados? Esta sesión comienza con frases simples y dibujos; construye un modelo probabilístico con cuentas verificables; y termina con una primera pregunta científica sobre textos técnicos en español.
+\end{idea}
+\section*{Antes de empezar}
+No se presupone conocimiento previo de procesamiento del lenguaje natural, aprendizaje profundo ni modelos de lenguaje. Se utilizan nociones elementales de probabilidad; cada nuevo objeto se presenta primero con lenguaje cotidiano, después con un ejemplo visual, luego con un cálculo y finalmente con su definición y propiedades. Los desarrollos formales adicionales se encuentran en \texttt{sup01.tex}; el código R y Python está separado en \texttt{modulo\_codigo\_s01.tex}.
+\section*{Lo que el lector podrá hacer}
+Explicar qué son una secuencia y un token; distinguir n-gramas de bolsas; construir una matriz de transiciones desde una frase; derivar la regla de la cadena y el estimador MLE; interpretar suavizado, entropía, KL y perplejidad con sus unidades; justificar una comparación de modelos; y formular dos áreas de interés investigable.
+\clearpage\begingroup\footnotesize\tableofcontents\endgroup\clearpage
+\input{fuentes/apertura_visual}
+\input{fuentes/escalera_conteos}
+\input{fuentes/modelo_evaluacion}
+\input{fuentes/ejemplos_verificados}
+\input{fuentes/derivaciones_de_pizarra}
+\input{fuentes/casos_visuales}
+\input{fuentes/bpe_paso_a_paso}
+\input{fuentes/glosario_consulta}
+\input{fuentes/seminario_investigacion}
+\input{fuentes/ejercicios_guia}
+\input{fuentes/bibliografia_revisada}
+\end{document}

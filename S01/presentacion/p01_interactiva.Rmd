@@ -1,0 +1,410 @@
+---
+title: S01 · Del texto a la probabilidad
+subtitle: Modelos de lenguaje · Matemáticas Aplicadas · Presentación dinámica
+author: Edición v0.9 · alineada con el libro (sesión S01)
+date: 31 de octubre de 2026
+lang: es
+output:
+  html_document:
+    theme: united
+    highlight: tango
+    toc: true
+    toc_depth: 2
+    toc_float: true
+    code_folding: hide
+    code_download: true
+    self_contained: true
+    pandoc_args: ["--mathml"]
+    df_print: paged
+    css: assets/estilo.css
+    includes:
+      after_body: assets/interacciones.html
+params:
+  ejecutar_r: false
+  ejecutar_python: false
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE,
+                      fig.align = "center", collapse = TRUE)
+# Activar la ejecución real solo con entornos R/Python configurados.
+# rmarkdown::render("p01_interactiva.Rmd",
+#   params=list(ejecutar_r=TRUE, ejecutar_python=TRUE))
+```
+
+> **Pregunta de la sesión:** ¿cómo sabemos si un modelo probabilístico representa bien los informes técnicos en español? Comenzaremos con una frase y terminaremos con un **reporte reproducible**. Los controles visuales de esta presentación calculan en el navegador con JavaScript. Los fragmentos **R** y **Python** se ejecutan al renderizar el `.Rmd` cuando se activan sus parámetros; el HTML entregado no ejecuta esos lenguajes en el navegador.
+
+**Ayuda de vocabulario:** cada bloque tiene un desplegable «Conceptos del bloque» con búsqueda y ejemplos; puedes abrirlo antes de avanzar por sus pestañas.
+
+**Ruta de trabajo:** [Sesión S01 del libro: guía, laboratorio matemático y complementos](../pdf/s01_integrada.pdf) · [Laboratorio computacional](../pdf/labcomp01.pdf) · [Taller](../pdf/t01.pdf) · [Reporte de ejemplo](../pdf/reporte_ejemplo_ejecutado.pdf)
+
+# Bloque 1 · ¿Qué estamos intentando modelar?
+<details class="glossary-widget" data-glossary-block="1">
+<summary><span class="glossary-heading">Conceptos del bloque 1 · consultar términos</span><span class="glossary-teaser">Secuencia · Corpus · Token…</span></summary>
+<div class="glossary-content"><label for="glosario-b1">Buscar una palabra o expresión del bloque</label>
+<input type="search" id="glosario-b1" class="glossary-search" placeholder="Escribe para filtrar conceptos…" autocomplete="off" />
+<div class="glossary-grid"><article class="glossary-entry" data-term="secuencia lista ordenada de unidades. en una frase, cambiar el orden de palabras puede cambiar el significado. «el gato mira» y «mira el gato» contienen las mismas palabras, pero en otro orden."><strong>Secuencia</strong><p>Lista ordenada de unidades. En una frase, cambiar el orden de palabras puede cambiar el significado.</p><small><b>Ejemplo:</b> «el gato mira» y «mira el gato» contienen las mismas palabras, pero en otro orden.</small></article>
+<article class="glossary-entry" data-term="corpus colección de textos utilizada para contar, entrenar o evaluar modelos. un conjunto de informes técnicos de mantenimiento."><strong>Corpus</strong><p>Colección de textos utilizada para contar, entrenar o evaluar modelos.</p><small><b>Ejemplo:</b> Un conjunto de informes técnicos de mantenimiento.</small></article>
+<article class="glossary-entry" data-term="token unidad que produce una regla de segmentación: puede ser palabra, carácter, subpalabra o símbolo especial. «bomba» puede ser una palabra o varios tokens de subpalabra."><strong>Token</strong><p>Unidad que produce una regla de segmentación: puede ser palabra, carácter, subpalabra o símbolo especial.</p><small><b>Ejemplo:</b> «bomba» puede ser una palabra o varios tokens de subpalabra.</small></article>
+<article class="glossary-entry" data-term="tokenización proceso que divide el texto en tokens siguiendo reglas definidas. «el gato» → [«el», «gato»], si se separa por espacios."><strong>Tokenización</strong><p>Proceso que divide el texto en tokens siguiendo reglas definidas.</p><small><b>Ejemplo:</b> «el gato» → [«el», «gato»], si se separa por espacios.</small></article>
+<article class="glossary-entry" data-term="vocabulario conjunto de tokens distintos reconocidos por un tokenizador o modelo. si solo se aceptan a, b y c, el vocabulario v tiene |v| = 3 elementos."><strong>Vocabulario</strong><p>Conjunto de tokens distintos reconocidos por un tokenizador o modelo.</p><small><b>Ejemplo:</b> Si solo se aceptan a, b y c, el vocabulario V tiene |V| = 3 elementos.</small></article>
+<article class="glossary-entry" data-term="n-grama secuencia de n unidades consecutivas, usualmente superpuestas. en «el gato duerme»: bigramas «el gato», «gato duerme»."><strong>N-grama</strong><p>Secuencia de n unidades consecutivas, usualmente superpuestas.</p><small><b>Ejemplo:</b> En «el gato duerme»: bigramas «el gato», «gato duerme».</small></article>
+<article class="glossary-entry" data-term="bolsa de palabras representación que conserva los conteos de las palabras, pero descarta el orden global. «gato mira perro» y «perro mira gato» tienen la misma bolsa."><strong>Bolsa de palabras</strong><p>Representación que conserva los conteos de las palabras, pero descarta el orden global.</p><small><b>Ejemplo:</b> «gato mira perro» y «perro mira gato» tienen la misma bolsa.</small></article>
+<article class="glossary-entry" data-term="modelo de lenguaje modelo que asigna probabilidades a secuencias o a sus continuaciones. estimar qué tan probable es «sello» después de «fuga en el…»."><strong>Modelo de lenguaje</strong><p>Modelo que asigna probabilidades a secuencias o a sus continuaciones.</p><small><b>Ejemplo:</b> Estimar qué tan probable es «sello» después de «fuga en el…».</small></article><article class="glossary-entry" data-term="representación regla para convertir texto en unidades que el modelo pueda procesar. «bomba» como palabra o como cinco caracteres."><strong>Representación</strong><p>Regla para convertir texto en unidades que el modelo pueda procesar.</p><small><b>Ejemplo:</b> «bomba» como palabra o como cinco caracteres.</small></article><article class="glossary-entry" data-term="unidad de predicción elemento cuya probabilidad estima un modelo en cada paso. la letra «a» o la palabra «bomba». "><strong>Unidad de predicción</strong><p>Elemento cuya probabilidad estima un modelo en cada paso.</p><small><b>Ejemplo:</b> La letra «a» o la palabra «bomba». </small></article><article class="glossary-entry" data-term="evaluación comprobación del desempeño mediante textos reservados. medir la pérdida sobre informes de prueba."><strong>Evaluación</strong><p>Comprobación del desempeño mediante textos reservados.</p><small><b>Ejemplo:</b> Medir la pérdida sobre informes de prueba.</small></article><article class="glossary-entry" data-term="contexto o historia unidades anteriores disponibles para predecir la siguiente. en «el gato…», el contexto es «el gato»."><strong>Contexto o historia</strong><p>Unidades anteriores disponibles para predecir la siguiente.</p><small><b>Ejemplo:</b> En «el gato…», el contexto es «el gato».</small></article></div><p class="glossary-noresults" hidden>No hay coincidencias. Prueba con otra palabra.</p>
+<p class="glossary-footnote">Consulta las definiciones cuando aparezca un término nuevo. Los ejemplos son introductorios; las definiciones formales y sus hipótesis están en la sesión S01 del libro y en sus Complementos matemáticos.</p></div>
+</details>
+
+## 1.1 La pregunta que abre el curso
+
+En lenguaje cotidiano, una máquina puede intentar completar:
+
+<div class="hero-question"><div class="eyebrow">PREGUNTA MOTIVADORA</div><div class="hero-line">«La bomba presenta fuga en el ...»</div><div class="suggestions"><span>sello</span><span>reporte</span><span>tanque</span></div><p>¿Cuál continuación parece más probable? ¿Cambiaría la respuesta si entrenamos con novelas en lugar de reportes de mantenimiento?</p></div>
+
+**No empezamos con una red neuronal.** Empezamos con un problema observable: describir la probabilidad de la siguiente unidad, dada una **historia** (lo que ya se ha escrito, también llamado **contexto**). Esta pregunta lleva a modelos más avanzados, como redes recurrentes y Transformers, que explicaremos en sesiones posteriores.
+
+**Usos que justifican estudiar secuencias:** anticipar una palabra; clasificar incidentes; recuperar documentos; resumir; traducir; extraer eventos de reportes; y conectar esos eventos con series de tiempo. El objetivo de hoy es comprender el primer eslabón, no estudiar todavía todas esas arquitecturas.
+
+## 1.2 El mapa de la sesión
+
+<div class="flowmap"><div>Texto<br><small>un documento</small></div><b>→</b><div>Tokens<br><small>unidades</small></div><b>→</b><div>Conteos<br><small>n-gramas</small></div><b>→</b><div>Probabilidades<br><small>predicción</small></div><b>→</b><div>Evaluación<br><small>¿qué tan bien predice?</small></div><b>→</b><div>Reporte<br><small>evidencia</small></div></div>
+
+**Un modelo de lenguaje** asigna probabilidades a **secuencias**: listas ordenadas de unidades. En $x_1,\ldots,x_T$, cada $x_t$ es una unidad (una letra, palabra o fragmento) y $p(x_1,\ldots,x_T)$ expresa la probabilidad asignada a la secuencia completa. La notación es la del libro: $V$ es el vocabulario y $|V|$ su tamaño, $x_{<t}=x_1,\ldots,x_{t-1}$ es la historia y $\rho_t$ la probabilidad asignada al evento observado $t$.
+
+Conviene distinguir tres preguntas antes de calcular:
+
+- **Representación:** ¿cómo convertimos el texto en unidades? «bomba» puede ser una palabra o cinco caracteres.
+- **Unidad de predicción:** ¿qué predice el modelo en cada paso: una letra, una palabra o una subpalabra?
+- **Evaluación:** ¿cómo comprobamos con textos reservados si las probabilidades predichas son adecuadas?
+
+En el **Bloque 3** introduciremos las medidas: **divergencia de Kullback–Leibler (KL)** (compara distribuciones), **perplejidad (perplexity, PPL)** (resume pérdida por paso) y **bits por carácter (BPC)** (normaliza la pérdida por longitud del texto). Todavía no necesitamos sus fórmulas.
+
+**Relación con investigación:** **IC10** es el código de un problema de la matriz de investigación: medir el costo de representar textos técnicos en español con tokenizadores generales. Lo retomaremos en el **Bloque 5**. El hito formal de S01, sin embargo, sigue siendo elegir **dos áreas de interés**, con un párrafo justificado para cada una.
+
+## 1.3 Laboratorio visual: del texto a los tokens
+
+Un **token** es una unidad definida por un procedimiento de segmentación. Puede ser una palabra, un carácter, una subpalabra o un símbolo especial. Una palabra no es siempre un token; un mismo documento puede tener distintas cantidades de tokens.
+
+<div class="widget" id="widget-token"><div class="widget-head"><strong>Explorador de tokenización</strong><span class="badge-demo">Interactivo · navegador</span></div><label for="textoTokens">Escribe una frase:</label><input id="textoTokens" value="el gato mira al perro"/><div class="mini-controls"><button type="button" class="pill active" data-token-mode="palabras">Palabras</button><button type="button" class="pill" data-token-mode="caracteres">Caracteres</button><button type="button" class="pill" data-token-mode="pares">Bigramas de palabras</button></div><div id="tokenSalida" class="token-row"></div><p id="tokenNota" class="fine"></p></div>
+
+**Para no confundir:** la modalidad «bigramas» produce pares consecutivos superpuestos; no equivale a entrenar un tokenizador de **codificación por pares de bytes** (Byte Pair Encoding, BPE), un procedimiento que une fragmentos frecuentes y se explica en el **Bloque 4**. Las subpalabras modernas se estudiarán después de comprender esta separación inicial.
+
+[Regresar a la guía: representación](../pdf/s01_integrada.pdf)
+
+## 1.4 N-gramas, bolsa y orden
+
+**Unigrama:** una unidad. **Bigrama:** dos unidades consecutivas. **Trigrama:** tres unidades consecutivas. En este ejemplo, «contexto» significa las unidades anteriores que utilizamos para predecir la siguiente. Un **modelo de $n$-gramas** predice cada unidad con las $n-1$ anteriores.
+
+<div class="example-grid"><div class="example-panel"><strong>Secuencia</strong><div class="big-example">el → gato → mira → al → perro</div><p>Conserva el orden.</p></div><div class="example-panel"><strong>Bolsa de palabras</strong><div class="big-example">{el:1, gato:1, mira:1, al:1, perro:1}</div><p>Cuenta frecuencias; no conserva el orden.</p></div></div>
+
+Dos textos pueden tener la misma bolsa de palabras y significados distintos. Una bolsa de bigramas conserva información local, pero no toda la estructura original. Además, **bolsa**, **lista** y **conjunto** no son equivalentes: una bolsa conserva multiplicidades.
+
+<details class="check-question"><summary>Pregunta de comprobación del bloque 1: ¿Qué cambia cuando usamos caracteres en lugar de palabras?</summary><p><strong>Respuesta orientativa:</strong> La segmentación y la unidad de predicción; las probabilidades dejan de ser directamente comparables por token.</p></details>
+
+# Bloque 2 · De contar a predecir
+<details class="glossary-widget" data-glossary-block="2">
+<summary><span class="glossary-heading">Conceptos del bloque 2 · consultar términos</span><span class="glossary-teaser">Bigrama · Transición · Matriz de conteos…</span></summary>
+<div class="glossary-content"><label for="glosario-b2">Buscar una palabra o expresión del bloque</label>
+<input type="search" id="glosario-b2" class="glossary-search" placeholder="Escribe para filtrar conceptos…" autocomplete="off" />
+<div class="glossary-grid"><article class="glossary-entry" data-term="bigrama par de tokens consecutivos, en orden. «abac» contiene (a,b), (b,a) y (a,c)."><strong>Bigrama</strong><p>Par de tokens consecutivos, en orden.</p><small><b>Ejemplo:</b> «abac» contiene (a,b), (b,a) y (a,c).</small></article>
+<article class="glossary-entry" data-term="transición paso observado desde un símbolo anterior hacia el siguiente. en «aba», aparece una transición a→b y otra b→a."><strong>Transición</strong><p>Paso observado desde un símbolo anterior hacia el siguiente.</p><small><b>Ejemplo:</b> En «aba», aparece una transición a→b y otra b→a.</small></article>
+<article class="glossary-entry" data-term="matriz de conteos tabla cuyas filas son símbolos de origen y columnas símbolos de destino. la celda c(a,b)=2 significa que a→b se observó dos veces."><strong>Matriz de conteos</strong><p>Tabla cuyas filas son símbolos de origen y columnas símbolos de destino.</p><small><b>Ejemplo:</b> La celda C(a,b)=2 significa que a→b se observó dos veces.</small></article>
+<article class="glossary-entry" data-term="probabilidad condicional probabilidad de un resultado cuando ya conocemos un contexto o condición. p(b|a) es la probabilidad de ver b después de a."><strong>Probabilidad condicional</strong><p>Probabilidad de un resultado cuando ya conocemos un contexto o condición.</p><small><b>Ejemplo:</b> P(b|a) es la probabilidad de ver b después de a.</small></article>
+<article class="glossary-entry" data-term="frecuencia relativa conteo de un resultado dividido por el total pertinente. de cuatro salidas desde a, dos van hacia b: 2/4."><strong>Frecuencia relativa</strong><p>Conteo de un resultado dividido por el total pertinente.</p><small><b>Ejemplo:</b> De cuatro salidas desde a, dos van hacia b: 2/4.</small></article>
+<article class="glossary-entry" data-term="suavizado aditivo regla que suma un valor positivo a cada conteo antes de normalizar para evitar ceros. con α=1, a un conteo 0 se le suma 1."><strong>Suavizado aditivo</strong><p>Regla que suma un valor positivo a cada conteo antes de normalizar para evitar ceros.</p><small><b>Ejemplo:</b> Con α=1, a un conteo 0 se le suma 1.</small></article>
+<article class="glossary-entry" data-term="α (alfa) parámetro que controla cuánto suavizamos los conteos. α=0 no suaviza; α=1 suma uno por celda."><strong>α (alfa)</strong><p>Parámetro que controla cuánto suavizamos los conteos.</p><small><b>Ejemplo:</b> α=0 no suaviza; α=1 suma uno por celda.</small></article>
+<article class="glossary-entry" data-term="hipótesis de markov simplificación por la que la predicción depende solo de una historia reciente limitada. un bigrama usa el símbolo anterior y no toda la frase."><strong>Hipótesis de Markov</strong><p>Simplificación por la que la predicción depende solo de una historia reciente limitada.</p><small><b>Ejemplo:</b> Un bigrama usa el símbolo anterior y no toda la frase.</small></article></div><p class="glossary-noresults" hidden>No hay coincidencias. Prueba con otra palabra.</p>
+<p class="glossary-footnote">Consulta las definiciones cuando aparezca un término nuevo. Los ejemplos son introductorios; las definiciones formales y sus hipótesis están en la sesión S01 del libro y en sus Complementos matemáticos.</p></div>
+</details>
+
+## 2.1 Primero se observan las transiciones
+
+Comenzamos con la cadena `abacabbacb`. Antes de ver una matriz, leamos sus nueve transiciones consecutivas. Cada flecha cuenta como un par ordenado.
+
+<div class="widget" id="widget-bigrama"><div class="widget-head"><strong>Del texto a la matriz</strong><span class="badge-demo">Interactivo · navegador</span></div><label for="cadenaBg">Cadena (alfabeto a, b, c):</label><input id="cadenaBg" value="abacabbacb"/><div class="mini-controls"><label for="alphaBg">Suavizado aditivo α: <output id="alphaBgText">1,0</output></label><input id="alphaBg" type="range" min="0" max="3" step="0.25" value="1"/></div><div id="flechasBg" class="transition-list"></div><div class="example-grid"><div><div class="widget-subtitle">Conteos C</div><div id="matrizConteos"></div></div><div><div class="widget-subtitle">Probabilidades P</div><div id="matrizProb"></div></div></div><p id="prediccionBg" class="output-note"></p></div>
+
+La matriz no se presenta como una operación misteriosa: **cada celda cuenta una flecha**. Solo después dividimos cada fila por su suma.
+
+## 2.2 ¿Qué hacemos con algo no observado?
+
+El texto de entrenamiento no contiene la transición $\mathtt{b}\to\mathtt{c}$. La estimación por frecuencia le asignaría probabilidad cero. Como $-\log 0=+\infty$, ese fallo puede dominar completamente la pérdida de prueba.
+
+Con $\alpha>0$ (suavizado aditivo), un contexto $u$ y un vocabulario $V$ de $|V|$ símbolos,
+
+$$\widehat P_\alpha(v\mid u)=\frac{C(u,v)+\alpha}{\sum_w C(u,w)+\alpha|V|}.$$
+
+En el ejemplo base, la fila del estado $\mathtt{a}$ es $(0,2,2)$ y, para $\alpha=1$, queda $(1/7,3/7,3/7)$. La prueba `abca` tiene tres transiciones cuya probabilidad condicional es $1/35$; su perplejidad es $35^{1/3}\approx 3{,}271$. Si queremos la **probabilidad conjunta**, debemos especificar también la distribución inicial $\pi_0(\mathtt{a})=\Pr(X_1=\mathtt{a})$; con $\pi_0(\mathtt{a})=1/3$ resulta $1/105$.
+
+<div class="callout">**Advertencia formal:** suavizar no garantiza generalización. Evita probabilidades nulas y corresponde a la media posterior bajo una distribución de Dirichlet simétrica (una distribución sobre el símplex de probabilidades; véase 2.5), pero la elección de $\alpha$ debe evaluarse fuera del conjunto de prueba.</div>
+
+## 2.3 ¿Y una secuencia completa?
+
+La **regla de la cadena** descompone una probabilidad de secuencia sin suponer que basta mirar los símbolos recientes. Esa simplificación posterior se llama **hipótesis de Markov**:
+
+$$p(x_{1:T})=p(x_1)\prod_{t=2}^{T}p(x_t\mid x_{<t}),\qquad x_{<t}=x_1,\ldots,x_{t-1}.$$
+
+Un bigrama **aproxima** el condicionamiento por la historia completa mediante $p(x_t\mid x_{t-1})$. Esta simplificación permite aprender contando; al mismo tiempo explica sus límites. La hipótesis de Markov de orden $m$ es una **independencia condicional**: $X_t\perp X_{1:t-m-1}\mid X_{t-m:t-1}$; conocidos los $m$ símbolos previos, el pasado remoto no cambia la distribución del siguiente. La prueba por inducción de la regla de la cadena y el contraejemplo de las monedas están en la sección 1.1.3 del libro.
+
+**Dos niveles que hay que separar:** una tabla pequeña puede calcularse y verificarse a mano; una distribución real sobre texto exige decidir representación, normalización, entrenamiento, validación y protocolo de evaluación.
+
+## 2.4 Máxima verosimilitud: por qué se divide por los conteos
+
+El **símplex** $\Delta_{K-1}=\{q:\ q_i\ge0,\ \sum_iq_i=1\}$ reúne las distribuciones sobre $K=|V|$ categorías; el **soporte** de $q$ es $\operatorname{supp}(q)=\{i:q_i>0\}$. Si, dado el contexto, las $N$ continuaciones son independientes con ley categórica $q$ y $N=\sum_ic_i>0$, la **estimación por máxima verosimilitud** (maximum likelihood estimation, MLE) es única: $\widehat q_i=c_i/N$.
+
+1. **Verosimilitud.** $L(q)=\prod_iq_i^{c_i}$; la versión multinomial añade $N!/\prod_ic_i!$, que no depende de $q$. Con $S=\{i:c_i>0\}$, $\ell(q)=\sum_{i\in S}c_i\ln q_i$.
+2. **Masa fuera de $S$.** Si $\varepsilon=\sum_{i\notin S}q_i\in(0,1)$, reescalar las coordenadas de $S$ por $1/(1-\varepsilon)$ aumenta $\ell$ en $-N\ln(1-\varepsilon)>0$.
+3. **Existencia.** En $\{\ell\ge\ell(q^0)\}$, con $q^0$ uniforme en $S$, cada $q_i\ge e^{\ell(q^0)/c_i}>0$: conjunto compacto donde $\ell$ es continua (Weierstrass).
+4. **Lagrange.** En el máximo, para toda dirección $v$ con $\sum_{i\in S}v_i=0$, $\sum_i(c_i/q_i)v_i=0$; con $v=e_i-e_j$ se obtiene $c_i/q_i=\lambda$ y, sumando, $\lambda=N$.
+5. **Unicidad.** Los pasos 2 y 4 determinan un único punto.
+
+**Hipótesis retiradas:** si $N=0$, toda $q$ maximiza; si se exige $q_i>0$ y algún $c_i=0$, el supremo no se alcanza. La versión con condiciones de Karush–Kuhn–Tucker (KKT) está en el Complemento S01.C4 del libro.
+
+## 2.5 Dirichlet: de la priori a la predictiva
+
+La **función Gamma** es $\Gamma(x)=\int_0^\infty t^{x-1}e^{-t}dt$ ($x>0$), con $\Gamma(x+1)=x\Gamma(x)$. La **distribución de Dirichlet** $\mathrm{Dir}(\alpha_1,\ldots,\alpha_K)$, con $\alpha_i>0$ y $A=\sum_i\alpha_i$, tiene densidad $f(q)=\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{\alpha_i-1}$ en el interior del símplex. El **teorema de Bayes para densidades** da $f(q\mid x_{1:N})=\Pr(x_{1:N}\mid q)f(q)\big/\int\Pr(x_{1:N}\mid q')f(q')\,dq'$.
+
+1. Priori con su constante: $\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{\alpha_i-1}$.
+2. Verosimilitud: $\prod_iq_i^{c_i}$.
+3. Producto: $\frac{\Gamma(A)}{\prod_i\Gamma(\alpha_i)}\prod_iq_i^{c_i+\alpha_i-1}$.
+4. Núcleo: $\prod_iq_i^{\beta_i-1}$ con $\beta_i=c_i+\alpha_i$.
+5. Normalización (integral de Dirichlet): $\int\prod_iq_i^{\beta_i-1}dq=\prod_i\Gamma(\beta_i)/\Gamma(N+A)$.
+6. Posterior: $q\mid x_{1:N}\sim\mathrm{Dir}(c_1+\alpha_1,\ldots,c_K+\alpha_K)$.
+
+**Predictiva.** Si $X_{N+1}$ es condicionalmente independiente de los datos dado $q$,
+$$\Pr(X_{N+1}=i\mid x_{1:N})=\int q_i\,f(q\mid x_{1:N})\,dq=\frac{\Gamma(\beta_i+1)}{\Gamma(\beta_i)}\cdot\frac{\Gamma(N+A)}{\Gamma(N+A+1)}=\frac{c_i+\alpha_i}{N+A},$$
+que es la **media** posterior. La **moda**, si todos los $\beta_i\ge1$ y alguno $>1$, es $\frac{c_i+\alpha_i-1}{N+A-K}$. Con $c=(6,3,1,0,0)$ y $\alpha_i=1$: media $(7,4,2,1,1)/15$ y moda $(6,3,1,0,0)/10$ (cifras verificadas).
+
+<details class="check-question"><summary>Pregunta de comprobación del bloque 2: ¿Qué ocurre al normalizar una fila sin transiciones y sin suavizado?</summary><p><strong>Respuesta orientativa:</strong> La distribución está indefinida; hace falta una convención o un suavizado explícito.</p></details>
+
+# Bloque 3 · ¿Qué significa que un modelo sea mejor?
+<details class="glossary-widget" data-glossary-block="3">
+<summary><span class="glossary-heading">Conceptos del bloque 3 · consultar términos</span><span class="glossary-teaser">Sorpresa o información · Entropía · Entropía cruzada…</span></summary>
+<div class="glossary-content"><label for="glosario-b3">Buscar una palabra o expresión del bloque</label>
+<input type="search" id="glosario-b3" class="glossary-search" placeholder="Escribe para filtrar conceptos…" autocomplete="off" />
+<div class="glossary-grid"><article class="glossary-entry" data-term="sorpresa o información cantidad de información de un resultado según su probabilidad: −log₂(q). un suceso de probabilidad 1/4 aporta 2 bits."><strong>Sorpresa o información</strong><p>Cantidad de información de un resultado según su probabilidad: −log₂(q).</p><small><b>Ejemplo:</b> Un suceso de probabilidad 1/4 aporta 2 bits.</small></article>
+<article class="glossary-entry" data-term="entropía promedio de la sorpresa cuando la probabilidad usada es la distribución de referencia p. una distribución uniforme sobre 4 opciones tiene entropía 2 bits."><strong>Entropía</strong><p>Promedio de la sorpresa cuando la probabilidad usada es la distribución de referencia p.</p><small><b>Ejemplo:</b> Una distribución uniforme sobre 4 opciones tiene entropía 2 bits.</small></article>
+<article class="glossary-entry" data-term="entropía cruzada pérdida logarítmica promedio al predecir datos de p utilizando probabilidades q. castiga que q asigne poca probabilidad a eventos frecuentes de p."><strong>Entropía cruzada</strong><p>Pérdida logarítmica promedio al predecir datos de p utilizando probabilidades q.</p><small><b>Ejemplo:</b> Castiga que q asigne poca probabilidad a eventos frecuentes de p.</small></article>
+<article class="glossary-entry" data-term="divergencia kl diferencia h(p,q)−h(p); mide el costo logarítmico adicional de usar q. no es una distancia simétrica. si p=q, kl es 0."><strong>Divergencia KL</strong><p>Diferencia H(p,q)−H(p); mide el costo logarítmico adicional de usar q. No es una distancia simétrica.</p><small><b>Ejemplo:</b> Si p=q, KL es 0.</small></article>
+<article class="glossary-entry" data-term="perplejidad (ppl) exponencial de la pérdida logarítmica media por unidad de predicción. si la pérdida es 2 bits/token, ppl=4."><strong>Perplejidad (PPL)</strong><p>Exponencial de la pérdida logarítmica media por unidad de predicción.</p><small><b>Ejemplo:</b> Si la pérdida es 2 bits/token, PPL=4.</small></article>
+<article class="glossary-entry" data-term="bpc bits por carácter: pérdida total en bits dividida por el número de caracteres del texto. 200 bits en 100 caracteres corresponden a 2 bpc."><strong>BPC</strong><p>Bits por carácter: pérdida total en bits dividida por el número de caracteres del texto.</p><small><b>Ejemplo:</b> 200 bits en 100 caracteres corresponden a 2 BPC.</small></article>
+<article class="glossary-entry" data-term="logaritmo en base 2 expresa información en bits; log₂(4)=2. una probabilidad 1/8 aporta −log₂(1/8)=3 bits."><strong>Logaritmo en base 2</strong><p>Expresa información en bits; log₂(4)=2.</p><small><b>Ejemplo:</b> Una probabilidad 1/8 aporta −log₂(1/8)=3 bits.</small></article>
+<article class="glossary-entry" data-term="conjunto de prueba datos reservados para medir el rendimiento después de fijar las decisiones del modelo. no se usan para elegir α durante el ajuste."><strong>Conjunto de prueba</strong><p>Datos reservados para medir el rendimiento después de fijar las decisiones del modelo.</p><small><b>Ejemplo:</b> No se usan para elegir α durante el ajuste.</small></article><article class="glossary-entry" data-term="distribución de referencia p distribución usada para describir los datos que se quieren predecir. p=(0,5;0,25;0,25)."><strong>Distribución de referencia p</strong><p>Distribución usada para describir los datos que se quieren predecir.</p><small><b>Ejemplo:</b> p=(0,5;0,25;0,25).</small></article><article class="glossary-entry" data-term="distribución del modelo q probabilidades propuestas por el modelo evaluado. q(a)=0,25."><strong>Distribución del modelo q</strong><p>Probabilidades propuestas por el modelo evaluado.</p><small><b>Ejemplo:</b> q(a)=0,25.</small></article><article class="glossary-entry" data-term="bos/eos marcas para indicar el comienzo y el fin de una secuencia. el protocolo puede incluir eos como evento predictivo."><strong>BOS/EOS</strong><p>Marcas para indicar el comienzo y el fin de una secuencia.</p><small><b>Ejemplo:</b> El protocolo puede incluir EOS como evento predictivo.</small></article></div><p class="glossary-noresults" hidden>No hay coincidencias. Prueba con otra palabra.</p>
+<p class="glossary-footnote">Consulta las definiciones cuando aparezca un término nuevo. Los ejemplos son introductorios; las definiciones formales y sus hipótesis están en la sesión S01 del libro y en sus Complementos matemáticos.</p></div>
+</details>
+
+## 3.1 De sorpresa a entropía
+
+Una observación que el modelo considera improbable produce una mayor sorpresa: $s(x)=-\log_2 q(x)$, medida en bits. La entropía promedia la sorpresa según la **distribución de referencia** $p$ (la que describe los datos). Llamamos $q$ a las probabilidades asignadas por el **modelo evaluado**:
+
+$$H_2(p)=-\sum_x p(x)\log_2p(x),\qquad H_2(p,q)=-\sum_x p(x)\log_2q(x).$$
+
+**Cotas:** $0\le H_2(p)\le\log_2K$, con el máximo si y solo si $p$ es uniforme. Prueba con la **desigualdad de Jensen** (para $\varphi$ cóncava, $\sum_iw_i\varphi(x_i)\le\varphi(\sum_iw_ix_i)$): $H_2(p)=\sum_ip_i\log_2(1/p_i)\le\log_2|\operatorname{supp}(p)|\le\log_2K$. La **entropía condicional** $H(X\mid Y)=\sum_yp(y)H(X\mid Y=y)$ y la **información mutua** $I(X;Y)=H(X)-H(X\mid Y)\ge0$ completan el vocabulario de esta sección.
+
+$H_2(p,q)$ **no mide una distancia**; mide el costo logarítmico esperado de usar $q$ cuando los datos siguen $p$. La evaluación por documento aproxima esta idea mediante probabilidades asignadas a observaciones reservadas.
+
+## 3.2 ¿Qué añade la divergencia KL?
+
+$$D_{\mathrm{KL}}(p\Vert q)=\sum_{x:\,p(x)>0} p(x)\log_2\frac{p(x)}{q(x)},\qquad H_2(p,q)=H_2(p)+D_{\mathrm{KL}}(p\Vert q),$$
+
+si los soportes son compatibles ($\operatorname{supp}(p)\subseteq\operatorname{supp}(q)$); en otro caso ambas valen $+\infty$.
+
+<div class="widget" id="widget-kl"><div class="widget-head"><strong>Explorador de KL</strong><span class="badge-demo">Interactivo · navegador</span></div><p>Fijamos <strong>p=(0,50; 0,25; 0,25)</strong> y modificamos <em>q</em> sin perder la condición de que sus probabilidades sumen uno.</p><label for="qA">q(a): <output id="qAValor">0,25</output></label><input type="range" id="qA" min="0.1" max="0.7" value="0.25" step="0.01"/><label for="qB">q(b): <output id="qBValor">0,50</output></label><input type="range" id="qB" min="0.05" max="0.85" value="0.50" step="0.01"/><button type="button" class="pill" id="klIgualar">Hacer q = p (KL = 0)</button><div class="prob-bars" id="barrasKL"></div><div class="stat-row"><div><span>H(p)</span><strong id="hP">1,500</strong><small>bits</small></div><div><span>H(p,q)</span><strong id="hPQ">1,750</strong><small>bits</small></div><div><span>KL(p||q)</span><strong id="klPQ">0,250</strong><small>bits</small></div></div></div>
+
+**Desigualdad de Gibbs** (demostrada en el Complemento S01.C3 del libro): $D_{\mathrm{KL}}\ge0$; vale cero exactamente si las distribuciones coinciden (con las condiciones habituales de soporte). No es simétrica y no satisface los axiomas de una distancia métrica. Además, minimizar la pérdida empírica $-T^{-1}\sum_t\ln q_\theta(x_t\mid x_{<t})$ equivale a maximizar la verosimilitud, por la regla de la cadena.
+
+## 3.3 Perplejidad: traducir pérdida a una escala intuitiva
+
+Para las probabilidades asignadas a los símbolos efectivamente observados, $\rho_t=q(x_t\mid x_{<t})$, la pérdida media en nats es $L_e=-T^{-1}\sum_t\ln \rho_t$ y la perplejidad es $\mathrm{PPL}=e^{L_e}=2^{L_2}$, con $L_2=-T^{-1}\sum_t\log_2\rho_t$ en bits; equivalentemente, $\mathrm{PPL}=(\prod_t 1/\rho_t)^{1/T}$, la media geométrica de las inversas.
+
+<div class="widget" id="widget-ppl"><div class="widget-head"><strong>Perplejidad de cuatro predicciones</strong><span class="badge-demo">Interactivo · navegador</span></div><p>Modifica la probabilidad que el modelo asigna al <em>tercer símbolo observado</em>. Las otras probabilidades son 1/2, 1/4 y 1/2.</p><label for="probTercero">Probabilidad del tercer símbolo: <output id="probTerceroText">0,125</output></label><input id="probTercero" type="range" min="0.025" max="0.975" step="0.025" value="0.125"/><div class="stat-row"><div><span>Pérdida media</span><strong id="lossPPL">1,750</strong><small>bits/token</small></div><div><span>Perplejidad</span><strong id="valPPL">3,364</strong><small>opciones equivalentes</small></div></div></div>
+
+Interpretación: representa la incertidumbre media en unidades de predicción **compatibles**; no significa que el vocabulario real tenga esa cantidad de elementos.
+
+## 3.4 ¿Podemos comparar dos tokenizadores con PPL?
+
+<div class="widget" id="widget-bpc"><div class="widget-head"><strong>Dos modelos, dos rankings</strong><span class="badge-demo">ILUSTRATIVO · navegador</span></div><p>Mismo texto de <strong>100 caracteres</strong>. Modelo A: 100 tokens y PPL 3,2. Modelo B: PPL 25, pero el número de tokens puede variar.</p><label for="tokensB">Tokens del modelo B: <output id="tokensBText">30</output></label><input id="tokensB" type="range" min="20" max="50" step="1" value="30"/><div class="stat-row"><div><span>BPC A</span><strong id="bpcA">1,678</strong><small>bits/carácter</small></div><div><span>BPC B</span><strong id="bpcB">1,393</strong><small>bits/carácter</small></div></div><p id="bpcConclusion" class="output-note"></p></div>
+
+$$\mathrm{bits}(z)=-\log_2 q(\tau(z)),\qquad \mathrm{BPC}(z;q)=\frac{\mathrm{bits}(z)}{|z|},$$
+
+donde $|z|$ es el número de caracteres (puntos de código) del texto $z$ y $q(\tau(z))$ incluye las marcas de inicio y fin. Si la PPL se calculó sobre los mismos $T$ tokens, $\mathrm{BPC}=\frac{T}{|z|}\log_2\mathrm{PPL}$.
+
+Para una comparación válida debe tratarse del **mismo texto**, bajo normalización compatible y con probabilidades de secuencia y convenciones comparables sobre los **marcadores de inicio y fin** del texto: ⟨s⟩ (BOS, beginning of sequence) y ⟨/s⟩ (EOS, end of sequence). BPC es una base de normalización útil; no elimina automáticamente todas las diferencias de protocolo.
+
+<details class="check-question"><summary>Pregunta de comprobación del bloque 3: ¿Por qué dos perplejidades por token pueden inducir una comparación injusta?</summary><p><strong>Respuesta orientativa:</strong> El número de eventos de predicción cambia con la tokenización; conviene comparar una unidad común como BPC.</p></details>
+
+# Bloque 4 · Laboratorios: teoría que se puede ejecutar
+<details class="glossary-widget" data-glossary-block="4">
+<summary><span class="glossary-heading">Conceptos del bloque 4 · consultar términos</span><span class="glossary-teaser">Laboratorio matemático · MLE · Dirichlet…</span></summary>
+<div class="glossary-content"><label for="glosario-b4">Buscar una palabra o expresión del bloque</label>
+<input type="search" id="glosario-b4" class="glossary-search" placeholder="Escribe para filtrar conceptos…" autocomplete="off" />
+<div class="glossary-grid"><article class="glossary-entry" data-term="laboratorio matemático actividad que contrasta fórmulas, propiedades y demostraciones mediante cálculos verificables. comprobar que cada fila de probabilidades suma 1."><strong>Laboratorio matemático</strong><p>Actividad que contrasta fórmulas, propiedades y demostraciones mediante cálculos verificables.</p><small><b>Ejemplo:</b> Comprobar que cada fila de probabilidades suma 1.</small></article>
+<article class="glossary-entry" data-term="mle estimación por máxima verosimilitud: elección de parámetros que hace más probables los datos observados. para una categórica, lleva a las frecuencias relativas."><strong>MLE</strong><p>Estimación por máxima verosimilitud: elección de parámetros que hace más probables los datos observados.</p><small><b>Ejemplo:</b> Para una categórica, lleva a las frecuencias relativas.</small></article>
+<article class="glossary-entry" data-term="dirichlet distribución de probabilidad sobre vectores no negativos cuyas componentes suman 1. permite interpretar un suavizado aditivo como media posterior."><strong>Dirichlet</strong><p>Distribución de probabilidad sobre vectores no negativos cuyas componentes suman 1.</p><small><b>Ejemplo:</b> Permite interpretar un suavizado aditivo como media posterior.</small></article>
+<article class="glossary-entry" data-term="bpe byte pair encoding: procedimiento voraz que fusiona pares frecuentes de unidades. después de fusionar (a,s), «casa» puede contener el token «as»."><strong>BPE</strong><p>Codificación por pares de bytes (Byte Pair Encoding): procedimiento voraz que fusiona pares frecuentes de unidades.</p><small><b>Ejemplo:</b> Después de fusionar (a,s), «casa» puede contener el token «as».</small></article>
+<article class="glossary-entry" data-term="verificación numérica comprobación computacional de un resultado con tolerancias y casos conocidos. evaluar en r y python la misma perplejidad."><strong>Verificación numérica</strong><p>Comprobación computacional de un resultado con tolerancias y casos conocidos.</p><small><b>Ejemplo:</b> Evaluar en R y Python la misma perplejidad.</small></article>
+<article class="glossary-entry" data-term="código reproducible programa que, con entradas, versiones y reglas declaradas, regenera las cifras del reporte. script + corpus + entorno + semilla."><strong>Código reproducible</strong><p>Programa que, con entradas, versiones y reglas declaradas, regenera las cifras del reporte.</p><small><b>Ejemplo:</b> Script + corpus + entorno + semilla.</small></article>
+<article class="glossary-entry" data-term="r markdown (.rmd) documento que combina texto, fórmulas y fragmentos de código para generar html u otros formatos. el código r puede evaluarse al renderizar el documento."><strong>R Markdown (.Rmd)</strong><p>Documento que combina texto, fórmulas y fragmentos de código para generar HTML u otros formatos.</p><small><b>Ejemplo:</b> El código R puede evaluarse al renderizar el documento.</small></article>
+<article class="glossary-entry" data-term="shiny marco de r para construir aplicaciones reactivas que recalculan resultados a partir de controles. mover α y actualizar una matriz en un servidor shiny."><strong>Shiny</strong><p>Marco de R para construir aplicaciones reactivas que recalculan resultados a partir de controles.</p><small><b>Ejemplo:</b> Mover α y actualizar una matriz en un servidor Shiny.</small></article></div><p class="glossary-noresults" hidden>No hay coincidencias. Prueba con otra palabra.</p>
+<p class="glossary-footnote">Consulta las definiciones cuando aparezca un término nuevo. Los ejemplos son introductorios; las definiciones formales y sus hipótesis están en la sesión S01 del libro y en sus Complementos matemáticos.</p></div>
+</details>
+
+## 4.1 Laboratorio matemático: comprobar antes de programar
+
+**Tres afirmaciones que el código debe verificar:**
+
+1. Cada fila suavizada de la matriz de transición suma uno.
+2. La identidad $H(p,q)-H(p)=D_{\mathrm{KL}}(p\Vert q)$ coincide con el cálculo directo.
+3. La PPL de `abca`, condicionada al primer símbolo, es $35^{1/3}$ para el modelo dado y $\alpha=1$.
+
+Las derivaciones del estimador MLE, la conjugación Dirichlet, la desigualdad de Gibbs y la perplejidad están en la [sesión S01 del libro](../pdf/s01_integrada.pdf): texto principal y Complementos matemáticos S01.C1–C12.
+
+## 4.2 R y Python, el mismo cálculo
+
+Los siguientes fragmentos implementan el **mismo ejemplo matemático**. La ejecución R depende de la configuración elegida al compilar este documento; el valor mostrado procede del cálculo verificado en Python y de la derivación exacta.
+
+<div class="code-language-switch"><button class="pill active" type="button" data-code-lang="r">Ver R</button><button class="pill" type="button" data-code-lang="python">Ver Python</button></div>
+
+<div class="paired-code" data-lang="r">
+
+```{r bigramas_r, eval=params$ejecutar_r}
+C <- matrix(c(0,2,2, 2,1,0, 1,1,0), nrow=3, byrow=TRUE,
+            dimnames=list(c("a","b","c"), c("a","b","c")))
+alpha <- 1
+P <- sweep(C+alpha, 1, rowSums(C)+3*alpha, "/")
+prob <- P["a","b"]*P["b","c"]*P["c","a"]
+c(prob_condicional=prob, perplejidad=prob^(-1/3))
+```
+
+</div>
+<div class="paired-code" data-lang="python" style="display:none">
+
+```{python bigramas_python, eval=params$ejecutar_python}
+import math
+C = [[0,2,2],[2,1,0],[1,1,0]]
+P = [[(c+1)/(sum(fila)+3) for c in fila] for fila in C]
+prob = P[0][1]*P[1][2]*P[2][0]
+print({"prob_condicional":prob,"perplejidad":prob**(-1/3)})
+```
+
+</div>
+
+<div class="result-foot">**Resultado matemático comprobado:** probabilidad condicional = 1/35 ≈ 0,028571; PPL ≈ 3,271066. El HTML proyectado no ejecuta R ni Python dentro del navegador. Para recalcular con R o Python, usa los programas incluidos o vuelve a generar el `.Rmd` en un entorno configurado.</div>
+
+## 4.3 ¿Por qué existe BPE?
+
+El lenguaje no se organiza siempre en palabras frecuentes: tecnicismos, morfología, abreviaturas y números provocan fragmentaciones muy diferentes. La **codificación por pares de bytes** (*Byte Pair Encoding*, BPE) comienza con unidades pequeñas y fusiona repetidamente el par adyacente más frecuente según una regla de desempate. El nombre procede de un algoritmo de compresión de bytes (Gage, 1994); Sennrich et al. (2016) lo adaptaron a subpalabras. Aquí las unidades iniciales son caracteres, con el marcador de fin de palabra ⟨/w⟩.
+
+<div class="widget" id="widget-bpe"><div class="widget-head"><strong>Animación de fusiones BPE</strong><span class="badge-demo">Ejemplo didáctico</span></div><p>Corpus: <em>casa (5), casas (2), cosa (6), cosas (3), caso (4)</em>. Cada paso reproduce la tabla de la guía S01, con desempate lexicográfico.</p><div class="mini-controls"><button id="bpeAnterior" type="button" class="pill">← Anterior</button><button id="bpeSiguiente" type="button" class="pill">Siguiente →</button></div><p class="big-example" id="bpePaso"></p><div class="stat-row"><div><span>Fusión</span><strong id="bpeNum">0/6</strong></div><div><span>Longitud total</span><strong id="bpeLong">105</strong><small>símbolos</small></div></div></div>
+
+La longitud disminuye en el conteo del par en ese paso para este corpus y bajo la convención indicada; el método voraz **no garantiza la tokenización óptima global**. Contraejemplo verificado: en el corpus *bdac* (4), *ebac* (4), *bad* (5), *feb* (4), dos fusiones voraces dejan 45 unidades y la mejor ruta deja 43 (Complemento S01.C11).
+
+## 4.4 Módulo ejecutable y app complementaria
+
+En el paquete se incluyen los programas originales que generan las mediciones y pruebas:
+
+```text
+python codigo/representacion.py
+python codigo/s01.py
+python codigo/experimento_s01.py
+# En un equipo con R instalado:
+Rscript codigo/representacion.R
+Rscript codigo/s01.R
+Rscript codigo/experimento_s01.R
+```
+
+La aplicación exploratoria [Shiny](shiny/app.R) permite cambiar la cadena y el suavizado, construir matrices de bigramas y explorar KL mediante controles reactivos. **Requiere R, Shiny y ejecución local o un servidor Shiny**, mientras que el HTML interactivo básico funciona sin servidor.
+
+<details class="check-question"><summary>Pregunta de comprobación del bloque 4: ¿Qué añade ejecutar el ejemplo después de demostrar sus fórmulas?</summary><p><strong>Respuesta orientativa:</strong> Comprueba cifras y convenciones concretas, pero no sustituye las hipótesis ni la demostración.</p></details>
+
+# Bloque 5 · Del resultado al reporte y a la investigación
+<details class="glossary-widget" data-glossary-block="5">
+<summary><span class="glossary-heading">Conceptos del bloque 5 · consultar términos</span><span class="glossary-teaser">Línea base · Datos sintéticos · Comparación pareada…</span></summary>
+<div class="glossary-content"><label for="glosario-b5">Buscar una palabra o expresión del bloque</label>
+<input type="search" id="glosario-b5" class="glossary-search" placeholder="Escribe para filtrar conceptos…" autocomplete="off" />
+<div class="glossary-grid"><article class="glossary-entry" data-term="línea base método de referencia contra el cual se compara una propuesta nueva. un bigrama general antes de entrenar una alternativa especializada."><strong>Línea base</strong><p>Método de referencia contra el cual se compara una propuesta nueva.</p><small><b>Ejemplo:</b> Un bigrama general antes de entrenar una alternativa especializada.</small></article>
+<article class="glossary-entry" data-term="datos sintéticos datos creados deliberadamente para enseñanza o simulación, no recogidos de una población real. las seis frases de prueba de esta demostración."><strong>Datos sintéticos</strong><p>Datos creados deliberadamente para enseñanza o simulación, no recogidos de una población real.</p><small><b>Ejemplo:</b> Las seis frases de prueba de esta demostración.</small></article>
+<article class="glossary-entry" data-term="comparación pareada evaluación de dos métodos sobre las mismas unidades para analizar diferencias por unidad. restar bpc técnico − bpc general para cada documento."><strong>Comparación pareada</strong><p>Evaluación de dos métodos sobre las mismas unidades para analizar diferencias por unidad.</p><small><b>Ejemplo:</b> Restar BPC técnico − BPC general para cada documento.</small></article>
+<article class="glossary-entry" data-term="bootstrap por documento re-muestreo de documentos completos, con reemplazo, para estimar la variabilidad de una estadística. volver a muestrear seis diferencias documentales."><strong>Bootstrap por documento</strong><p>Re-muestreo de documentos completos, con reemplazo, para estimar la variabilidad de una estadística.</p><small><b>Ejemplo:</b> Volver a muestrear seis diferencias documentales.</small></article>
+<article class="glossary-entry" data-term="intervalo de confianza (ic) intervalo construido por un procedimiento con una cobertura frecuentista especificada bajo sus supuestos. ic bootstrap al 95 % para una diferencia media."><strong>Intervalo de confianza (IC)</strong><p>Intervalo construido por un procedimiento con una cobertura frecuentista especificada bajo sus supuestos.</p><small><b>Ejemplo:</b> IC bootstrap al 95 % para una diferencia media.</small></article>
+<article class="glossary-entry" data-term="ic10 código de una pregunta candidata de investigación: costo de tokenización de textos técnicos en español. comparar tokens/palabra y bpc con diseños controlados."><strong>IC10</strong><p>Código de una pregunta candidata de investigación: costo de tokenización de textos técnicos en español.</p><small><b>Ejemplo:</b> Comparar tokens/palabra y BPC con diseños controlados.</small></article>
+<article class="glossary-entry" data-term="validación externa evaluación adicional en otra fuente, institución o población para estudiar generalización. probar en informes de otra empresa, bajo autorización."><strong>Validación externa</strong><p>Evaluación adicional en otra fuente, institución o población para estudiar generalización.</p><small><b>Ejemplo:</b> Probar en informes de otra empresa, bajo autorización.</small></article>
+<article class="glossary-entry" data-term="revista q1 revista situada en el primer cuartil de una categoría en un sistema bibliométrico y año definidos. un objetivo editorial que exige contribución, rigor y novedad; no garantiza aceptación."><strong>Revista Q1</strong><p>Revista situada en el primer cuartil de una categoría en un sistema bibliométrico y año definidos.</p><small><b>Ejemplo:</b> Un objetivo editorial que exige contribución, rigor y novedad; no garantiza aceptación.</small></article><article class="glossary-entry" data-term="csv formato sencillo de datos organizados en filas y columnas. una fila por informe con su bpc."><strong>CSV</strong><p>Formato sencillo de datos organizados en filas y columnas.</p><small><b>Ejemplo:</b> Una fila por informe con su BPC.</small></article><article class="glossary-entry" data-term="presupuesto de fusiones numero de combinaciones aprendidas por BPE. 20 fusiones en cada tokenizador."><strong>Presupuesto de fusiones</strong><p>Número máximo de combinaciones que aprende un tokenizador BPE durante el entrenamiento.</p><small><b>Ejemplo:</b> 20 fusiones para cada corpus.</small></article>
+<article class="glossary-entry" data-term="tokens por palabra cociente entre cantidad de tokens y cantidad de palabras del mismo texto. 127 sobre 35."><strong>Tokens por palabra</strong><p>Cociente entre el total de tokens producidos y el número de palabras del mismo texto.</p><small><b>Ejemplo:</b> 127 tokens / 35 palabras.</small></article></div><p class="glossary-noresults" hidden>No hay coincidencias. Prueba con otra palabra.</p>
+<p class="glossary-footnote">Consulta las definiciones cuando aparezca un término nuevo. Los ejemplos son introductorios; las definiciones formales y sus hipótesis están en la sesión S01 del libro y en sus Complementos matemáticos.</p></div>
+</details>
+
+## 5.1 ¿Qué resultado produjo el experimento?
+
+El experimento de S01 v2.2 usa **8 frases generales y 8 técnicas de entrenamiento, y 6 técnicas de prueba**, todas redactadas para docencia. Compara dos bigramas de caracteres, ambos con $\alpha=1$ y el **mismo vocabulario entrenado**. La pérdida incluye **marcadores de inicio y fin** (⟨s⟩ y ⟨/s⟩, BOS/EOS) y divide por la longitud original en **puntos de código Unicode** (una convención para contar caracteres que no siempre coincide con las letras visibles).
+
+<div class="widget"><div class="widget-head"><strong>Diferencias de BPC por documento reservado</strong><span class="badge-synthetic">SINTÉTICO · ejecutado con Python</span></div><div id="tablaResultados"></div><div class="stat-row"><div><span>Δ media</span><strong>-0,54025</strong><small>BPC técnico − BPC general</small></div><div><span>IC percentil (exploratorio; con solo seis documentos no se puede asegurar cobertura nominal) 95 %</span><strong>[-0,66771; -0,42038]</strong><small>bootstrap pareado exhaustivo, 6⁶</small></div></div></div>
+
+**Interpretación apropiada:** en esas seis frases sintéticas reservadas, el bigrama entrenado con texto técnico asigna menor pérdida media. No constituye una estimación poblacional para reportes industriales ni compara tokenizadores neuronales. La interfaz muestra **resultados obtenidos anteriormente con Python**, no un entrenamiento ejecutado al mover los controles.
+
+**Bootstrap pareado:** una remuestra elige seis documentos al azar con reemplazo y calcula la media de sus diferencias; con seis documentos hay $6^6=46656$ remuestras igualmente probables. El intervalo percentil usa los cuantiles 0,025 y 0,975 de esas medias (definición precisa en el Complemento S01.C12).
+
+## 5.2 El taller termina en un reporte, no en una captura
+
+El producto autónomo de S01 es un **reporte de 2–3 páginas**, más los programas y archivos CSV (tablas de datos en formato de valores separados por comas) que regeneran sus resultados. Debe explicar:
+
+1. la pregunta y la unidad de análisis;
+2. los corpus, el preprocesamiento y la separación entrenamiento/prueba;
+3. los modelos, las probabilidades y el protocolo BPC;
+4. los resultados por documento y su incertidumbre;
+5. los límites del ejemplo sintético y la propuesta de una réplica real.
+
+[Consigna del taller](../pdf/t01.pdf) · [Modelo de reporte ejecutado](../pdf/reporte_ejemplo_ejecutado.pdf) · [Plantilla editable](informes/reporte_s01.tex)
+
+## 5.3 Primera pregunta de investigación: IC10
+
+**Pregunta prospectiva:** ¿qué penalización presentan los tokenizadores generales frente a tokenizadores especializados cuando procesan reportes técnicos en español?
+
+**Extensión empírica todavía pendiente:** el microexperimento de BPE del apartado 5.4 ya cambia los tokenizadores con un presupuesto común, pero utiliza frases inventadas; faltan corpus general y de dominio con licencia comprobada; particiones por documento/fuente; tamaño de vocabulario declarado; longitud de texto comparable; medidas de tokens por palabra y BPC bajo modelos bien definidos; bootstrap por documento y análisis por subdominio; comparación con líneas base fuertes y posible validación externa.
+
+Un resultado reproducible **no equivale** por sí mismo a contribución Q1. La aspiración a una revista del primer cuartil exige delimitar novedad, validez de la medición, replicación, relevancia para el dominio y análisis de límites; la revista y su cuartil deben verificarse en el momento del sometimiento.
+
+**Hito evaluable S01:** identificar **dos áreas de interés**, con un párrafo de motivación y disponibilidad plausible de datos para cada una. No se exige escoger el problema definitivo hasta S05.
+
+
+## 5.4 Cambiar la segmentación: microexperimento IC10
+
+**Ahora sí cambia el tokenizador.** Entrenamos dos procedimientos **BPE de subpalabras** sobre el corpus general y el técnico respectivamente, conservando **20 fusiones en cada uno**, las mismas reglas de normalización y **seis frases técnicas de prueba no utilizadas para aprender las fusiones**.
+
+| Tokenizador | Palabras evaluadas | Tokens producidos | Tokens por palabra |
+|:--|--:|--:|--:|
+| BPE entrenado con textos generales | 35 | 148 | 4,228571 |
+| BPE entrenado con textos técnicos | 35 | 127 | 3,628571 |
+
+**Qué se puede concluir:** en este ejemplo **sintético** el BPE técnico produce 21 tokens menos, equivalentes a 0,6 tokens por palabra menos. **Qué no se puede concluir:** no hemos probado que un modelo predictivo sea mejor, tenga menor BPC ni rinda mejor en un corpus real. La longitud de la segmentación no equivale a calidad probabilística.
+
+[Tabla por documento](experimentos/resultados_ic10_tokenizacion.csv) · [20 fusiones aprendidas por corpus](experimentos/fusiones_ic10.csv) · [Laboratorio computacional actualizado](../pdf/labcomp01.pdf).
+
+**Ejecuta o audita:** `python codigo/ic10_tokenizadores.py` o `Rscript codigo/ic10_tokenizadores.R`. El HTML muestra resultados **generados previamente en Python** y no ejecuta estos lenguajes al navegar.
+
+
+## Anexo · Complementos matemáticos (continúa en curso posterior)
+
+Estas deducciones no se cubren en la clase presencial; se estudian en la [sesión S01 del libro](../pdf/s01_integrada.pdf), subsección «Complementos matemáticos de S01».
+
+- **C1** Símplex compacto y convexo; $\lim_{x\downarrow0}x\ln x=0$.
+- **C2** Regla de la cadena con soporte; dos formas equivalentes de la independencia condicional; parámetros $K^m(K-1)$.
+- **C3** $\ln z\le z-1$; desigualdad de Jensen; desigualdad de Gibbs; regla de puntuación estrictamente propia; KL no es métrica.
+- **C4** MLE: concavidad, existencia y condiciones KKT; prueba por Gibbs.
+- **C5** $\Gamma(x+1)=x\Gamma(x)$; $\mathrm B(a,b)=\Gamma(a)\Gamma(b)/\Gamma(a+b)$; integral de Dirichlet por inducción.
+- **C6** Moda de una Dirichlet; masa de lo no visto $(K-K_+)\alpha/(N+K\alpha)$, creciente en $K$.
+- **C7** Regla de la cadena de la entropía; $I(X;Y)\ge0$; $H(X\mid Y,Z)\le H(X\mid Y)$.
+- **C8** Regla de la cadena de la KL; suma logarítmica; procesamiento de datos.
+- **C9** Matrices positivas: estacionaria única y convergencia geométrica; $\pi=(98,108,75)/281$ paso a paso; tasa de entropía $H_\infty\approx1{,}472301$ bits.
+- **C10** PPL y BPC; desigualdad de Kraft; parada geométrica $\mathbb E[M]=(1-r)/r$.
+- **C11** BPE: reducción exacta y contraejemplo a la optimalidad.
+- **C12** Bootstrap pareado e intervalo percentil.
+
+---
+
+### Bibliografía y procedencia
+
+Estructura digital inspirada en el archivo aportado un ejemplo docente de Álgebra Lineal Aplicada: navegación por secciones y plegado de código, adaptados a una plantilla común accesible. Contenidos y cifras tomados de los materiales producidos para **S01 v2.2**. Referencias fundamentales: Shannon (1948), Cover y Thomas (2006), Gage (1994), Sennrich et al. (2016), y Chollet con Allaire (2018, capítulo 6 de *Deep Learning with R*). Los diagramas y widgets de esta entrega son originales.
+
+
+<details class="check-question"><summary>Pregunta de comprobación del bloque 5: ¿Los seis documentos sintéticos prueban una mejora generalizable?</summary><p><strong>Respuesta orientativa:</strong> No. Sirven para aprender el protocolo; faltan datos independientes y suficientes para una inferencia confiable.</p></details>
+
+**Referencias esenciales de esta sesión:** Shannon (1948), *A Mathematical Theory of Communication*. Sennrich et al. (2016), *Neural Machine Translation of Rare Words with Subword Units*. Las fichas bibliográficas completas se conservan en el volumen del curso.

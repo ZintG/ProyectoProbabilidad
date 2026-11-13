@@ -1,0 +1,149 @@
+
+\chapter*{Derivaciones complementarias y experimentos de pizarra}
+\addcontentsline{toc}{chapter}{Derivaciones complementarias y experimentos de pizarra}
+
+\section*{De una frase a una variable aleatoria}
+\addcontentsline{toc}{section}{De una frase a una variable aleatoria}
+Antes de introducir redes neuronales separamos tres operaciones distintas:
+(i) elegir una representación discreta del texto, (ii) asignar probabilidades a
+secuencias en esa representación y (iii) generar símbolos condicionando en un
+prefijo. Por ejemplo, la cadena ``pozo estable'' puede representarse por caracteres,
+palabras o subpalabras; las probabilidades sobre los elementos de cada representación
+no tienen por qué coincidir. Una representación admite un modelo autorregresivo
+si permite definir $q(x_t\mid x_{<t})$ y su producto a lo largo de la secuencia.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[font=\small,box/.style={draw=azul,rounded corners=2pt,fill=azulclaro,
+minimum height=9mm,align=center,text width=3cm},>=Stealth]
+\node[box] (a) at (0,0) {Texto original\\\texttt{pozo estable}};
+\node[box] (b) at (4.1,0) {Tokenización\\$x_1,\ldots,x_T$};
+\node[box] (c) at (8.2,0) {Probabilidad\\$\prod_tq(x_t\mid x_{<t})$};
+\draw[->,thick] (a)--(b);
+\draw[->,thick] (b)--(c);
+\node[draw=gris,dashed,rounded corners,text width=7.7cm,align=center] at (4.1,-1.5)
+{Medición: $-\log_2 q(x_{1:T})$ bits; fijar fronteras y unidad del texto};
+\end{tikzpicture}
+\caption{Tres decisiones separadas: representación, asignación de probabilidad y medición.}
+\end{figure}
+
+\section*{Regla de la cadena con números: dependencia que el bigrama pierde}
+\addcontentsline{toc}{section}{Regla de la cadena con números}
+Sea $X_1\sim\mathrm{Bernoulli}(1/2)$, $X_2\sim\mathrm{Bernoulli}(1/2)$ independiente
+y $X_3=X_1$ con probabilidad uno. La regla de la cadena es exacta:
+$p(x_1,x_2,x_3)=p(x_1)p(x_2\mid x_1)p(x_3\mid x_1,x_2)$.
+La probabilidad de $(1,0,1)$ es $1/2\cdot1/2\cdot1=1/4$. Sin embargo,
+$p(X_3=1\mid X_2=0)=1/2$; al imponer el supuesto de bigramas se obtiene
+$1/2\cdot1/2\cdot1/2=1/8$. La diferencia se debe a la memoria perdida, no
+a una falla de la regla de la cadena. En esta distribución el pasado remoto
+$X_1$ es indispensable para predecir $X_3$.
+
+\section*{La estimación por máxima verosimilitud cuando hay ceros}
+\addcontentsline{toc}{section}{MLE y sus casos de frontera}
+Para un contexto $h$, sean $c_1,\ldots,c_K$ los conteos y $N=\sum_i c_i>0$.
+El objetivo $\ell(q)=\sum_{i:c_i>0}c_i\ln q_i$ se maximiza sobre el símplex
+cerrado $q_i\geq0$, $\sum_iq_i=1$. Sobre el soporte observado, las condiciones
+de Lagrange dan $c_i/q_i=\lambda$. Por ello $q_i=c_i/N$, y por el principio
+de la desigualdad de Gibbs este valor maximiza globalmente la log-verosimilitud.
+Para un $c_i=0$, la solución asigna $q_i=0$; una solución estrictamente positiva
+para todas las categorías no alcanza el máximo, solo puede aproximarlo.
+
+\begin{center}
+\begin{tabular}{lrrrr}\toprule
+Contexto $h$ & $c(a)$ & $c(b)$ & $c(c)$ & $N_h$\\\midrule
+$a$ & 0 & 2 & 2 & 4\\
+$b$ & 2 & 1 & 0 & 3\\
+$c$ & 1 & 1 & 0 & 2\\\bottomrule
+\end{tabular}
+\end{center}
+Para el contexto $b$, $\hat q(c\mid b)=0$. Con $\alpha=1/2$ y $K=3$,
+\[
+q_\alpha(\cdot\mid b)=\biggl(\frac{2.5}{4.5},\frac{1.5}{4.5},
+\frac{0.5}{4.5}\biggr)=\left(\frac59,\frac13,\frac19\right).
+\]
+La masa para el símbolo no visto es $1/9$; para $\alpha=1$ sería $1/6$.
+Esto pone de relieve que el parámetro de suavizado cambia predicciones,
+por lo que se selecciona en validación, nunca en prueba.
+
+\section*{De Dirichlet a predicción posterior}
+\addcontentsline{toc}{section}{De Dirichlet a predicción posterior}
+Sea $\mathbf q\sim\operatorname{Dirichlet}(\alpha_1,\ldots,\alpha_K)$.
+Su densidad (hasta constante) es $\prod_iq_i^{\alpha_i-1}$.
+Dada una muestra con conteos $\mathbf c$, la verosimilitud es proporcional
+a $\prod_iq_i^{c_i}$, de modo que la posterior tiene densidad
+$\prod_iq_i^{c_i+\alpha_i-1}$; por identificación,
+$\mathbf q\mid \mathbf c\sim\operatorname{Dirichlet}(\mathbf c+\boldsymbol\alpha)$.
+La distribución predictiva para una nueva observación es
+\[
+P(X_{N+1}=i\mid\mathbf c)=\int q_i\,p(\mathbf q\mid\mathbf c)\,d\mathbf q
+=\frac{c_i+\alpha_i}{N+\sum_j\alpha_j}.
+\]
+La integral es una esperanza posterior, no una moda posterior ni un estimador
+frecuentista sin regularización. Este punto facilita comprender que un modelo
+puede conservar incertidumbre sobre parámetros a partir de pocos datos.
+
+\section*{Entropía, cruzada, divergencia y codificación}
+\addcontentsline{toc}{section}{Entropía, cruzada, divergencia y codificación}
+Para $p=(3/4,1/4)$ y $q=(1/2,1/2)$, usando logaritmos en base dos,
+\[
+H(p)=-\tfrac34\log_2\tfrac34-\tfrac14\log_2\tfrac14\simeq0.8113,
+\qquad H(p,q)=1.
+\]
+Luego $D_{\mathrm{KL}}(p\Vert q)=H(p,q)-H(p)\simeq0.1887$ bits.
+Invirtiendo el orden se obtiene
+$D_{\mathrm{KL}}(q\Vert p)=\frac12\log_2(2/3)+\frac12\log_2 2
+\simeq0.2075$ bits: KL no es simétrica.
+El argumento de Gibbs establece $D_{\mathrm{KL}}(p\Vert q)\geq0$;
+si $q=0$ en un punto con $p>0$, se entiende que la divergencia es infinita.
+La interpretación de codificación es operacional: $-\log_2 q(x)$ mide
+longitud idealizada de un código probabilístico para el evento $x$.
+
+\section*{Tres modelos, una cadena: por qué la unidad importa}
+\addcontentsline{toc}{section}{Tres modelos, una cadena}
+Considérese un texto de $100$ caracteres Unicode medidos como puntos de
+código, sin normalización posterior. Supónganse dos distribuciones válidas
+sobre sus secuencias de tokens, con codificación reversible del texto:
+\begin{center}
+\begin{tabular}{lrrrr}\toprule
+Modelo & Tokens & PPL/token & Bits totales & BPC\\\midrule
+A (caracteres) &100& $3.2$ & $100\log_2(3.2)\simeq167.8$ & $1.678$\\
+B (subpalabras)&30& $25$ & $30\log_2(25)\simeq139.3$ & $1.393$\\\bottomrule
+\end{tabular}
+\end{center}
+Ambos juegos de probabilidades son \emph{ilustrativos}. Para comparar tasas
+sobre un mismo texto debe incluirse toda la probabilidad del evento textual,
+incluidos marcadores de inicio y fin cuando correspondan, y garantizar que
+ambas representaciones reconstruyan el texto sin pérdida. Si un tokenizador
+normaliza y destruye caracteres, el BPC calculado sobre texto original
+puede dejar de representar una tasa comparable; es necesario especificar
+la transformación o evaluarla explícitamente.
+
+\section*{Ventana de contexto y mecanismo de generación}
+\addcontentsline{toc}{section}{Ventana de contexto y mecanismo de generación}
+En el generador autorregresivo, el \emph{prompt} proporciona el prefijo;
+el contexto es la historia efectivamente suministrada al modelo;
+y el arnés decide si muestrear, terminar o truncar la respuesta.
+\begin{figure}[H]\centering
+\begin{tikzpicture}[font=\small,>=Stealth,
+box/.style={draw=azul,rounded corners,fill=azulclaro,align=center,text width=3cm,minimum height=1cm}]
+\node[box] (p) at (0,0) {Prefijo\,(prompt)\\$x_{1:k}$};
+\node[box] (q) at (4,0) {Distribución condicional\\$q_\theta(\cdot\mid h)$};
+\node[box] (t) at (8,0) {Muestreo de $X_{k+1}$\\+ condición de parada};
+\draw[->,thick] (p)--(q);
+\draw[->,thick] (q)--(t);
+\draw[->,thick] (t.south) -- ++(0,-.7) -| node[pos=.25,below]{si continúa: actualizar $h$} (p.south);
+\end{tikzpicture}
+\caption{El modelo calcula condicionales; el arnés transforma condicionales en un algoritmo de generación.}
+\end{figure}
+En particular, una cota de $n$ tokens impuesta externamente produce
+una distribución de longitudes diferente de la ley generativa sin truncamiento.
+
+\section*{Puente hacia la práctica en R y Python}
+\addcontentsline{toc}{section}{Puente hacia la práctica en R y Python}
+La estrategia pedagógica separa la representación de texto, la construcción
+de una matriz de conteos y su interpretación probabilística. El módulo
+\texttt{modulo\_codigo\_s01.tex} proporciona un corpus ilustrativo, código base R
+sin dependencias, validación de sumas por fila, cálculo de entropía cruzada
+y una implementación didáctica de BPE con desempates deterministas.
+Las arquitecturas recurrentes, convolucionales y \emph{Transformer} se
+mencionan solo como extensiones: su tratamiento detallado corresponde
+a sesiones posteriores.

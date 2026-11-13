@@ -1,0 +1,282 @@
+\documentclass[11pt,letterpaper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{top=2cm, bottom=2cm, left=2.2cm, right=2.2cm}
+
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{float}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage[most]{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% Configuración de colores sobrios y profesionales
+\definecolor{primary}{RGB}{20, 60, 100}
+\definecolor{secondary}{RGB}{35, 110, 160}
+\definecolor{accentbg}{RGB}{246, 249, 252}
+\definecolor{boxborder}{RGB}{185, 205, 225}
+\definecolor{warmbg}{RGB}{254, 249, 243}
+\definecolor{warmborder}{RGB}{215, 120, 40}
+
+% Estilo de cajas informativas
+\newtcolorbox{infobox}[1][]{
+  colback=accentbg,
+  colframe=primary,
+  fonttitle=\bfseries,
+  coltitle=white,
+  arc=2.5mm,
+  boxrule=1pt,
+  left=4mm, right=4mm, top=3mm, bottom=3mm,
+  #1
+}
+
+\newtcolorbox{alertbox}[1][]{
+  colback=warmbg,
+  colframe=warmborder,
+  fonttitle=\bfseries,
+  coltitle=white,
+  arc=2.5mm,
+  boxrule=1pt,
+  left=4mm, right=4mm, top=3mm, bottom=3mm,
+  #1
+}
+
+% Encabezados y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small \textcolor{gray}{Proyecto de Probabilidad · Modelos de $n$-gramas}}
+\lhead{\small \textcolor{gray}{Guía Conceptual y Plan de Trabajo}}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\begin{document}
+
+\begin{center}
+  {\LARGE \textbf{\textcolor{primary}{Proyecto Final de Probabilidad: Modelos de $n$-gramas}}}\\[0.25em]
+  {\Large \textbf{Guía Intuitiva, Explicación Conceptual y Plan de Trabajo en Equipo}}\\[0.25em]
+  {\normalsize Curso de Teoría de la Probabilidad · Quinto Semestre · Licenciatura en Computación}\\[0.15em]
+  {\small Noviembre de 2026}
+\end{center}
+\vspace{-0.5em}
+
+\begin{infobox}[title=Propósito de esta guía]
+Este documento sintetiza el proyecto final de la materia de forma clara, amena e intuitiva. Está pensado para que cualquier integrante del equipo, independientemente de sus conocimientos previos sobre modelos de lenguaje, comprenda de inmediato \textbf{qué se busca lograr, por qué tiene sentido probabilístico, cómo se resuelven los retos del proyecto y cómo organizarse en un equipo de 4 personas} para completarlo paso a paso con éxito y sin frustración.
+\end{infobox}
+
+\section{¿De qué trata este proyecto en palabras sencillas?}
+
+Imagina que estás escribiendo un mensaje en tu teléfono móvil y escribes la letra:
+\begin{center}
+\textbf{\Large « q »}
+\end{center}
+Tu intuición y el teclado predictivo de tu teléfono saben de inmediato que la siguiente letra, con casi un 100\,\% de probabilidad en español, será la letra \textbf{« u »}.
+
+Ahora imagina que acabas de escribir:
+\begin{center}
+\textbf{\Large « la ca »}
+\end{center}
+¿Qué letra viene a continuación? Podría ser una \textbf{«s»} (\textit{la casa}), una \textbf{«m»} (\textit{la cama}), una \textbf{«r»} (\textit{la cara}) o una \textbf{«l»} (\textit{la cal}). Hay cierta incertidumbre, pero sabemos con certeza que difícilmente vendrá una \textbf{«x»} o una \textbf{«w»}.
+
+Este proyecto consiste exactamente en construir una \textbf{máquina predictiva que intenta adivinar el siguiente carácter (letra, espacio o signo) de un texto en español}, basándose exclusivamente en el cálculo de probabilidades obtenido a partir de conteos en un libro real.
+
+A la cantidad de caracteres previos que miramos como contexto se le llama en probabilidad el \textbf{orden del modelo de $n$-gramas}:
+\begin{itemize}[leftmargin=1.0cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Unigramas ($n = 1$):} El modelo no tiene memoria del pasado; solo predice según la frecuencia general de cada letra en el texto (por ejemplo, sabiendo que la «e» y la «a» son muy comunes en español).
+    \item \textbf{Bigramas ($n = 2$):} El modelo mira \textbf{la última letra} para predecir la siguiente (ej.\ qué letra suele seguir a la «q»). Formalmente, es una \textit{Cadena de Markov de primer orden}.
+    \item \textbf{Trigramas ($n = 3$):} El modelo mira las \textbf{últimas 2 letras} para predecir la tercera.
+    \item \textbf{Modelos de orden $n = 4$ y $n = 5$:} El modelo mira las últimas 3 o 4 letras (ya empieza a reconocer raíces y fragmentos enteros de palabras).
+\end{itemize}
+
+\section{El objetivo central y la gran pregunta a responder}
+
+El proyecto no busca simplemente escribir código, sino responder experimentalmente con datos a la siguiente pregunta de investigación:
+
+\begin{quote}
+\centering
+\textit{«¿Cuánto mejora la predicción del siguiente carácter al aumentar la memoria del modelo (el orden $n$) y a partir de qué orden deja de compensar por falta de datos?»}
+\end{quote}
+
+\paragraph{La trampa que van a experimentar:}
+A primera vista, uno podría pensar: \textit{«¡Pues démosle al modelo una memoria de 10 letras para que sea súper inteligente!»}. Pero en la práctica ocurre algo crítico:
+\begin{itemize}[leftmargin=1.0cm, itemsep=1pt, parsep=0pt]
+    \item Mientras más largo es el contexto que exigimos recordar, \textbf{menos veces habrá aparecido esa combinación exacta en el libro}.
+    \item Cuando el modelo se encuentra con una secuencia que nunca vio en su fase de estudio, la probabilidad calculada por frecuencia empírica da exactamente \textbf{cero ($0$)}.
+    \item Como las métricas de evaluación utilizan logaritmos ($\log_2(0) \to -\infty$), asignar probabilidad cero a un evento real \textbf{arruina por completo el rendimiento del modelo} (da un error infinito).
+\end{itemize}
+Resolver este fenómeno mediante un concepto probabilístico llamado \textbf{suavizado} es uno de los aportes centrales del proyecto.
+
+\section{Materia prima y herramientas de trabajo}
+
+\begin{enumerate}[leftmargin=0.7cm, itemsep=2pt, parsep=0pt]
+    \item \textbf{El Corpus (Texto de estudio):}
+    Se utilizará una obra literaria en español de dominio público descargada de \href{https://www.gutenberg.org}{Project Gutenberg} con al menos \textbf{300\,000 caracteres} (por ejemplo, una novela clásica). Cada equipo debe elegir una obra distinta y registrar en la primera semana su título, autor, URL y fecha de descarga.
+    
+    \item \textbf{Limpieza y Normalización Obligatoria:}
+    \begin{itemize}[itemsep=0.5pt, parsep=0pt]
+        \item Convertir todo el texto a minúsculas.
+        \item Colapsar espacios múltiples y saltos de línea repetidos en un solo espacio en blanco.
+        \item Reemplazar cualquier símbolo fuera del alfabeto elegido por un carácter especial único (por ejemplo \texttt{\#}). El vocabulario final $\mathcal{V}$ rondará típicamente entre 30 y 45 caracteres.
+    \end{itemize}
+
+    \item \textbf{Partición de los Datos (80\% / 10\% / 10\%):}
+    El libro se divide en tres bloques contiguos en este orden:
+    \begin{itemize}[itemsep=0.5pt, parsep=0pt]
+        \item \textbf{80\,\% Entrenamiento:} De donde el modelo aprende y cuenta las frecuencias de las letras.
+        \item \textbf{10\,\% Validación:} El conjunto de pruebas intermedias para calibrar los parámetros del modelo (encontrar el mejor valor de suavizado $\alpha$).
+        \item \textbf{10\,\% Prueba:} El examen final definitivo. \textbf{Se evalúa una sola vez al final del proyecto}.
+    \end{itemize}
+    \textit{Importante:} No se mezclan letras ni oraciones al azar: un texto tiene fuerte dependencia entre caracteres vecinos, y barajar filtraría información del entrenamiento a la evaluación.
+    
+    \item \textbf{Herramientas permitidas:}
+    Python 3 estándar con \texttt{NumPy}, \texttt{pandas} y \texttt{Matplotlib} (o R base con \texttt{ggplot2}). \textbf{No} se permiten librerías que ya implementen modelos de lenguaje (como NLTK o KenLM) ni redes neuronales. Todo el cálculo probabilístico se programa por el equipo.
+\end{enumerate}
+
+\section{La prueba de cordura: Su red de seguridad inicial}
+
+Para garantizar que nadie pierda tiempo buscando errores matemáticos en un texto gigante de 300\,000 letras, el profesor diseñó una \textbf{prueba de cordura obligatoria} con una palabra de juguete:
+\begin{center}
+\texttt{\textbf{«abracadabra»}}
+\end{center}
+Antes de procesar la novela real, el script \texttt{pruebas.py} debe correr sobre \texttt{abracadabra} y reproducir con total exactitud las cifras teóricas de la Tabla~\ref{tab:cordura}. Si estas cifras coinciden, ¡el equipo puede avanzar con total tranquilidad sabiendo que sus fórmulas y matrices están blindadas!
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{ll}
+\toprule
+\textbf{Magnitud calculada} & \textbf{Valor esperado exacto} \\
+\midrule
+Conteos de unigramas & a: 5, b: 2, r: 2, c: 1, d: 1 \\
+Entropía de las frecuencias de unigramas & 2.0404 bits \\
+$\hat{q}(\text{b} \mid \text{a})$ por Máxima Verosimilitud (MLE, bigramas) & 0.5 \\
+$\hat{q}_\alpha(\text{b} \mid \text{a})$ con suavizado $\alpha = 1$ y $|\mathcal{V}| = 5$ & $1/3 \approx 0.3333$ \\
+Bits Por Carácter (BPC) del bigrama MLE sobre sus 10 transiciones & 0.6 bits \\
+Perplejidad (PPL) correspondiente & 1.5157 \\
+\bottomrule
+\end{tabular}
+\caption{Valores esperados obligatorios para la prueba en \texttt{pruebas.py}.}
+\label{tab:cordura}
+\end{table}
+
+\section{El camino paso a paso: Las 6 Fases explicadas fácil}
+
+\subsection*{Fase 1: Explorar el corpus (¿Qué tan ordenado es el español?)}
+\begin{itemize}[leftmargin=0.8cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Qué se hace:} Se cuenta cuántas veces aparece cada carácter en el bloque de entrenamiento y se grafica de mayor a menor frecuencia (Gráfica F1 y Tabla T1).
+    \item \textbf{Intuición teórica:} Se calcula la \textbf{Entropía} $H(\hat{p})$, que mide el nivel promedio de sorpresa o desorden del texto. Se compara con la entropía máxima posible ($\log_2 |\mathcal{V}|$), que representaría un texto generado al azar equiprobable. La diferencia en bits muestra numéricamente cuánta estructura y regularidad posee el idioma español.
+\end{itemize}
+
+\subsection*{Fase 2: Estimar por Máxima Verosimilitud (MLE)}
+\begin{itemize}[leftmargin=0.8cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Qué se hace:} Se calculan las probabilidades condicionales empíricas para $n = 1, 2, 3, 4, 5$, dividiendo conteos observados:
+    \[
+    \hat{q}(y \mid h) = \frac{c(h, y)}{c(h)}
+    \]
+    \item \textbf{El hallazgo clave:} Al evaluar en validación, se descubre que para $n \ge 2$ aparecen secuencias no observadas en el entrenamiento, asignando probabilidad 0. Esto dispara la proporción de ceros (Tabla T2) y demuestra por qué la MLE pura falla al generalizar.
+\end{itemize}
+
+\subsection*{Fase 3: Suavizado aditivo y calibración del parámetro $\alpha$}
+\begin{itemize}[leftmargin=0.8cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Qué se hace:} Para que ninguna combinación tenga probabilidad cero, se suma un valor $\alpha > 0$ a cada celda de conteo (fórmula de Laplace generalizada):
+    \[
+    \hat{q}_\alpha(y \mid h) = \frac{c(h, y) + \alpha}{c(h) + \alpha |\mathcal{V}|}
+    \]
+    \item \textbf{Experimento:} Se prueba una rejilla de valores de $\alpha \in \{0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1\}$ sobre el bloque de validación.
+    \item \textbf{Resultado:} Se grafica el error BPC contra $\alpha$ para cada $n$ (Gráfica F2) y se elige el $\alpha$ óptimo que minimice el error de validación.
+\end{itemize}
+
+\subsection*{Fase 4: Evaluación en prueba y comprobación teórica}
+\begin{itemize}[leftmargin=0.8cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Qué se hace:} Con los mejores $\alpha$ ya fijados en validación, se evalúa \textbf{una sola vez} el bloque de prueba.
+    \item \textbf{Métricas principales:} Se reporta el \textbf{BPC} (Bits por Carácter, menor es mejor) y la \textbf{Perplejidad} ($\text{PPL} = 2^{\text{BPC}}$).
+    \item \textbf{Comprobación teórica:} Se verifica la \textit{Desigualdad de Gibbs} ($H(p) \le H(p,q)$) y se grafica el promedio acumulado de sorpresa a lo largo de la prueba, comprobando visualmente cómo se estabiliza tal como predice la \textit{Ley de los Grandes Números}.
+\end{itemize}
+
+\subsection*{Fase 5: Simulación (¡Poner a escribir al modelo!)}
+\begin{itemize}[leftmargin=0.8cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Qué se hace:} Se genera texto sintético de 300 caracteres con los modelos $n = 2, 3, 5$, partiendo de un mismo contexto inicial.
+    \item \textbf{Intuición teórica:} En bigramas ($n=2$), la matriz de transición permite calcular la \textit{distribución estacionaria} $\pi$, demostrando que a largo plazo las frecuencias de letras generadas convergen a las frecuencias reales del texto. Además, se analiza qué propiedades del español capturan las frases generadas y cuáles no.
+\end{itemize}
+
+\subsection*{Fase 6: Cuantificar la incertidumbre (Bootstrap)}
+\begin{itemize}[leftmargin=0.8cm, itemsep=1pt, parsep=0pt]
+    \item \textbf{Qué se hace:} ¿Es el mejor modelo significativamente superior al modelo anterior, o fue solo suerte con este texto? Se divide la prueba en bloques contiguos de 2000 caracteres y se aplica \textit{Bootstrap} (10\,000 remuestreos) para construir un intervalo de confianza del 95\,\% sobre la diferencia de rendimiento.
+\end{itemize}
+
+\section{Plan de organización para un equipo de 4 personas}
+
+Para trabajar de manera equilibrada, sin cuellos de botella y garantizando que todos dominen el contenido, se propone la siguiente distribución funcional:
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l p{3.8cm} X}
+\toprule
+\textbf{Integrante} & \textbf{Rol Principal} & \textbf{Entregables y Tareas Clave} \\
+\midrule
+\textbf{Persona 1} & \textbf{Ingeniero de Datos y Preprocesamiento} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Seleccionar la obra en Gutenberg y documentar la fuente.
+    \item Programar \texttt{preparar.py}: lectura, normalización y partición 80/10/10 contigua.
+    \item Implementar la Fase 1 (vocabulario, frecuencias y Tabla T1).
+\end{itemize} \\
+\addlinespace[3pt]
+\textbf{Persona 2} & \textbf{Arquitecto de Modelos Probabilísticos} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Programar \texttt{modelos.py}: conteos de $n$-gramas, matrices condicionales MLE y suavizado aditivo con $\alpha$.
+    \item Programar \texttt{pruebas.py} para asegurar que la prueba de \texttt{abracadabra} pase sin errores.
+\end{itemize} \\
+\addlinespace[3pt]
+\textbf{Persona 3} & \textbf{Experimentación y Simulación} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Programar \texttt{experimentos.py}: cálculo de BPC, perplejidad y selección del mejor $\alpha$ (Fases 3 y 4).
+    \item Programar la generación de texto (Fase 5) y el remuestreo Bootstrap del 95\,\% (Fase 6).
+    \item Exportar tablas (\texttt{.csv}) y figuras (\texttt{.pdf}/\texttt{.png}).
+\end{itemize} \\
+\addlinespace[3pt]
+\textbf{Persona 4} & \textbf{Líder de Reporte y Reproducibilidad} & 
+\begin{itemize}[leftmargin=*, nosep]
+    \item Estructurar la plantilla del reporte en LaTeX (10 a 14 págs.) según la Tabla 3 del enunciado.
+    \item Redactar el marco teórico formal (apoyándose en el libro de Luis Rincón y notas de S01).
+    \item Redactar el \texttt{README.md} y asegurar que todo corra en menos de 10 minutos.
+\end{itemize} \\
+\bottomrule
+\end{tabularx}
+\caption{Distribución modular sugerida para un equipo de 4 personas.}
+\label{tab:roles}
+\end{table}
+
+\begin{alertbox}[title=Recomendación clave para la defensa oral]
+El profesor se reserva el derecho de solicitar una \textbf{defensa oral aleatoria de 10 minutos} a cualquier integrante. Por ello, se recomienda realizar una breve sincronización semanal de 20 minutos donde cada miembro explique su código y sus gráficos al resto del equipo.
+\end{alertbox}
+
+\section{Cronograma de trabajo sugerido (4 semanas)}
+
+\begin{itemize}[leftmargin=1.2cm, itemsep=3pt]
+    \item \textbf{Semana 1 (Cimientos):} Elegir la obra de Gutenberg y pedir aprobación; programar la limpieza y partición; implementar y verificar la prueba de \texttt{abracadabra}.
+    \item \textbf{Semana 2 (Modelado):} Implementar conteos de $n$-gramas (Fase 2); aplicar suavizado aditivo y encontrar el mejor $\alpha$ con validación (Fase 3). Revisión 1 con el profesor.
+    \item \textbf{Semana 3 (Evaluación y Simulación):} Evaluar una sola vez en el bloque de prueba (Fase 4); simular texto (Fase 5); calcular el Bootstrap (Fase 6). Revisión 2 con el profesor.
+    \item \textbf{Semana 4 (Redacción y Empaquetado):} Integrar todas las tablas y figuras en el reporte de LaTeX; responder las preguntas de discusión; verificar la reproducibilidad completa en menos de 10 minutos y generar el archivo \texttt{.zip}.
+\end{itemize}
+
+\section{Lista de comprobación antes de entregar}
+
+\begin{itemize}[label=$\square$, leftmargin=1.0cm, itemsep=3pt]
+    \item El resumen incluye el mejor $n$ y su BPC de prueba con su intervalo Bootstrap.
+    \item Cada símbolo y término está definido antes de su primer uso formal.
+    \item El bloque de prueba se utilizó exactamente una sola vez y el reporte lo declara explícitamente.
+    \item El script \texttt{pruebas.py} pasa sin errores y reproduce exactamente las cifras de \texttt{abracadabra}.
+    \item Las tablas (T1--T4) y figuras (F1--F5) están numeradas, citadas y comentadas con unidades (bits, caracteres).
+    \item Cada pregunta en cursiva de la sección 4 tiene respuesta en la sección 7 de discusión.
+    \item Las referencias incluyen la obra literaria usada y el libro del curso.
+    \item La carpeta comprimida se llama exactamente \texttt{P1\_EquipoNN\_Apellido1\_Apellido2.zip}.
+\end{itemize}
+
+\end{document}

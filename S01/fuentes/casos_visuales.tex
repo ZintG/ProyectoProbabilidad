@@ -1,0 +1,50 @@
+\chapter*{Parte IV. Dos casos integradores para conectar ideas y decisiones}
+\addcontentsline{toc}{chapter}{Parte IV. Casos integradores y preguntas nuevas}
+\section*{25. Caso A: del comentario de un usuario a una representación numérica}
+Supongamos que una aplicación recibe tres frases: «servicio muy bueno», «servicio bueno» y «servicio muy lento». Antes de clasificar cada una como valoración positiva o negativa, debemos hacer explícitas varias decisiones: si distinguimos mayúsculas, si eliminamos tildes, si preservamos espacios y si trabajamos con palabras o subpalabras.
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth,font=\small,b/.style={draw=azul,rounded corners,fill=azulclaro,minimum height=12mm,text width=31mm,align=center}]
+\node[b] (a) at (0,0){Texto\\servicio muy bueno};
+\node[b] (b) at (4.1,0){Tokens\\servicio $\mid$ muy $\mid$ bueno};
+\node[b] (c) at (8.2,0){Códigos\\$1,2,3$};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);
+\end{tikzpicture}
+\end{center}
+Definamos, solo para este caso, $V=\{\texttt{servicio},\texttt{muy},\texttt{bueno},\texttt{lento}\}$. La bolsa de palabras de la primera frase es $(1,1,1,0)$ y la de la tercera $(1,1,0,1)$. Esas representaciones permiten comparar \emph{frecuencias}, pero no explican por sí mismas cómo se determina la polaridad de una opinión. Clasificar es una tarea distinta de predecir el siguiente token; un sistema moderno puede combinar representaciones y un predictor de clases.
+
+\section*{26. Caso B: secuencia de eventos de un pozo, sin inventar datos reales}
+Imagine una bitácora simbólica con eventos \texttt{N} (operación normal), \texttt{A} (alarma) y \texttt{R} (revisión): \texttt{N N A R N A R}. Aquí las letras son \emph{etiquetas ficticias} y no representan mediciones de un pozo real. La secuencia tiene siete posiciones y seis transiciones:
+\[
+N\to N,\quad N\to A,\quad A\to R,\quad R\to N,\quad N\to A,\quad A\to R.
+\]
+La matriz de conteos, con orden $N,A,R$, es
+\[
+C=\begin{pmatrix}1&2&0\\0&0&2\\1&0&0\end{pmatrix},\qquad
+\widehat P=\begin{pmatrix}1/3&2/3&0\\0&0&1\\1&0&0\end{pmatrix}.
+\]
+La interpretación correcta es modesta: \emph{en esta secuencia ficticia}, una alarma fue seguida por una revisión en las dos ocasiones observadas. No significa que una alarma en un sistema industrial real siempre produzca una revisión. Para esa afirmación se requerirían fuentes, datos, diseño y validación.
+
+\begin{idea}[Texto y series de tiempo]
+Una secuencia de eventos discretos puede estudiarse con una cadena de Markov. Una serie temporal de presión o temperatura contiene valores numéricos y puede requerir un modelo distinto. La conexión entre ambos cursos es estructural (dependencias y pronóstico), no la afirmación de que todas las secuencias se comportan como palabras.
+\end{idea}
+
+\section*{27. Un cálculo adicional con entropía y perplejidad}
+Para el contexto $A$ de la bitácora de juguete, el estimador MLE asigna $(0,0,1)$, y la entropía de su continuación es cero: según ese modelo, no existe incertidumbre. Con suavizado aditivo $\alpha=1$, los conteos $(0,0,2)$ producen probabilidades $(1/5,1/5,3/5)$. Su entropía en bits es
+\[
+H=-2\cdot\tfrac15\log_2(\tfrac15)-\tfrac35\log_2(\tfrac35)\approx1.371.
+\]
+\textbf{¿Contradicción?} No. La entropía mide incertidumbre \emph{según una distribución específica}; al cambiar el modelo, cambia la entropía del modelo. No hemos demostrado una variación de la incertidumbre real del fenómeno.
+
+Un experimento evaluativo debe separar \emph{modelo ajustado} y \emph{datos de prueba}. Si una nueva transición observada fuera $A\to N$, bajo MLE produciría pérdida infinita, mientras que bajo el suavizado anterior costaría $-\log_2(1/5)=\log_2 5\approx2.322$ bits. La decisión de usar suavizado influye en la generalización y en la función de pérdida.
+
+\section*{28. Cómo evitar conclusiones precipitadas}
+Considere cuatro afirmaciones que se pueden discutir antes de emprender un proyecto:
+\begin{enumerate}
+\item «Una palabra aparece más veces en el corpus». \emph{Descriptiva}, siempre que se defina el corpus y la normalización.
+\item «Un tokenizador produce menos tokens por palabra». \emph{Medición comparativa} que exige textos y vocabularios fijados.
+\item «Un modelo produce menor perplejidad». \emph{Resultado dependiente del protocolo}: se deben declarar tokenización y unidad.
+\item «Este tokenizador produce mejores respuestas». \emph{Hipótesis causal o predictiva más fuerte}, que requiere controlar modelo, entrenamiento, datos y métricas de tarea.
+\end{enumerate}
+Estas diferencias separan una demostración pedagógica de una investigación reproducible. Conducen directamente a la última hora del seminario y al hito de dos áreas de interés.
+\clearpage

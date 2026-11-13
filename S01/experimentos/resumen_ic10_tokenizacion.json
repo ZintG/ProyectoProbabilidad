@@ -1,0 +1,17 @@
+{
+  "datos": "SINTETICOS_DIDACTICOS",
+  "pregunta": "cambiar entrenamiento del tokenizador con igual numero de fusiones",
+  "tipo": "BPE didactico por palabras con marcador </w>",
+  "presupuesto_fusiones": 20,
+  "numero_documentos_prueba": 6,
+  "palabras_prueba": 35,
+  "tokens_general_total": 148,
+  "tokens_tecnico_total": 127,
+  "razon_tokens_por_palabra_general": 4.228571,
+  "razon_tokens_por_palabra_tecnico": 3.628571,
+  "conclusion": "NO hay medida de BPC predictiva ni prueba de generalizacion, solo longitud tokenizada",
+  "separacion": "aprendizaje de fusiones solo en entrenamiento",
+  "desempate": "orden lexicografico Unicode de pares",
+  "normalizacion": "strip, lower, split sobre espacios; no se eliminaron acentos",
+  "marcador_final": "</w>"
+}

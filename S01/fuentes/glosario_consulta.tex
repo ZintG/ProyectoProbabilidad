@@ -1,0 +1,22 @@
+\chapter*{Vocabulario de consulta: diez ideas en una página}
+\addcontentsline{toc}{chapter}{Vocabulario de consulta}
+Los términos de esta tabla se han construido en la guía. Se reúnen aquí para que el estudiante pueda volver a sus definiciones sin perder el hilo de la lectura.
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{37mm}X}\toprule
+Término & Qué significa en esta sesión \\\midrule
+Secuencia & Lista ordenada de observaciones; el orden puede afectar su significado o distribución.\\
+Token & Unidad que produce una regla de segmentación; puede ser palabra, carácter o subpalabra.\\
+Tokenización & Procedimiento que convierte texto en tokens, con convenciones explícitas.\\
+N-grama & Ventana de $n$ unidades consecutivas; un bigrama contiene dos.\\
+Bolsa de palabras & Recuento de tokens que ignora su posición en la secuencia.\\
+Contexto & Información ya disponible al estimar una probabilidad de continuación.\\
+MLE & Elección de parámetros que maximiza la probabilidad asignada a la muestra de entrenamiento.\\
+Suavizado & Procedimiento que modifica probabilidades estimadas para evitar asignar cero por ausencia muestral.\\
+Entropía cruzada & Pérdida logarítmica media de datos de $p$ al usar probabilidades de $q$.\\
+Perplejidad & Exponencial de la pérdida logarítmica media por evento, con unidad de evaluación declarada.\\\bottomrule
+\end{tabularx}
+\end{center}
+\begin{idea}[¿Qué viene después?]
+El token es la unidad; el vector es una representación; el modelo produce una distribución condicional; la pérdida permite evaluar esa distribución; la investigación pregunta si diferencias observadas se sostienen más allá de un ejemplo elegido a mano.
+\end{idea}
+\clearpage

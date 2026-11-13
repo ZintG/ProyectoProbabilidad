@@ -1,0 +1,231 @@
+\chapter*{Profundización: cinco conexiones que preparan la investigación}
+\addcontentsline{toc}{chapter}{Cinco conexiones para investigación}
+
+\section*{1. ¿Qué se puede concluir de una cadena de Markov?}
+\addcontentsline{toc}{section}{Cadenas de Markov y distribución estacionaria}
+El modelo suavizado del ejemplo principal puede estudiarse como una cadena
+homogénea de tres estados, con distribución inicial $\pi_0$ y matriz
+\[
+P=\begin{pmatrix}1/7&3/7&3/7\\1/2&1/3&1/6\\2/5&2/5&1/5\end{pmatrix}.
+\]
+Por construcción, $P_{ij}\ge0$ y $\sum_jP_{ij}=1$; cada fila define
+una probabilidad. Como todas las entradas son estrictamente positivas,
+la cadena es irreducible y aperiódica: desde cualquier estado se llega
+a cualquier otro en un paso, y cada estado admite una transición a sí mismo.
+Bajo estas condiciones existe una única distribución estacionaria $\pi$
+con componentes estrictamente positivas y $\pi P=\pi$.
+
+Para calcularla, escribimos $\pi=(u,v,w)$ y resolvemos
+\[
+\begin{cases}
+ u=\tfrac17u+\tfrac12v+\tfrac25w,\\
+ v=\tfrac37u+\tfrac13v+\tfrac25w,\\
+ w=\tfrac37u+\tfrac16v+\tfrac15w,\\
+ u+v+w=1.
+\end{cases}
+\]
+Una de las primeras tres ecuaciones es redundante: las filas de $P$
+suman uno. Tras sustituir y resolver el sistema lineal queda
+\[
+\boxed{\pi=\left(\frac{98}{281},\frac{108}{281},\frac{75}{281}\right).}
+\]
+Se verifica, por ejemplo, que
+\[
+\frac{98}{281}\frac17+\frac{108}{281}\frac12
++\frac{75}{281}\frac25
+=\frac{14+54+30}{281}=\frac{98}{281}.
+\]
+El mismo procedimiento verifica las otras dos coordenadas.
+Este cálculo revela la distinción entre \emph{probabilidad de transición}
+y \emph{probabilidad de ocupación a largo plazo}: no son iguales por
+definición. Una distribución inicial arbitraria evoluciona como
+$\pi_t=\pi_0P^t$ y se aproxima a la estacionaria bajo las hipótesis
+mencionadas. En lenguaje real, las probabilidades condicionadas suelen
+cambiar con el contexto y no existe necesariamente una matriz homogénea
+fija en ese sentido.
+
+\begin{puente}
+Este es el punto de contacto directo con el curso paralelo de Series
+de Tiempo: cadenas de Markov, matrices estocásticas, distribución invariante
+y pronóstico condicional. Más adelante podremos comparar esta representación
+con modelos ocultos de Markov y modelos de estado, pero en S01 no es
+necesario introducir sus algoritmos.
+\end{puente}
+
+\section*{2. Entropía condicional y tasa de información de una cadena}
+\addcontentsline{toc}{section}{Entropía condicional y tasa de información}
+La entropía conjunta de dos símbolos satisface
+\[
+H(X_1,X_2)=H(X_1)+H(X_2\mid X_1).
+\]
+Esto se demuestra al expandir
+$-\sum_{i,j}p(i,j)\log_2 p(i,j)$ y usar
+$p(i,j)=p(i)p(j\mid i)$:
+\[
+\begin{split}
+H(X_1,X_2)&=-\sum_{i,j}p(i,j)\log_2p(i)\\
+&\quad-\sum_{i,j}p(i,j)\log_2p(j\mid i)\\
+&=H(X_1)+\sum_i p(i)H(X_2\mid X_1=i).
+\end{split}
+\]
+El promedio $\sum_i p(i)H(X_2\mid X_1=i)$ es
+la entropía condicional: mide cuánto falta por conocer sobre $X_2$
+cuando se conoce el estado precedente.
+
+Para la cadena estacionaria construida antes, su tasa de entropía es
+\[
+h(P,\pi)=-\sum_{i\in V}\pi_i\sum_{j\in V}P_{ij}\log_2P_{ij}.
+\]
+La fórmula surge porque el símbolo inicial contribuye un término finito
+$H(X_1)$, mientras que cada transición, bajo estacionariedad, tiene
+la misma entropía condicional media. En efecto,
+\[
+H(X_{1:T})=H(X_1)+\sum_{t=2}^T H(X_t\mid X_{t-1})
+=H(\pi)+(T-1)h(P,\pi).
+\]
+Dividiendo por $T$ y dejando $T\to\infty$ se obtiene
+$\lim_{T\to\infty}T^{-1}H(X_{1:T})=h(P,\pi)$.
+Hay dos lecciones: el costo de representar el símbolo inicial
+no desaparece en una cadena corta y la entropía marginal $H(\pi)$
+no coincide necesariamente con la entropía condicional media.
+
+\begin{ejemplo}[Un contraste con números sencillos]
+Si las transiciones son independientes del estado anterior y cada fila
+es $(1/2,1/2)$, entonces $H(X_t\mid X_{t-1})=1$ bit y la cadena
+no aprovecha memoria. En cambio, para
+$P=\left(\begin{smallmatrix}0.9&0.1\\0.1&0.9\end{smallmatrix}\right)$
+la estacionaria es uniforme, $H(X_t)=1$ bit, pero
+\[
+H(X_t\mid X_{t-1})=-0.9\log_20.9-0.1\log_20.1\approx0.4690
+\text{ bits}.
+\]
+El conocimiento del estado anterior reduce la incertidumbre de
+la siguiente observación sin cambiar la distribución marginal.
+\end{ejemplo}
+
+\section*{3. Soporte, símbolos desconocidos y final de secuencia}
+\addcontentsline{toc}{section}{Soporte y símbolos desconocidos}
+El suavizado aditivo distribuye masa positiva entre los $K$ símbolos
+incluidos en el vocabulario del modelo. \emph{No asigna automáticamente}
+probabilidad a cualquier símbolo que no pertenezca a ese vocabulario.
+En un modelo de palabras entrenado con $V$, una palabra nueva necesita
+una decisión de representación: sustituirse por un símbolo
+$\langle\mathrm{UNK}\rangle$, segmentarse en unidades menores o
+admitirse mediante algún mecanismo adicional.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[>=Stealth,font=\small,
+ box/.style={draw=azul,fill=azulclaro,rounded corners,align=center,text width=3.1cm,minimum height=9mm}]
+\node[box](a)at(0,0){Palabra de prueba\\\texttt{revestidor}};
+\node[box](b)at(4.1,1){Vocabulario de palabras\\\texttt{<UNK>}};
+\node[box](c)at(4.1,-1){Vocabulario subléxico\\varias unidades};
+\draw[->,thick] (a)--(b);\draw[->,thick] (a)--(c);
+\end{tikzpicture}
+\caption{Dos políticas distintas para un símbolo no visto; no son intercambiables.}
+\end{figure}
+
+Si además la longitud de la cadena es variable, necesitamos fijar
+cómo termina la secuencia. Una construcción usual introduce un símbolo
+de fin $\langle/\mathrm{s}\rangle$ y asigna probabilidades a las
+transiciones hasta encontrarlo. De este modo, bajo hipótesis de
+terminación adecuadas, el modelo determina una ley sobre cadenas
+finitas de longitudes variables. Si se omite la probabilidad de parar,
+la suma de probabilidades de cadenas completas puede no estar
+bien definida.
+
+\begin{ejemplo}[Parada con probabilidad geométrica]
+Considérese un generador que emite un símbolo ordinario con probabilidad
+$1-r$ y termina con probabilidad $r\in(0,1)$ en cada paso, con decisiones
+independientes. Si $N$ es el número de símbolos ordinarios previos al fin,
+\[
+P(N=n)=(1-r)^nr,\quad n=0,1,2,\ldots,
+\qquad \mathbb E[N]=\frac{1-r}{r}.
+\]
+Al limitar la generación a un máximo de $m$ símbolos mediante un arnés,
+la probabilidad de truncamiento es $P(N\ge m)=(1-r)^m$.
+Esta cuenta es una idealización explícita: en un LLM real la probabilidad
+de fin depende de la historia y la política de decodificación.
+\end{ejemplo}
+
+\section*{4. Códigos ideales y límites de interpretación}
+\addcontentsline{toc}{section}{Código ideal y pérdida logarítmica}
+La cantidad $-\log_2q(x)$ se interpreta como longitud de código ideal
+según $q$. Esto motiva tanto la entropía como la divergencia KL:
+si los datos siguen $p$ pero se utiliza $q$,
+\[
+\mathbb E_p[-\log_2q(X)]-\mathbb E_p[-\log_2p(X)]
+=D_{\rm KL}(p\|q).
+\]
+Es el exceso esperado de longitud ideal, no una promesa de que
+cualquier compresor real tenga exactamente esa longitud en un archivo.
+Los códigos binarios de longitud entera deben cumplir restricciones
+como la desigualdad de Kraft y agregan sobrecostos de cabecera,
+fronteras y representación.
+
+\begin{ejemplo}[Cuando la entropía no es el costo de un símbolo concreto]
+Para $p=(1/2,1/4,1/4)$, el símbolo de probabilidad $1/2$ contribuye
+$1$ bit si ocurre, mientras que cada símbolo de probabilidad $1/4$
+contribuye $2$ bits. La entropía $1.5$ bits es un \emph{promedio esperado},
+no la longitud de cada realización. Con un código de prefijo
+$\{0,10,11\}$ las longitudes individuales son exactamente $(1,2,2)$,
+y el promedio coincide con 1.5 bits.
+\end{ejemplo}
+
+La pérdida logarítmica es una regla de puntuación propia: su riesgo
+esperado se minimiza al informar la distribución verdadera.
+La demostración ya está contenida en la identidad de entropía cruzada
+más Gibbs. Por ello tiene sentido usarla para evaluar predicciones
+probabilísticas, pero no sustituye métricas de exactitud, fidelidad o
+utilidad operacional cuando esas son las preguntas científicas.
+
+\section*{5. Incertidumbre experimental y unidad de remuestreo}
+\addcontentsline{toc}{section}{Unidad estadística de comparación}
+Supongamos que se quiere comparar dos procedimientos A y B en $m$
+documentos reservados. Si $L_{A,j}$ y $L_{B,j}$ denotan las pérdidas
+en el mismo documento $j$, definimos
+\[
+d_j=L_{A,j}-L_{B,j},\qquad \overline d=\frac1m\sum_{j=1}^m d_j.
+\]
+Un análisis pareado retiene la estructura de comparación: cada documento
+aporta una diferencia. Si las unidades documentales son razonablemente
+independientes, su error estándar clásico es $s_d/\sqrt m$, donde
+\[
+s_d^2=\frac1{m-1}\sum_{j=1}^m(d_j-\overline d)^2.
+\]
+Este error estándar y los intervalos que se construyen con él no
+resultan válidos por el mero hecho de tener millones de tokens: los
+símbolos dentro de un mismo documento comparten dependencias.
+
+En investigación con textos técnicos, varios documentos del mismo pozo,
+incidente o empresa también pueden estar correlacionados. En ese caso la
+unidad de remuestreo puede necesitar elevarse hasta el pozo, incidente o
+fuente, según la pregunta y el proceso de muestreo. Una comparación que
+ignora esto puede aparentar una precisión mayor de la real.
+
+\begin{ejemplo}[Diferencias pareadas construidas para ilustrar el método]
+Considérense cuatro documentos con diferencias en BPC
+$(-0.20,0.10,-0.10,0.00)$, calculadas como A menos B.
+Su promedio es $-0.05$ BPC. Los cuadrados respecto de la media son
+$0.0225,0.0225,0.0025,0.0025$; la suma es $0.05$.
+La varianza muestral es $0.05/3\approx0.01667$ y el error estándar
+$\sqrt{0.01667/4}\approx0.06455$. Con solo cuatro documentos,
+el valor puntual no debe venderse como efecto establecido. El ejemplo es
+\textbf{ILUSTRATIVO}, no procede de una prueba real.
+\end{ejemplo}
+
+\section*{6. Cuidado con una supuesta ventaja metodológica}
+\addcontentsline{toc}{section}{Separar hipótesis de evidencia}
+Un tokenizador puede producir menos unidades por palabra sin que
+su modelo probabilístico correspondiente alcance menor pérdida de
+predicción; la arquitectura, la cantidad de datos y el tratamiento
+de caracteres pueden alterar esa relación. Por eso conviene separar
+métricas \emph{descriptivas de segmentación} de métricas \emph{predictivas}.
+Si comparamos dos modelos completos, podremos describir diferencias
+de tasa; si queremos atribuir la diferencia a BPE, habrá que diseñar un
+experimento en el que los otros factores se mantengan comparables.
+
+Esta cautela también explica por qué la matriz IC10 es una \emph{semilla}
+de investigación, no un resultado preestablecido. Un resultado nulo,
+negativo o contrario a la hipótesis puede ser científicamente útil si
+la medición fue defendible. El paso siguiente, en S02, será revisar
+candidatos y disponibilidad de datos antes de elegir un problema.

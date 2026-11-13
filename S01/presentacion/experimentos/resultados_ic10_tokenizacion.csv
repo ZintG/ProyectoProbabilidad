@@ -1,0 +1,7 @@
+id,palabras,tokens_bpe_general,tokens_bpe_tecnico,tokens_por_palabra_general,tokens_por_palabra_tecnico,diferencia_tokens_por_palabra
+E01,5,21,14,4.2,2.8,-1.4
+E02,6,27,23,4.5,3.833333,-0.666667
+E03,5,25,20,5.0,4.0,-1.0
+E04,6,28,27,4.666667,4.5,-0.166667
+E05,7,25,25,3.571429,3.571429,0.0
+E06,6,22,18,3.666667,3.0,-0.666667

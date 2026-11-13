@@ -1,0 +1,371 @@
+% ======================================================================
+%  preambulo.tex — Estilo común de todo el material del curso:
+%    - los tres documentos (programa.tex, investigacion.tex, arbitraje.tex) y las
+%      versiones compactas de las sesiones (sesiones/sNN.tex);
+%    - las guías completas de clase (guias/sNN.tex), las proyecciones por bloque
+%      (proyeccion/sNN_bK.tex) y los solucionarios (soluciones/sNN_soluciones.tex).
+%  Cada documento define \documentonombre ANTES de \input{preambulo}. Una
+%  proyección define además \modoproyeccion (láminas 16:9) y \guiaexterna (ruta
+%  de la guía, sin extensión, de la que toma numeración y referencias).
+%  Todo cambio de estilo se hace SOLO aquí.
+% ======================================================================
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish,es-noshorthands,es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\ifdefined\modoproyeccion
+  \usepackage[paperwidth=160mm,paperheight=90mm,left=8mm,right=8mm,top=10mm,bottom=7mm,
+    headheight=11pt,headsep=2.5mm,footskip=4.5mm]{geometry}
+  \renewcommand{\familydefault}{\sfdefault}
+\else
+  \usepackage[a4paper,margin=2.4cm,headheight=14pt]{geometry}
+\fi
+
+\usepackage{amsmath,amssymb,amsthm,mathtools,bm}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs,array,tabularx,longtable,multirow,makecell,colortbl}
+\usepackage{pdflscape}
+\usepackage{float}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,calc,fit,backgrounds,shapes.geometric}
+\usepackage{enumitem}
+\usepackage{pifont}
+\usepackage{etoolbox}
+\usepackage{xspace}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage[most]{tcolorbox}
+\usepackage[round,authoryear]{natbib}
+\usepackage{xurl}
+\usepackage{listings}
+\usepackage{environ}
+\usepackage{adjustbox}
+\usepackage{needspace}
+\usepackage{xr-hyper}
+\usepackage[hidelinks]{hyperref}
+\usepackage{subfiles}
+
+% ---------------------------------------------------------------------
+% Metadatos del curso
+% ---------------------------------------------------------------------
+\newcommand{\cursotitulo}{Modelos de Lenguaje de Gran Escala}
+\newcommand{\cursosubtitulo}{De la intuición al modelo, del modelo a la aplicación}
+\newcommand{\cursoprograma}{Maestría en Matemáticas Aplicadas}
+\newcommand{\cursoversion}{S01 v1.0}
+\newcommand{\cursoversioncorta}{S01 v1.0}
+\newcommand{\cursofecha}{17 de octubre de 2026}
+\providecommand{\documentonombre}{Programa}
+
+% ---------------------------------------------------------------------
+% Colores
+% ---------------------------------------------------------------------
+\definecolor{azul}{HTML}{1F3A5F}
+\definecolor{azulclaro}{HTML}{E8EEF5}
+\definecolor{verde}{HTML}{2E6B3F}
+\definecolor{verdeclaro}{HTML}{EAF3EC}
+\definecolor{ocre}{HTML}{8A5A00}
+\definecolor{ocreclaro}{HTML}{FBF3E2}
+\definecolor{vino}{HTML}{7A1F2B}
+\definecolor{vinoclaro}{HTML}{F7EAEC}
+\definecolor{gris}{HTML}{5A5A5A}
+\definecolor{grisclaro}{HTML}{F2F2F2}
+\definecolor{morado}{HTML}{4B3A78}
+\definecolor{moradoclaro}{HTML}{EFECF6}
+\definecolor{petroleo}{HTML}{0F5E66}
+\definecolor{petroleoclaro}{HTML}{E4F1F2}
+
+% ---------------------------------------------------------------------
+% Títulos y encabezados
+% ---------------------------------------------------------------------
+\titleformat{\part}[display]{\centering\Huge\bfseries\color{azul}}{\partname~\thepart}{12pt}{}
+\titleformat{\chapter}[hang]{\LARGE\bfseries\color{azul}}{\thechapter}{0.8em}{}
+\titlespacing*{\chapter}{0pt}{-10pt}{14pt}
+\titleformat{\section}{\Large\bfseries\color{azul}}{\thesection}{0.8em}{}
+\titleformat{\subsection}{\large\bfseries\color{azul}}{\thesubsection}{0.8em}{}
+\titlespacing*{\section}{0pt}{14pt}{6pt}
+\titlespacing*{\subsection}{0pt}{10pt}{4pt}
+
+\pagestyle{fancy}
+\fancyhf{}
+\ifdefined\modoproyeccion
+  \fancyhead[L]{\scriptsize\color{gris}\leftmark}
+  \fancyhead[R]{\scriptsize\color{gris}\rightmark}
+  \fancyfoot[L]{\scriptsize\color{gris}\cursotitulo\ \textperiodcentered\ \cursoversioncorta}
+  \fancyfoot[R]{\scriptsize\color{gris}\thepage}
+  \renewcommand{\headrulewidth}{0.2pt}
+  \fancypagestyle{plain}{\fancyhf{}\fancyfoot[R]{\scriptsize\color{gris}\thepage}%
+    \renewcommand{\headrulewidth}{0pt}}
+\else
+  \fancyhead[L]{\small\color{gris}\cursotitulo}
+  \fancyhead[R]{\small\color{gris}\cursoprograma\ \textperiodcentered\ \cursoversioncorta}
+  \fancyfoot[L]{\scriptsize\color{gris}\documentonombre}
+  \fancyfoot[C]{\small\thepage}
+  \renewcommand{\headrulewidth}{0.3pt}
+  \fancypagestyle{plain}{\fancyhf{}\fancyfoot[C]{\small\thepage}\renewcommand{\headrulewidth}{0pt}}
+\fi
+
+\setlist{itemsep=1pt,topsep=3pt,parsep=0pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\setcounter{tocdepth}{1}
+\ifdefined\modoproyeccion
+  \titleformat{\chapter}[hang]{\Large\bfseries\color{azul}}{\thechapter}{0.8em}{}
+  \titlespacing*{\chapter}{0pt}{-14pt}{6pt}
+  \setlength{\parskip}{3pt}
+\fi
+
+% ---------------------------------------------------------------------
+% Cajas. Los títulos van siempre entre llaves para admitir comas.
+% ---------------------------------------------------------------------
+\tcbset{base/.style={enhanced,breakable,boxrule=0pt,arc=1pt,left=7pt,right=7pt,
+  top=5pt,bottom=5pt,fonttitle=\bfseries\small,attach title to upper={\par\smallskip},
+  before skip=8pt,after skip=8pt}}
+\newtcolorbox{idea}[1][Idea central]{base,colback=azulclaro,
+  borderline west={3pt}{0pt}{azul},coltitle=azul,title={#1}}
+\newtcolorbox{contraste}[1][Contraste]{base,colback=vinoclaro,
+  borderline west={3pt}{0pt}{vino},coltitle=vino,title={#1}}
+\newtcolorbox{ejemplo}[1][Ejemplo trabajado]{base,colback=grisclaro,
+  borderline west={3pt}{0pt}{azul!70},coltitle=azul,title={#1}}
+\newtcolorbox{aplicacion}[1][Caso aplicado]{base,colback=verdeclaro,
+  borderline west={3pt}{0pt}{verde},coltitle=verde,title={#1}}
+\newtcolorbox{arnes}[1][Prompt, contexto y arnés en esta sesión]{base,colback=petroleoclaro,
+  borderline west={3pt}{0pt}{petroleo},coltitle=petroleo,title={#1}}
+\newtcolorbox{taller}[1][Taller]{base,colback=verdeclaro,
+  borderline west={3pt}{0pt}{verde},coltitle=verde,title={#1}}
+\newtcolorbox{investigacion}[1][Hacia el proyecto]{base,colback=ocreclaro,
+  borderline west={3pt}{0pt}{ocre},coltitle=ocre,title={#1}}
+\newtcolorbox{puente}[1][Puente con el curso de Series de Tiempo]{base,colback=moradoclaro,
+  borderline west={3pt}{0pt}{morado},coltitle=morado,title={#1}}
+\newtcolorbox{hito}[1][Hito del proyecto]{base,colback=vinoclaro,
+  borderline west={3pt}{0pt}{vino},coltitle=vino,title={#1}}
+\newtcolorbox{derivacion}[1][Derivaciones]{base,colback=grisclaro,
+  borderline west={3pt}{0pt}{gris},coltitle=gris,title={#1}}
+% Guías completas: pasos del taller, verificaciones, notas al profesor y resumen
+\newtcolorbox{paso}[1]{base,colback=white,boxrule=0.4pt,colframe=verde!45,
+  borderline west={3pt}{0pt}{verde},coltitle=verde,title={#1}}
+\newtcolorbox{verificacion}[1][Verificaciones numéricas]{base,colback=verdeclaro,
+  borderline west={3pt}{0pt}{verde},coltitle=verde,title={#1}}
+\newtcolorbox{nota}[1][Nota para el profesor]{base,colback=ocreclaro,
+  borderline west={3pt}{0pt}{ocre},coltitle=ocre,title={#1}}
+\newtcolorbox{resumen}[1][Resultados que quedan consolidados]{base,colback=white,boxrule=0.4pt,
+  colframe=azul!40,borderline west={3pt}{0pt}{azul},coltitle=azul,title={#1}}
+\ifdefined\modoproyeccion   % en las láminas las cajas ocupan menos
+  \tcbset{base/.append style={top=2pt,bottom=2pt,left=5pt,right=4pt,before skip=4pt,after skip=4pt,
+    fontupper=\small}}
+\fi
+% Traza de un agente: Pensamiento, Acción y Observación, un renglón cada una
+\newenvironment{traza}{\par\ifdefined\modoproyeccion\footnotesize\else\small\fi\raggedright\def\item[##1]{\par\hangindent=1.2em\hangafter=1
+  \noindent{\bfseries\color{petroleo}##1}\ }}{\par}
+
+% ---------------------------------------------------------------------
+% Estatus de los resultados que se muestran en clase
+% ---------------------------------------------------------------------
+\newcommand{\etiqueta}[2]{\,{\setlength{\fboxsep}{1.2pt}\colorbox{#1}{\scriptsize\sffamily\bfseries\color{white}#2}}}
+\newcommand{\real}{\etiqueta{verde}{REAL}}
+\newcommand{\ilustrativa}{\etiqueta{ocre}{ILUSTRATIVA}}
+\newcommand{\pendiente}{\etiqueta{vino}{PENDIENTE}}
+
+% ---------------------------------------------------------------------
+% Macros de la matriz
+% ---------------------------------------------------------------------
+\newcommand{\Pri}{\textcolor{azul}{\ding{108}}}
+\newcommand{\Sec}{\textcolor{azul}{\ding{109}}}
+\newcommand{\TS}{\textcolor{morado}{\ding{115}}}
+\newcommand{\nada}{\textcolor{gris!50}{\textperiodcentered}}
+
+% ---------------------------------------------------------------------
+% Matemática
+% ---------------------------------------------------------------------
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator{\softmax}{softmax}
+\DeclareMathOperator{\rank}{rank}
+\DeclareMathOperator{\Var}{Var}
+\DeclareMathOperator{\tr}{tr}
+\DeclareMathOperator{\E}{\mathbb{E}}
+\newcommand{\KL}{D_{\mathrm{KL}}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\T}{^{\top}}
+\newcommand{\passk}{\ensuremath{\mathrm{pass}^{k}}}
+\newcommand{\passat}{\ensuremath{\mathrm{pass}@k}}
+\newcommand{\codigo}[1]{\texttt{\small #1}}
+\theoremstyle{definition}
+\newtheorem{proposicion}{Proposición}[chapter]
+\newtheorem{definicion}[proposicion]{Definición}
+\newtheorem{lema}[proposicion]{Lema}
+\newtheorem{corolario}[proposicion]{Corolario}
+\theoremstyle{remark}
+\newtheorem{observacion}[proposicion]{Observación}
+\theoremstyle{definition}
+\renewcommand{\qedsymbol}{\ensuremath{\blacksquare}}
+
+% ---------------------------------------------------------------------
+% Código de los talleres (listings). Los fragmentos se toman de los .py
+% con marcadores "# [[nombreIni]]" ... "# [[nombreFin]]".
+% ---------------------------------------------------------------------
+\lstdefinestyle{python}{language=Python,basicstyle=\ttfamily\footnotesize,
+  columns=fullflexible,keepspaces=true,keywordstyle=\color{azul}\bfseries,
+  commentstyle=\color{gris}\itshape,stringstyle=\color{verde},showstringspaces=false,
+  frame=single,framerule=0.3pt,rulecolor=\color{azul!30},backgroundcolor=\color{grisclaro},
+  breaklines=true,xleftmargin=3pt,xrightmargin=3pt,aboveskip=6pt,belowskip=6pt,
+  rangeprefix=\#\ [[,rangesuffix=]],includerangemarker=false,
+  literate={á}{{\'a}}1 {é}{{\'e}}1 {í}{{\'i}}1 {ó}{{\'o}}1 {ú}{{\'u}}1 {ñ}{{\~n}}1
+    {Á}{{\'A}}1 {É}{{\'E}}1 {Í}{{\'I}}1 {Ó}{{\'O}}1 {Ú}{{\'U}}1 {Ñ}{{\~N}}1 {ü}{{\"u}}1
+    {¿}{{?`}}1 {¡}{{!`}}1 {«}{{\guillemotleft}}1 {»}{{\guillemotright}}1
+    {·}{{\textperiodcentered}}1 {—}{{---}}1 {–}{{--}}1 {≥}{{\ensuremath{\ge}}}1
+    {≤}{{\ensuremath{\le}}}1 {±}{{\ensuremath{\pm}}}1 {×}{{\ensuremath{\times}}}1}
+\lstset{style=python}
+
+% ---------------------------------------------------------------------
+% Estructura de una sesión
+%   \sesion{N}{Título}{Bloque}
+% Cada archivo sesiones/sNN.tex compila solo (guía de sesión) o dentro
+% de programa.tex. La marca \esdocumentoprincipal distingue los casos.
+% ---------------------------------------------------------------------
+\newcounter{sesionnum}
+\providecommand{\tipodocumentosesion}{Guía de sesión}
+\newcommand{\sesion}[3]{%
+  \setcounter{sesionnum}{#1}%
+  \chapter*{\color{azul}Sesión #1\quad #2}%
+  \addcontentsline{toc}{chapter}{Sesión #1.\enspace #2}%
+  \markboth{Sesión #1}{Sesión #1}%
+  \ifdefined\esdocumentoprincipal
+    {\color{gris}\small #3}\par\medskip
+  \else
+    {\color{gris}\small #3\ \textperiodcentered\ \tipodocumentosesion\ \textperiodcentered\
+     \cursoprograma\ \textperiodcentered\ \cursoversion}\par\medskip
+  \fi
+  \setcounter{equation}{0}%
+  \setcounter{figure}{0}%
+  \renewcommand{\thefigure}{S\arabic{sesionnum}.\arabic{figure}}%
+  \renewcommand{\theequation}{S\arabic{sesionnum}.\arabic{equation}}%
+  \setcounter{proposicion}{0}%
+  \renewcommand{\theproposicion}{\arabic{sesionnum}.\arabic{proposicion}}%
+}
+
+% Ficha de la sesión
+\newcommand{\ficha}[4]{%
+  \begin{tcolorbox}[enhanced,boxrule=0.4pt,colframe=azul!40,colback=white,arc=1pt,
+     left=6pt,right=6pt,top=4pt,bottom=4pt]
+  \small
+  \begin{tabularx}{\linewidth}{@{}>{\raggedright\leavevmode\color{azul}\bfseries}p{3.0cm}X@{}}
+    Pregunta guía & #1\\
+    Matemática central & #2\\
+    Caso aplicado & #3\\
+    Producto autónomo & #4
+  \end{tabularx}
+  \end{tcolorbox}}
+
+% Agenda de la clase (240 minutos)
+\newenvironment{agenda}{%
+  \par\small\noindent
+  \tabularx{\linewidth}{@{}>{\leavevmode\color{azul}\bfseries}p{1.9cm}>{\raggedright\arraybackslash}X>{\raggedleft\arraybackslash}p{1.1cm}@{}}
+  \toprule
+  \normalcolor Tramo & Momento de la clase & Min.\\ \midrule}
+ {\bottomrule\endtabularx\par\medskip}
+
+% Ejercicios N.k y suplementarios N.A, N.B...
+\newenvironment{ejercicios}{\begin{enumerate}[label=\textbf{\arabic{sesionnum}.\arabic*},
+  leftmargin=2.6em,itemsep=4pt]}{\end{enumerate}}
+\newenvironment{suplementarios}{\begin{enumerate}[label=\textbf{\arabic{sesionnum}.\Alph*},
+  leftmargin=2.6em,itemsep=4pt]}{\end{enumerate}}
+\newcommand{\tipo}[1]{{\color{gris}\small[#1]}\ }
+\newcommand{\autoverif}[1]{\par{\small\color{gris}\emph{Para autoverificar:} #1}}
+
+% Referencia a un capítulo del programa desde una sesión
+\newcommand{\refp}[1]{\ifdefined\esdocumentoprincipal capítulo~\ref{#1}\else el programa del curso\fi}
+
+% Tabla de bases de datos de la sesión (generada desde datos/catalogo.csv)
+\newcommand{\basesdatos}[1]{\input{\subfix{../datos/tablas/datos_s#1}}}
+
+% Bibliografía local cuando la sesión se compila sola
+\newcommand{\bibliografiasesion}{%
+  \ifdefined\esdocumentoprincipal\else
+    \bibliographystyle{../bib/plainnat-es}
+    \bibliography{../bib/curso}%
+  \fi}
+
+% ---------------------------------------------------------------------
+% Guías completas y proyección por bloques
+%   La clase de cada guía se escribe en cuatro archivos de bloque
+%   (guias/sNN/b1.tex ... b4.tex), uno por movimiento del ciclo:
+%     B1 concreto y visual · B2 formalización I · B3 formalización II (C)
+%     B4 aplicado, tres capas y lanzamiento.
+%   La guía A4 los incluye todos; cada proyección incluye uno.
+%   \bloque{N}{k}{Título}{Tramo}  abre el bloque k de la sesión N.
+%   \lamina{Título}               en la guía, un subtítulo; en proyección, una lámina.
+%   \saltolamina                  en proyección, la misma lámina continúa en otra página.
+%   \sologuia{...}, \soloproyeccion{...}  contenido de un solo formato.
+%   \esbozo{...} antes de cada prueba: en proyección la prueba se sustituye por
+%   el esbozo (la prueba completa está en la guía y se hace en la pizarra).
+%   \refg{etiqueta}, \eqrefg{etiqueta}: referencias que en la proyección y en el
+%   solucionario apuntan a la guía (misma numeración).
+% ---------------------------------------------------------------------
+\ifdefined\guiaexterna
+  \IfFileExists{\guiaexterna.aux}{\externaldocument[G-]{\guiaexterna}}%
+    {\typeout{Aviso: falta \guiaexterna.aux; compile antes la guía}}
+  \newcommand{\refg}[1]{\ref{G-#1}}
+  \newcommand{\eqrefg}[1]{\eqref{G-#1}}
+  \newcommand{\iniciobloque}[4]{\expandafter\gdef\csname iniciobloque#1\endcsname{%
+    \setcounter{proposicion}{#2}\setcounter{equation}{#3}\setcounter{figure}{#4}}}
+  \IfFileExists{\guiaexterna-bloques.tex}{\input{\guiaexterna-bloques.tex}}%
+    {\typeout{Aviso: falta \guiaexterna-bloques.tex; compile antes la guía}}
+\else
+  \newcommand{\refg}[1]{\ref{#1}}
+  \newcommand{\eqrefg}[1]{\eqref{#1}}
+\fi
+\newwrite\archivobloques
+\newcommand{\barralamina}[1]{{\setlength{\fboxsep}{3pt}\noindent\colorbox{azul}{%
+  \parbox{\dimexpr\linewidth-2\fboxsep}{\color{white}\normalsize\bfseries #1}}}\par\smallskip}
+\newcommand{\titulolamina}{}
+\newcommand{\esbozoactual}{}
+\newcommand{\esbozo}[1]{\gdef\esbozoactual{#1}}
+\ifdefined\modoproyeccion
+  \newcommand{\sologuia}[1]{}
+  \newcommand{\soloproyeccion}[1]{#1}
+  \newcommand{\bloque}[4]{%
+    \setcounter{sesionnum}{#1}%
+    \renewcommand{\theproposicion}{\arabic{sesionnum}.\arabic{proposicion}}%
+    \renewcommand{\theequation}{S\arabic{sesionnum}.\arabic{equation}}%
+    \renewcommand{\thefigure}{S\arabic{sesionnum}.\arabic{figure}}%
+    \setcounter{proposicion}{0}\setcounter{equation}{0}\setcounter{figure}{0}%
+    \csname iniciobloque#2\endcsname
+    \markboth{Sesión #1 \textperiodcentered\ Bloque #2}{}%
+    \thispagestyle{plain}\vspace*{\fill}
+    \begin{center}
+      {\small\color{gris}\cursotitulo\ \textperiodcentered\ \cursoprograma\par}\medskip
+      {\Large\bfseries\color{azul}Sesión #1\quad\sesiontitulo\par}\medskip
+      {\LARGE\bfseries\color{petroleo}Bloque #2\quad #3\par}\medskip
+      {\normalsize\color{gris}#4\ \textperiodcentered\ \cursoversion\par}
+    \end{center}
+    \vspace*{\fill}}
+  \newcommand{\lamina}[1]{\clearpage\gdef\titulolamina{#1}\markright{#1}\barralamina{#1}}
+  \newcommand{\saltolamina}{\clearpage\barralamina{\titulolamina\ {\normalfont\small(cont.)}}}
+  \newcommand{\agregarnecesita}[1]{\BeforeBeginEnvironment{#1}{\needspace{5\baselineskip}}}
+  \forcsvlist{\agregarnecesita}{definicion,proposicion,lema,corolario,observacion,resumen,idea}
+  \RenewEnviron{proof}[1][]{\par\smallskip\noindent
+    \ifx\esbozoactual\empty
+      {\color{gris}\small\itshape Demostración: en la pizarra (completa en la guía).}%
+    \else
+      {\setlength{\fboxsep}{4pt}\colorbox{grisclaro}{\parbox{\dimexpr\linewidth-2\fboxsep}{%
+        \small{\color{azul}\bfseries Idea de la demostración.}\ \esbozoactual}}}%
+    \fi
+    \gdef\esbozoactual{}\par\smallskip}
+\else
+  \newcommand{\sologuia}[1]{#1}
+  \newcommand{\soloproyeccion}[1]{}
+  \newcommand{\bloque}[4]{%
+    \ifnum#2=1 \immediate\openout\archivobloques=\jobname-bloques.tex\fi
+    \immediate\write\archivobloques{\string\iniciobloque{#2}{\the\value{proposicion}}%
+      {\the\value{equation}}{\the\value{figure}}}%
+    \needspace{10\baselineskip}%
+    \section*{Bloque #2 \textperiodcentered\ #3}%
+    \addcontentsline{toc}{section}{Bloque #2 \textperiodcentered\ #3}%
+    {\color{gris}\small #4}\par\smallskip}
+  \newcommand{\lamina}[1]{\needspace{6\baselineskip}\subsection*{#1}\gdef\titulolamina{#1}}
+  \newcommand{\saltolamina}{}
+\fi
+\providecommand{\sesiontitulo}{}

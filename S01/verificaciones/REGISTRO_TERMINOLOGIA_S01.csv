@@ -1,0 +1,38 @@
+término,primera aparición,dónde se define,tipo de definición,estado
+LLM,l. 62,l. 62,operativa,ok
+$n$-grama,l. 37,tabla de notación l. 24–56; l. 101,operativa; formal en Def. Markov,ok
+token / tokenización,l. 176,l. 176,operativa; formal en Def. vocabulario,ok
+"vocabulario $V$, $|V|$",l. 32,tabla de notación l. 24–56; l. 109,operativa; formal en Def. vocabulario,ok
+"one-hot, $e_i$",l. 52,tabla de notación l. 24–56; l. 206,operativa (formal: $e_i$ canónico),ok
+embedding,l. 52,tabla de notación l. 24–56; l. 206,operativa (formal en S02),ok
+BPE,l. 256,l. 256,formal (Def. s01:def:bpe),ok
+MLE / máxima verosimilitud,l. 415,l. 415,operativa; formal Prop. s01:prop:mle,ok
+suavizado / pseudoconteo,l. 427,l. 427,operativa,ok
+regla de la cadena,l. 507,l. 463,formal (Prop. s01:prop:cadena),ok
+"independencia condicional, $\perp$",l. 495,l. 493,formal (Def. s01:def:ci),ok
+hipótesis de Markov de orden $m$,l. 504,l. 504,formal (Def. s01:def:markov),ok
+símplex / soporte,l. 42,tabla de notación l. 24–56; l. 533,formal (Def. s01:def:simplex),ok
+retroceso (backoff),l. 602,l. 602,operativa,ok
+distribución a priori,l. 603,l. 603,operativa,ok
+función Gamma $\Gamma$,l. 44,tabla de notación l. 24–56; l. 608,formal (Def. s01:def:gamma),ok
+Dirichlet,l. 613,l. 613,formal (Def. s01:def:dirichlet),ok
+teorema de Bayes (densidades),l. 628,l. 628,formal (Teo. s01:teo:bayes),ok
+sorpresa / bit,l. 45,tabla de notación l. 24–56; l. 742,operativa,ok
+"entropía $H_2$, $H_e$",l. 46,tabla de notación l. 24–56; l. 744,operativa; formal l. de $H_2(p)$,ok
+nat,l. 46,tabla de notación l. 24–56; l. 773,operativa,ok
+entropía condicional / información mutua,l. 47,tabla de notación l. 24–56; l. 827,formal (Def. s01:def:condicional),ok
+entropía cruzada / KL,l. 48,tabla de notación l. 24–56; l. 846,formal (Def. s01:def:kl),ok
+soportes compatibles,l. 847,l. 847,formal (Def. s01:def:kl),ok
+perplejidad / PPL,l. 50,tabla de notación l. 24–56; l. 908,formal,ok
+BPC,l. 50,tabla de notación l. 24–56; l. 937,formal (Def. s01:def:bpc),ok
+BOS / EOS,l. 53,tabla de notación l. 24–56; l. 1096,operativa,ok
+bootstrap / intervalo percentil,l. 1141,l. 1141,operativa; formal Def. s01:def:bootstrap,ok
+IC10,l. 1159,l. 1159,operativa,ok
+"D01, D02",l. 1173,l. 1173,operativa,ok
+desigualdad de Jensen,l. 808,l. 808,enunciado con remisión; formal Lema s01:lem:jensen,ok
+desigualdad de Gibbs,l. 867,l. 867,enunciado con remisión; formal Teo. s01:teo:gibbs,ok
+condiciones KKT,l. 596,l. 596,operativa; formal Teo. s01:teo:kkt,ok
+suma logarítmica,l. 2259,l. 2198,formal (Lema s01:lem:sumalog),ok
+distribución estacionaria,l. 51,tabla de notación l. 24–56; l. 2288,formal (C9),ok
+tasa de entropía $H_\infty$,l. 51,tabla de notación l. 24–56; l. 2387,formal (Prop. s01:prop:tasa),ok
+desigualdad de Kraft,l. 2546,l. 2546,operativa con referencia,ok

@@ -1,0 +1,4 @@
+ID,fuente,url,uso_sugerido,estado,restricciones
+D01,Wikipedia en espanol,https://dumps.wikimedia.org/eswiki/,Corpus general y tecnico,URL de catalogo sin descarga,Revisar licencia del volcado y atribucion
+D02,Proyecto Gutenberg,https://www.gutenberg.org/,Corpus de contraste,Pagina de licencia consultada,Revisar situacion de copyright de cada obra por jurisdiccion
+D03,Volve Equinor,https://www.equinor.com/energy/volve-data-sharing,Corpus tecnico futuro,Por comprobar seleccion de reportes,Confirmar disponibilidad de texto y licencia

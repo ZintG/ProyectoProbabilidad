@@ -1,0 +1,88 @@
+\chapter*{Parte I. ¿Cómo aprende una máquina a continuar una frase?}
+\addcontentsline{toc}{chapter}{Parte I. Del lenguaje cotidiano a las secuencias}
+\section*{1. La pregunta que abre el curso}
+Imagine que una persona lee «El gato duerme sobre la...» y debe completar la frase. Tal vez proponga \emph{alfombra}, \emph{mesa} o \emph{cama}. Algunas continuaciones resultan más naturales que otras. Una máquina puede hacer una tarea análoga: asignar números entre cero y uno a las continuaciones posibles, de modo que su suma sea uno. Aún no necesitamos redes neuronales para entender esta operación.
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small}, token/.style={draw=azul,rounded corners=3pt,fill=azulclaro,minimum height=9mm,inner xsep=9pt}]
+\node[token] (t) at (0,0) {El gato duerme sobre la};
+\node[token,fill=verdeclaro,draw=verde] (a) at (6.1,1.0) {alfombra $\;0.50$};
+\node[token,fill=verdeclaro,draw=verde] (b) at (6.1,0) {cama $\;0.30$};
+\node[token,fill=verdeclaro,draw=verde] (c) at (6.1,-1.0) {mesa $\;0.20$};
+\draw[->,thick] (t.east)--(a.west);\draw[->,thick] (t.east)--(b.west);\draw[->,thick] (t.east)--(c.west);
+\end{tikzpicture}
+\end{center}
+\noindent\textit{Lectura de la figura.} Los valores se han inventado para ilustrar el mecanismo; no proceden de un LLM ni afirman que esas sean las únicas palabras posibles. La distribución condicional depende del contexto, de las unidades de representación y del modelo concreto.
+
+\begin{idea}[Lo que aprenderemos a hacer en esta sesión]
+Tomar una frase, separarla en unidades, contar cómo se combinan esas unidades, convertir los conteos en probabilidades y evaluar qué tan bien se ajustan las probabilidades a secuencias no utilizadas para el ajuste.
+\end{idea}
+
+\section*{2. ¿Para qué estudiar secuencias?}
+No toda aplicación de un modelo de lenguaje consiste en completar frases. Las mismas ideas matemáticas sustentan otras preguntas:
+\begin{center}
+\begin{tabularx}{\textwidth}{>{\bfseries}p{3.0cm}X>{\raggedright\arraybackslash}p{3.4cm}}
+\toprule Tarea & Pregunta reconocible & Objeto de entrada\\\midrule
+Clasificación & ¿Esta reseña expresa aprobación o rechazo? & Palabras de la reseña\\
+Traducción & ¿Qué secuencia en otro idioma corresponde a esta? & Secuencia de palabras\\
+Documentos técnicos & ¿Qué evento se describe en este informe? & Texto especializado\\
+Series de tiempo & ¿Cómo evolucionará la demanda mañana? & Mediciones ordenadas\\
+Predicción de texto & ¿Qué símbolo sigue a lo observado? & Contexto escrito\\\bottomrule
+\end{tabularx}
+\end{center}
+Una serie de tiempo no es texto; sin embargo, ambas tienen \emph{orden} y \emph{dependencia entre observaciones}. Más adelante estudiaremos modelos con memoria aprendida, atención y Transformers. Hoy construiremos las bases probabilísticas que hacen inteligibles sus objetivos de entrenamiento y evaluación. La intuición de comenzar por aplicaciones y ejemplos de secuencias está inspirada en el enfoque didáctico del capítulo 6 de \emph{Deep Learning with R} (primera edición); todas las figuras siguientes son originales.
+
+\section*{3. Antes de las ecuaciones: ¿qué es una secuencia?}
+Una \emph{secuencia} es una lista ordenada: cambiar el orden puede cambiar el significado o el fenómeno. «El perro persigue al gato» no expresa lo mismo que «El gato persigue al perro». En una serie de temperatura, $20,21,25$ no describe la misma evolución que $25,21,20$.
+
+\begin{center}
+\begin{tikzpicture}[every node/.style={font=\small},tok/.style={draw=azul,rounded corners=2pt,fill=azulclaro,minimum height=9mm,minimum width=18mm}, >=Stealth]
+\node[anchor=west,font=\bfseries] at (-.2,1.4) {Texto};
+\foreach \x/\w in {0/El,2/perro,4/persigue,6/al,8/gato} {\node[tok] at (\x,0.65){\w};}
+\draw[->,azul,thick] (.8,.65)--(1.1,.65);\draw[->,azul,thick] (2.8,.65)--(3.1,.65);\draw[->,azul,thick] (4.8,.65)--(5.1,.65);\draw[->,azul,thick] (6.8,.65)--(7.1,.65);
+\node[anchor=west,font=\bfseries] at (-.2,-.35) {Serie};
+\foreach \x/\w in {0/20,2/21,4/25,6/24,8/23} {\node[tok,fill=verdeclaro,draw=verde] at (\x,-1.1){\w};}
+\foreach \x in {0,2,4,6} {\draw[->,verde,thick] (\x+.85,-1.1)--(\x+1.1,-1.1);}
+\end{tikzpicture}
+\end{center}
+\textbf{Pregunta de comprensión:} ¿qué se pierde si guardamos solo las frecuencias de las palabras de una oración, sin su orden? Se pierde, al menos, la información que permite distinguir quién realizó una acción sobre quién.
+
+\section*{4. Primera decisión: ¿qué unidad llamaremos token?}
+Un \emph{token} es una unidad de representación definida por una regla concreta. No debe confundirse con la palabra ordinaria: un token puede ser un carácter, una palabra, una pieza de palabra o un símbolo especial. La \emph{tokenización} transforma texto en una secuencia de tokens.
+
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small}, b/.style={draw=azul,rounded corners,fill=azulclaro,align=center,minimum height=11mm}]
+\node[b,text width=40mm] (a) at (0,0){Texto original\\\texttt{El gato salta}};
+\node[b,text width=35mm] (w) at (6.5,1.5){Por palabras\\\texttt{El | gato | salta}};
+\node[b,text width=48mm] (c) at (6.5,0){Por caracteres\\\texttt{E | l | \_ | g | a | t | o | ...}};
+\node[b,text width=48mm] (s) at (6.5,-1.5){Por subpalabras\\\texttt{El | gat | o | salt | a}};
+\draw[->,thick] (a.east)--(w.west);\draw[->,thick] (a.east)--(c.west);\draw[->,thick] (a.east)--(s.west);
+\end{tikzpicture}
+\end{center}
+\noindent Los ejemplos de segmentación son \textbf{didácticos}, no salidas atribuidas a un tokenizador comercial. El guion bajo representa un espacio exclusivamente en el dibujo; otras implementaciones emplean otras convenciones.
+
+\section*{5. Del token al número: una representación comprensible}
+Los algoritmos necesitan identificadores y, a menudo, vectores. Construyamos un vocabulario diminuto: $V=\{\text{el},\text{gato},\text{duerme},\text{fin}\}$, con identificadores $1,2,3,4$. La frase «el gato duerme» pasa a $(1,2,3)$.
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small},box/.style={draw=azul,fill=azulclaro,rounded corners,align=center,text width=36mm,minimum height=13mm}]
+\node[box] (t) at (0,0){«el gato duerme»};
+\node[box] (s) at (4.3,0){tokens\\el $\mid$ gato $\mid$ duerme};
+\node[box] (i) at (8.6,0){identificadores\\$1,2,3$};
+\draw[->,thick] (t)--(s);\draw[->,thick] (s)--(i);
+\end{tikzpicture}
+\end{center}
+La \emph{codificación one-hot} representa el identificador 2 mediante el vector $(0,1,0,0)^\top$, donde solo una coordenada vale uno. Un \emph{embedding} asignaría al token un vector real aprendido, por ejemplo de dimensión $d$; sus valores no son necesariamente probabilidades ni tienen que sumar uno. En S02 estudiaremos formalmente esas representaciones. La separación conceptual es esencial: \textbf{tokenizar, identificar y representar vectorialmente son operaciones diferentes}.
+
+\section*{6. ¿Qué veremos, y qué dejamos para más adelante?}
+\begin{center}
+\begin{tikzpicture}[>=Stealth, every node/.style={font=\small},s/.style={draw=azul,rounded corners,fill=azulclaro,text width=22mm,minimum height=11mm,align=center}]
+\node[s] (a) at (0,0){Texto y\\tokens};
+\node[s] (b) at (2.8,0){Pares y\\conteos};
+\node[s] (c) at (5.6,0){Probabilidad\\condicional};
+\node[s] (d) at (8.4,0){Pérdida y\\perplejidad};
+\draw[->,thick] (a)--(b);\draw[->,thick] (b)--(c);\draw[->,thick] (c)--(d);
+\node[font=\scriptsize,text width=10cm,align=center] at (4.2,-1.1){Más adelante: embeddings, redes neuronales, atención, Transformers, generación y aplicaciones};
+\end{tikzpicture}
+\end{center}
+La S01 explica el mapa completo sin pretender enseñar todas las arquitecturas. Si el estudiante entiende por qué tiene sentido asignar probabilidades condicionales a tokens, estará preparado para comprender qué optimiza una red neuronal cuando aprende a predecirlos.
+\clearpage

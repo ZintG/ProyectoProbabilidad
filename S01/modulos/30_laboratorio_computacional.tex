@@ -1,0 +1,87 @@
+
+\chapter*{Laboratorio computacional: de las ecuaciones al reporte}
+\phantomsection\addcontentsline{toc}{chapter}{Laboratorio computacional: R y Python}\label{lab:comp}
+\begin{idea}[Pregunta de trabajo]
+\emph{¿Una tabla de transiciones estimada con lenguaje técnico asigna mayor
+probabilidad a bitácoras técnicas reservadas que una tabla estimada con prosa general?}
+Responder esta pregunta construida en pequeño ayuda a comprender qué medir,
+pero no demuestra nada sobre un tokenizador moderno ni sobre la población real
+de documentos industriales.
+\end{idea}
+\section*{L1. Inspeccionar el corpus antes de ajustar el modelo}
+El archivo \nolinkurl{experimentos/corpus_didactico.csv} contiene ocho documentos
+generales de entrenamiento, ocho técnicos de entrenamiento y seis técnicos
+de prueba; todas las frases fueron \textbf{redactadas para esta clase}.
+\textbf{No se descargaron informes de empresas ni se entrenó un LLM.}
+Las dos condiciones usan el mismo vocabulario de caracteres establecido
+\emph{solo con entrenamiento} y el mismo valor $\alpha=1$; los datos
+de prueba nunca intervienen en el ajuste ni en la selección del modelo.
+Se usan minúsculas y se quitan espacios de los extremos; el archivo se almacena
+en UTF-8 con caracteres precompuestos, sin normalización adicional.
+
+\section*{L2. Traducir ecuaciones a un algoritmo comprobable}
+Para cada documento $z=z_1\cdots z_n$, se añade un estado inicial
+\texttt{BOS} y se predice también un símbolo \texttt{EOS}. La probabilidad
+predictiva de bigramas es
+\[
+\widehat P(v\mid u)=\frac{C(u,v)+\alpha}
+{\sum_w C(u,w)+\alpha|V_{\mathrm{salida}}|},\qquad \alpha=1.
+\]
+La pérdida en bits para el documento completo es
+\[
+B(z)=-\sum_{t=1}^{n+1}\log_2 \widehat P(z_t\mid z_{t-1}),
+\qquad \operatorname{BPC}(z)=\frac{B(z)}{n}.
+\]
+Aquí $z_0=\mathrm{BOS}$ y $z_{n+1}=\mathrm{EOS}$. El denominador
+cuenta los puntos de código del texto original (\emph{no} EOS).
+\textbf{Observación:} el alfabeto es el mismo y los modelos difieren en
+los datos de entrenamiento, no en el algoritmo de tokenización.
+
+\section*{L3. Ejecutar en dos lenguajes y localizar los resultados}
+Desde el directorio que contiene \texttt{s01\_integrada.tex}:
+\begin{verbatim}
+python codigo/representacion.py
+python codigo/s01.py
+python codigo/experimento_s01.py
+# En un equipo donde este instalado R:
+Rscript codigo/representacion.R
+Rscript codigo/s01.R
+Rscript codigo/experimento_s01.R
+\end{verbatim}
+Los programas nuevos exportan los resultados a
+\nolinkurl{experimentos/resultados_python.csv} y
+\nolinkurl{experimentos/resultados_R.csv}. Python exporta también
+\nolinkurl{experimentos/resumen_python.json}. Si falta \texttt{Rscript},
+la ejecución R se deja \textbf{PENDIENTE}; no se informa una comparación
+entre lenguajes como completada.
+
+\section*{L4. Interpretar un resultado ejecutado, no extrapolarlo}
+\begin{ejemplo}[Salida verificada por Python en este corpus sintético]
+Se obtuvieron seis diferencias pareadas
+$\Delta_i=\operatorname{BPC}_{\rm tecnico}(z_i)-
+\operatorname{BPC}_{\rm general}(z_i)$; su promedio fue
+$\bar\Delta\approx-0.54025$ bits por carácter.
+Por enumeración exhaustiva de las $6^6=46656$ remuestras bootstrap
+pareadas con reemplazo, el intervalo percentil nominal del 95\% fue
+$[-0.66771,-0.42038]$.
+El intervalo \emph{describe el comportamiento de un procedimiento de
+remuestreo sobre seis frases construidas}, no la incertidumbre científica
+de una población de reportes: no hay muestreo representativo, comparación
+con modelos neuronales ni validación externa.
+\end{ejemplo}
+\section*{L5. De algoritmo a evidencia: registros obligatorios}
+El reporte contiene la versión del programa, datos y licencia,
+partición por documento, protocolo BOS/EOS, alfabeto, unidades,
+valores por documento, método del intervalo, limitaciones y
+una conclusión que no exceda lo medido. Cada cambio del corpus,
+semillas, modelado o tokenización requiere regenerar todas las tablas.
+El \hyperref[lab:ic10]{microexperimento IC10} evalua, por separado,
+la segmentacion aprendida por dos tokenizadores BPE.
+\ifdefined\labcompstandalone
+La consigna del taller exige un reporte corto; el seminario de
+investigación explica que falta
+\else
+La \hyperref[mod:taller]{consigna del taller} exige un reporte corto;
+el \hyperref[mod:invest]{seminario de investigación} explica qué falta
+\fi
+para convertir una demostración en un estudio candidato a publicación.

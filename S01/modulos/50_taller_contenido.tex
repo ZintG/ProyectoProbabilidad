@@ -1,0 +1,80 @@
+
+\chapter*{Taller autónomo con reporte técnico breve}
+\phantomsection\addcontentsline{toc}{chapter}{Taller autónomo y reporte técnico}\label{mod:taller}
+\begin{taller}[Finalidad y entrega]
+Demostrar, con cálculos y archivos regenerables, cómo las decisiones de
+representación afectan a un pequeño modelo de lenguaje. Entregar un
+\textbf{reporte de 2--3 páginas} (objetivo, datos, métodos, resultados,
+incertidumbre, limitaciones y relación con IC10), más scripts y CSV.
+\textbf{Todo es trabajo autónomo}; no se presuponen las horas del laboratorio
+dentro de la clase presencial. En S01 se conservan como hito de investigación
+\textbf{dos áreas de interés}, cada una con un párrafo.
+\end{taller}
+\section*{Actividad 1 [Representación]: una frase, cuatro objetos}
+Segmente ``el gato mira al perro'' en palabras y caracteres; construya
+unigramas, bigramas y trigramas; contraste bolsa de palabras con secuencia y
+escriba el vector one-hot del token \texttt{gato}. Repita el primer paso con
+una frase técnica. \emph{Autoverificación}: cinco palabras, cuatro pares,
+tres trigramas en la primera oración.
+\section*{Actividad 2 [Cálculo]: del conteo a la predicción}
+Con \texttt{abacabbacb} construya la matriz de transiciones, derive el
+estimador MLE e introduzca $\alpha=1$. Para \texttt{abca}, calcule la
+probabilidad de transición y la conjunta con $p(X_1=a)=1/3$.
+\emph{Autoverificación}: $P(b\mid a)=3/7$; probabilidad conjunta $1/105$.
+\section*{Actividad 3 [Demostración]: medir lo que se predice}
+Demuestre la identidad entre entropía cruzada y KL con las condiciones de
+soporte; calcule KL de $(1/2,1/4,1/4)$ respecto de
+$(1/4,1/2,1/4)$. Para las probabilidades observadas
+$(1/2,1/4,1/8,1/2)$, calcule PPL. Compare dos tokenizadores con
+$(T_A,\mathrm{PPL}_A)=(100,3.2)$ y $(T_B,\mathrm{PPL}_B)=(30,25)$
+sobre un mismo texto de 100 caracteres, indicando qué supuestos permiten
+interpretar el BPC. \emph{Autoverificación}: KL $=0.25$ bits y
+PPL $=2^{7/4}$.
+\section*{Actividad 4 [Algoritmos]: BPE, R y Python}
+Ejecute seis fusiones BPE sobre la tabla \emph{casa, casas, cosa, cosas,
+caso} con las frecuencias y reglas indicadas en la sección~1.1.2 del libro. Ejecute después:
+\begin{verbatim}
+python codigo/s01.py
+python codigo/experimento_s01.py
+python codigo/ic10_tokenizadores.py
+Rscript codigo/s01.R
+Rscript codigo/experimento_s01.R
+Rscript codigo/ic10_tokenizadores.R
+\end{verbatim}
+Compruebe las sumas de las filas, las longitudes BPE y las seis filas
+pareadas del CSV. Compare también, sobre las mismas seis frases
+de prueba, el BPE general con el tecnico mediante 20 fusiones en ambos;
+produzca \texttt{resultados\_ic10\_tokenizacion.csv} y explique las diferencias.
+Si no tiene R, indique \textbf{PENDIENTE} en el reporte,
+sin inventar que los números se reprodujeron en ambos lenguajes.
+\section*{Actividad 5 [Aplicación e investigación]: entregar evidencia}
+Use \nolinkurl{experimentos/corpus_didactico.csv} para reconstruir
+\nolinkurl{experimentos/resultados_python.csv}; complete la
+\textbf{plantilla de reporte} en \texttt{reportes/reporte\_s01.tex}.
+Incluya la tabla BPE con tokens por palabra y distinga la comparación
+de tokenizadores de la comparación de predictores por caracteres.
+Interprete la diferencia media de BPC y el intervalo bootstrap por
+\emph{documento}, explicando por qué ni el tamaño de muestra ni el origen
+del corpus permiten inferencia para textos industriales reales.
+Proponga una versión de IC10 que sí sea falsable con documentos y
+comparaciones externas. Finalmente, formule dos áreas de interés,
+con un párrafo justificado por cada una.
+\begin{verificacion}[Lista de control antes de entregar]
+\begin{enumerate}
+\item Los datos no se mezclan entre ajuste y prueba; se identifica cada
+unidad de observación.
+\item Se reportan todas las probabilidades de la cadena, incluido EOS,
+y se cuenta explícitamente la unidad del denominador BPC.
+\item Cada resultado se etiqueta como \emph{calculado}, \emph{ejecutado
+con datos sintéticos} o \emph{pendiente de validación empírica}.
+\item Se entregan código, CSV, versión de lenguaje, interpretación,
+limitaciones y dos áreas de interés.
+\end{enumerate}
+\end{verificacion}
+\section*{Extensiones opcionales, fuera del núcleo S01}
+Calcule intervalo de confianza mediante bootstrap jerárquico con varios
+documentos por fuente; incorpore una evaluación BPC de modelos probabilisticos sobre tokens
+BPE con distribuciones comparables; compare
+vocabularios fijados por entrenamiento con distintos tamaños; pruebe
+suavizado $\alpha\in\{1/2,1,2\}$ exclusivamente en validación; diseñe una
+réplica externa para dos dominios técnicos con control de licencias.

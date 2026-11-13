@@ -1,0 +1,121 @@
+\chapter{Datos y convenciones compartidas}
+La cadena de entrenamiento es \texttt{abacabbacb}; el conjunto de prueba
+\texttt{abca}; el alfabeto $V=\{a,b,c\}$. La matriz de bigramas usa
+filas para el símbolo precedente y columnas para el siguiente:
+\[
+C=\begin{pmatrix}0&2&2\\2&1&0\\1&1&0\end{pmatrix}.
+\]
+Se adoptan logaritmos base dos para los resultados en bits y la
+probabilidad inicial $p(X_1=i)=1/3$ para la evaluación conjunta del
+microejemplo. Los conteos se forman solo con entrenamiento; se evalúa
+prueba sin alterarlos.
+\section{R: matriz y suavizado}
+\begin{lstlisting}[language=R]
+train <- strsplit("abacabbacb", "", fixed=TRUE)[[1]]
+V <- c("a", "b", "c")
+C <- matrix(0L, 3, 3, dimnames=list(V,V))
+for (i in seq_len(length(train)-1L))
+    C[train[i],train[i+1L]] <- C[train[i],train[i+1L]]+1L
+P <- sweep(C+1, 1, rowSums(C)+3, "/")
+stopifnot(all(abs(rowSums(P)-1)<1e-12))
+\end{lstlisting}
+\section{Python: matriz y suavizado}
+\begin{lstlisting}[language=Python]
+train = "abacabbacb"
+V = "abc"
+C = {a: {b: 0 for b in V} for a in V}
+for a, b in zip(train, train[1:]):
+    C[a][b] += 1
+P = {a: {b: (C[a][b] + 1)/(sum(C[a].values()) + 3)
+          for b in V} for a in V}
+assert all(abs(sum(row.values())-1) < 1e-12
+           for row in P.values())
+\end{lstlisting}
+Ambos programas deben obtener
+$P(a\to b)=3/7$, $P(b\to c)=1/6$ y $P(c\to a)=2/5$.
+Una revisión útil consiste en contrastar no solo números redondeados,
+sino también suma de conteos, orden del vocabulario y convenciones
+sobre contextos sin observaciones.
+\chapter{De condicionales a pérdida, PPL y BPC}
+La probabilidad conjunta de la prueba es
+\[
+q(\texttt{abca})=\frac13\frac37\frac16\frac25=\frac1{105}.
+\]
+\begin{lstlisting}[language=Python]
+from math import log2
+bits = log2(105)
+bpc = bits / 4
+ppl = 2 ** bpc
+assert abs(bits - 6.714245517666122) < 1e-10
+\end{lstlisting}
+\begin{lstlisting}[language=R]
+bits <- log2(105)
+bpc <- bits / 4
+ppl <- 2^bpc
+stopifnot(abs(bits - 6.714245517666122) < 1e-10)
+\end{lstlisting}
+Si se omite $\pi(a)=1/3$ en la verosimilitud y se promedian las
+cuatro posiciones de la cadena, se está mezclando una pérdida
+\emph{condicional} con la tasa conjunta. Es preferible reportar
+explícitamente la convención de evaluación.
+\chapter{BPE con desempate definido}
+Se procesan palabras con frecuencias
+\emph{casa} (5), \emph{casas} (2), \emph{cosa} (6),
+\emph{cosas} (3), \emph{caso} (4).
+El marcador \texttt{<eow>} se incluye al final de cada palabra.
+El conteo de pares se pondera por frecuencia del tipo léxico;
+los empates se resuelven por orden Unicode ascendente sobre el par
+reconstruido, y los reemplazos se ejecutan de izquierda a derecha
+sin solapamiento.
+\begin{center}\small
+\begin{tabular}{clrr}\toprule Paso & Par & Reemplazos & Longitud\\\midrule
+0&---&---&105\\1&$a+s$&16&89\\2&$a+\mathrm{fin}$&11&78\\
+3&$c+as$&11&67\\4&$c+o$&9&58\\5&$co+s$&9&49\\
+6&$cos+a\mathrm{fin}$&6&43\\\bottomrule
+\end{tabular}
+\end{center}
+Una fila del registro tiene dos contadores posibles: frecuencia bruta
+del par y número de sustituciones efectivas. Cuando existen
+solapamientos no tienen por qué coincidir. La comprobación correcta es
+\[
+\text{longitud anterior}-\text{longitud nueva}
+=\text{número de sustituciones efectivas ponderadas}.
+\]
+El código completo (sin omisiones) está en
+\texttt{codigo/s01.py} y \texttt{codigo/s01.R}. Se evitan aquí bloques
+extensos de código repetitivo para mantener el documento enfocado en
+sus invariantes y en las relaciones matemáticas.
+\chapter{Extensión a investigación: cómo empezar sin contaminar la prueba}
+\section{Un protocolo de documentos reales}
+\begin{enumerate}
+\item Seleccionar una fuente general y otra técnica con licencia declarada,
+sin suponer que el catálogo del documento de investigación contiene
+archivos de corpus ya descargados.
+\item Congelar particiones por documento o grupo de documentos relacionados
+antes de aprender el vocabulario BPE.
+\item Entrenar tokenización y $n$-gramas solo con entrenamiento;
+elegir suavizado y tamaños de vocabulario con validación.
+\item Registrar tasa de tokens por palabra, longitud, bits por carácter
+y, cuando corresponda, pérdida por token compatible.
+\item Presentar incertidumbre por documento o grupo, no por supuesto de
+independencia entre todos los tokens de un mismo documento.
+\end{enumerate}
+\section{Separación entre ejemplo y evidencia}
+La matriz, el ejemplo de KL, la tabla BPE y el contraste entre PPL
+son \textbf{ILUSTRATIVOS con aritmética verificada}. Una mejora en
+reportes técnicos se considerará \textbf{REAL} solo después de una
+corrida documentada sobre datos admisibles, con código y control de
+fuga. Ninguna de las cifras de este módulo sustituye el futuro
+protocolo de investigación.
+\section{Pruebas mínimas automatizadas}
+\begin{enumerate}
+\item La suma de las transiciones es igual al número de símbolos
+menos uno.
+\item Cada fila de probabilidades de una matriz válida suma uno.
+\item La prueba suavizada tiene probabilidad conjunta $1/105$.
+\item La divergencia KL del ejemplo vale $1/4$ bit.
+\item El procedimiento BPE pasa de longitud 105 a 43 en seis pasos.
+\end{enumerate}
+Estas condiciones están programadas en
+\texttt{verificaciones/verificar\_s01.py}, que usa las mismas
+funciones públicas del módulo Python.

@@ -1,0 +1,63 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[spanish]{babel}
+\usepackage{amsmath,booktabs,geometry,hyperref}
+\geometry{margin=24mm}
+\title{Informe piloto: bigramas sobre bitácoras sintéticas}
+\author{Laboratorio S01 · ejemplo ejecutado en Python}
+\date{17 de octubre de 2026}
+\begin{document}\maketitle
+\begin{abstract}
+Se demuestra el protocolo mínimo para comparar modelos probabilísticos con
+métricas homogéneas y un informe reproducible. Los documentos se han
+fabricado para la clase: la experiencia no constituye evidencia de campo.
+\end{abstract}
+\section{Pregunta y datos}
+Se ajustaron dos bigramas de caracteres sobre 8 textos generales y 8 textos
+técnicos, respectivamente. Se evaluaron en 6 textos técnicos distintos,
+igualmente sintéticos. No se descargaron corpus ni se ejecutaron modelos LLM.
+\section{Método}
+Vocabulario común fijado con entrenamiento, minúsculas, recorte de espacios
+extremos, suavizado aditivo $\alpha=1$, BOS y EOS declarados. La métrica es
+$\mathrm{BPC}(z)=-\log_2\widehat P(z,\mathrm{EOS})/|z|$,
+contando puntos de código Unicode sin EOS en el denominador.
+\section{Resultados reproducidos}
+\begin{center}\begin{tabular}{lrrrr}\toprule
+Documento & Caracteres & BPC general & BPC técnico & Diferencia\\\midrule
+E01 & 27 & 4.167 & 3.609 & -0.559 \\
+E02 & 34 & 4.269 & 3.448 & -0.821 \\
+E03 & 32 & 3.900 & 3.533 & -0.367 \\
+E04 & 37 & 4.188 & 3.665 & -0.523 \\
+E05 & 36 & 4.176 & 3.558 & -0.619 \\
+E06 & 31 & 3.840 & 3.487 & -0.353 \\
+\bottomrule\end{tabular}\end{center}
+
+\noindent Diferencia media (técnico menos general): $-0.54024842$ bits/carácter. El intervalo percentil al 95\% fue
+$[-0.66770598,-0.42038147]$, obtenido por enumerar
+$6^6=46656$ remuestras de documentos con reemplazo y conservar el pareamiento.
+\section{Microexperimento BPE de tokenizacion (IC10)}
+Ajustamos dos tokenizadores BPE didacticos, uno en texto general y otro
+tecnico, con 20 fusiones cada uno; las reglas se aprendieron \emph{solo}
+de entrenamiento y se aplicaron a los mismos seis documentos reservados:
+\begin{center}\begin{tabular}{lrr}\toprule
+Tokenizador & Tokens & Tokens/palabra\\\midrule
+BPE general & 148 & 4.228571\\
+BPE tecnico & 127 & 3.628571\\\bottomrule
+\end{tabular}\end{center}
+Son 35 palabras, diferencia total $-21$ tokens. Es un resultado de
+\textbf{longitud tokenizada}, no de prediccion ni de un LLM.
+\section{Interpretación y límites}
+La comparación favorece al modelo técnico para \emph{estos seis ejemplos
+inventados}. No estima efectos poblacionales; el intervalo tampoco controla
+sesgos de selección o de redacción. No se han comparado tokenizadores modernos.
+En un estudio real se exigen licencia de corpus, particiones blindadas,
+baselines, varias semillas y validación externa.
+\section{Vínculo con investigación y objetivo Q1}
+El problema IC10 plantea estudiar la penalización de tokenización en textos
+técnicos en español. La experiencia de esta sesión solo enseña a medir y
+documentar. Un artículo candidato a una revista Q1 exige contribución
+novedosa, literatura crítica, evidencia sobre datos reales, robustez y
+reproducibilidad. La obligación de S01 es identificar dos áreas de interés;
+la selección formal del problema ocurre en S05.
+\end{document}

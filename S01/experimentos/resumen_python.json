@@ -1,0 +1,16 @@
+{
+  "datos": "SINTETICOS_CREADOS_PARA_ENSENAR",
+  "modelo": "bigrama_caracter_alpha_1",
+  "n_prueba": 6,
+  "vocabulario_entrenamiento": 26,
+  "delta_promedio_bpc": -0.54024842,
+  "ic_percentil_bootstrap_pareado_95": [
+    -0.66770598,
+    -0.42038147
+  ],
+  "bootstrap": "enumeracion_exhaustiva_n^n",
+  "decision": "SIN_INFERENCIA_POBLACIONAL",
+  "normalizacion": "minúsculas y recorte de extremos (corpus UTF-8 precompuesto)",
+  "unidad": "puntos_de_codigo_unicode",
+  "probabilidad": "cada documento incluye BOS y EOS; BPC divide por longitud sin EOS"
+}
