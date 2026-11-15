@@ -197,7 +197,7 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 * [x] Selección del libro *Niebla* y delimitación editorial sin paratexto.
 * [x] Implementación de `preparar.py` y partición contigua 80/10/10 en `datos/`.
 * [x] Implementación y validación de `pruebas.py` con *«abracadabra»*.
-* [ ] **Pendiente:** Ejecutar conteos de Fase 1 sobre `entrenamiento.txt` y calcular $H(\hat{p})$ vs $H_{\max}$ (Gráfica F1 y Tabla T1).
+* [x] **Pendiente:** Ejecutar conteos de Fase 1 sobre `entrenamiento.txt` y calcular $H(\hat{p})$ vs $H_{\max}$ (Gráfica F1 y Tabla T1).
 
 ### 🗓️ Semana 2: Modelado Probabilístico y Calibración
 * [ ] Programar `codigo/modelos.py` con conteos para $n = 1, 2, 3, 4, 5$.
