@@ -32,6 +32,10 @@ Para la elaboración de este plan maestro de trabajo y la estructuración del or
 | **Partición contigua (80% / 10% / 10%)** | ✅ Completado | `datos/entrenamiento.txt` (252,626 car.), `validacion.txt` (31,578 car.), `prueba.txt` (31,579 car.). |
 | **Prueba de cordura inicial (`abracadabra`)** | ✅ Completado | `codigo/pruebas.py` pasa con 100% de coincidencia matemática con la Tabla 1. |
 | **Bitácora metodológica inicial** | ✅ Completado | `decisiones_informe.md` y `datos/FUENTE.md`. |
+| **Fase 1: exploración del corpus** | ✅ Completado | `codigo/fase1.py`, `tablas/T1_particiones.csv`, `figuras/F1_frecuencias.pdf` y `.png`. |
+| **Fase 2: conteos, MLE y ceros en validación** | ✅ Completado | `codigo/modelos.py`, `codigo/fase2.py`, `tablas/T2_ceros_validacion.csv`. |
+| **Fase 3: suavizado de Laplace y calibración de $\alpha$** | ✅ Completado | `codigo/fase3.py`, `tablas/F2_bpc_alpha.csv`, `figuras/F2_bpc_alpha.pdf` y `.png`. |
+| **Revisión 1 con el profesor** | ⏳ Pendiente | Resumen preparado en `resumen_revision_1.md`; falta la reunión. |
 
 ---
 
@@ -72,6 +76,9 @@ flowchart TD
      $$H_{\max} = \log_2 |\mathcal{V}| = \log_2(27) \approx 4.7549 \text{ bits}$$
   6. Calcular la redundancia del texto $R = 1 - \frac{H(\hat{p})}{H_{\max}}$ e interpretar cuánta certidumbre aporta conocer las frecuencias del idioma.
 
+* **Estado:** ✅ Completada. Resultados en `tablas/T1_particiones.csv` y `figuras/F1_frecuencias.pdf`/`.png`; el cálculo se reproduce con `codigo/fase1.py`.
+* **Resultado obtenido:** $H(\hat{p}) = 4.0592$ bits, $H_{\max} = \log_2 27 = 4.7549$ bits y redundancia $R = 14.63\ \%$.
+
 ---
 
 ### 🔹 FASE 2: Estimación por Máxima Verosimilitud (MLE) y el Problema de los Ceros
@@ -88,6 +95,19 @@ flowchart TD
      - Registrar que la probabilidad asignada es $\hat{q}(y \mid h) = 0$, lo que conduce a $\log_2(0) \to -\infty$ y un error BPC infinito.
   4. Construir la **Tabla T2**: Número de parámetros posibles ($|\mathcal{V}|^n$), número de secuencias únicas observadas y porcentaje de ceros encontrados en validación para cada $n \in \{1, 2, 3, 4, 5\}$.
 
+* **Estado:** ✅ Completada. Código en `codigo/modelos.py` y `codigo/fase2.py`; tabla en `tablas/T2_ceros_validacion.csv`.
+* **Resultado obtenido (31,578 caracteres de validación por cada $n$):**
+
+  | $n$ | Ceros | % ceros | BPC MLE |
+  |---:|---:|---:|---:|
+  | 1 | 0 | 0.0000 % | 4.0515 |
+  | 2 | 0 | 0.0000 % | 3.2172 |
+  | 3 | 50 | 0.1583 % | $\infty$ |
+  | 4 | 491 | 1.5549 % | $\infty$ |
+  | 5 | 2,171 | 6.8750 % | $\infty$ |
+
+  El fallo de ceros **no comienza en $n=2$**, como suponía el plan original: los bigramas están completamente cubiertos y el primer cero aparece en $n=3$.
+
 ---
 
 ### 🔹 FASE 3: Suavizado Aditivo (Laplace Generalizado) y Calibración de $\alpha$
@@ -96,13 +116,27 @@ flowchart TD
   1. Implementar en `codigo/modelos.py` la probabilidad condicional con suavizado aditivo:
      $$\hat{q}_\alpha(y \mid h) = \frac{c(h, y) + \alpha}{c(h) + \alpha |\mathcal{V}|}$$
      *(Asegurar que cuando el contexto nunca fue visto, $c(h)=0$, la probabilidad se degrade naturalmente a la uniforme $1/|\mathcal{V}|$).*
-  2. Definir en `codigo/experimentos.py` la rejilla de calibración de hiperparámetros:
+  2. Definir la rejilla de calibración de hiperparámetros en `codigo/fase3.py`:
      $$\alpha \in \{0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0\}$$
   3. Para cada orden $n \in \{1, 2, 3, 4, 5\}$ y cada valor de $\alpha$:
      - Evaluar sobre `datos/validacion.txt` calculando los Bits Por Carácter (BPC):
-       $$\text{BPC}(n, \alpha) = -\frac{1}{N_{\text{val}} - n + 1} \sum_{t=n}^{N_{\text{val}}} \log_2 \hat{q}_\alpha(x_t \mid x_{t-n+1}^{t-1})$$
+       $$\text{BPC}(n, \alpha) = -\frac{1}{N_{\text{val}}} \sum_{t=1}^{N_{\text{val}}} \log_2 \hat{q}_\alpha(x_t \mid x_{t-n+1}^{t-1})$$
+       con $N_{\text{val}} = 31{,}578$ y contexto heredado del final del entrenamiento para las primeras $n-1$ posiciones.
   4. Graficar la curva de BPC vs $\alpha$ para cada $n$ (**Gráfica F2**).
   5. Identificar y guardar el valor óptimo $\alpha^*(n)$ que minimice el BPC de validación para cada modelo.
+
+* **Estado:** ✅ Completada. Código en `codigo/fase3.py`; resultados en `tablas/F2_bpc_alpha.csv` y `figuras/F2_bpc_alpha.pdf`/`.png`.
+* **Resultado obtenido:**
+
+  | $n$ | $\alpha^*$ | BPC de validación |
+  |---:|---:|---:|
+  | 1 | 1.0 | 4.0515 |
+  | 2 | 0.001 | 3.2172 |
+  | 3 | 0.1 | 2.6982 |
+  | 4 | 0.03 | 2.2959 |
+  | 5 | 0.03 | **2.1902** |
+
+  El mejor modelo en validación es $n=5$ con $\alpha=0.03$ y BPC $2.1902$. En $n=1$ la curva es plana, por lo que su $\alpha^*=1.0$ no es un óptimo real.
 
 ---
 
@@ -193,18 +227,18 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 
 ## 📅 5. Cronograma de Trabajo Sugerido (4 Semanas)
 
-### 🗓️ Semana 1: Cimientos y Preprocesamiento *(ESTADO: 90% Completada)*
+### 🗓️ Semana 1: Cimientos y Preprocesamiento *(ESTADO: 100% Completada)*
 * [x] Selección del libro *Niebla* y delimitación editorial sin paratexto.
 * [x] Implementación de `preparar.py` y partición contigua 80/10/10 en `datos/`.
 * [x] Implementación y validación de `pruebas.py` con *«abracadabra»*.
-* [x] **Pendiente:** Ejecutar conteos de Fase 1 sobre `entrenamiento.txt` y calcular $H(\hat{p})$ vs $H_{\max}$ (Gráfica F1 y Tabla T1).
+* [x] Ejecutar conteos de Fase 1 sobre `entrenamiento.txt` y calcular $H(\hat{p})$ vs $H_{\max}$ (Gráfica F1 y Tabla T1).
 
-### 🗓️ Semana 2: Modelado Probabilístico y Calibración
-* [ ] Programar `codigo/modelos.py` con conteos para $n = 1, 2, 3, 4, 5$.
-* [ ] Demostrar el fallo de ceros en validación (Fase 2, Tabla T2).
-* [ ] Implementar suavizado de Laplace generalizado en `modelos.py`.
-* [ ] Realizar la calibración de $\alpha \in \{0.001, \dots, 1.0\}$ sobre `datos/validacion.txt` (Fase 3, Gráfica F2).
-* [ ] **Hito:** Revisión 1 con el profesor con los mejores $\alpha^*$ seleccionados.
+### 🗓️ Semana 2: Modelado Probabilístico y Calibración *(ESTADO: 80% Completada — falta la Revisión 1)*
+* [x] Programar `codigo/modelos.py` con conteos para $n = 1, 2, 3, 4, 5$.
+* [x] Demostrar el fallo de ceros en validación (Fase 2, Tabla T2).
+* [x] Implementar suavizado de Laplace generalizado en `modelos.py`.
+* [x] Realizar la calibración de $\alpha \in \{0.001, \dots, 1.0\}$ sobre `datos/validacion.txt` (Fase 3, Gráfica F2). Mejor modelo: $n=5$, $\alpha=0.03$, BPC $2.1902$.
+* [ ] **Hito:** Revisión 1 con el profesor con los mejores $\alpha^*$ seleccionados. Resumen listo en `resumen_revision_1.md`.
 
 ### 🗓️ Semana 3: Evaluación en Prueba, Simulación e Incertidumbre
 * [ ] Correr la evaluación definitiva sobre `datos/prueba.txt` una única vez (Fase 4, Tabla T3).
