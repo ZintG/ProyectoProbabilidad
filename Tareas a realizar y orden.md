@@ -35,7 +35,7 @@ Para la elaboración de este plan maestro de trabajo y la estructuración del or
 | **Fase 1: exploración del corpus** | ✅ Completado | `codigo/fase1.py`, `tablas/T1_particiones.csv`, `figuras/F1_frecuencias.pdf` y `.png`. |
 | **Fase 2: conteos, MLE y ceros en validación** | ✅ Completado | `codigo/modelos.py`, `codigo/fase2.py`, `tablas/T2_ceros_validacion.csv`. |
 | **Fase 3: suavizado de Laplace y calibración de $\alpha$** | ✅ Completado | `codigo/fase3.py`, `tablas/F2_bpc_alpha.csv`, `figuras/F2_bpc_alpha.pdf` y `.png`. |
-| **Revisión 1 con el profesor** | ⏳ Pendiente | Resumen preparado en `resumen_revision_1.md`; falta la reunión. |
+| **Revisión 1 con el profesor** | ✅ Completado | `resumen_revision_1.md`; el profesor pidió justificar la elección de $\alpha^*$ (documentada en `decisiones_informe.md`, sección 12). |
 
 ---
 
@@ -48,7 +48,7 @@ flowchart TD
     Fase1["Fase 1: Exploración del Corpus (Entrenamiento)<br>• Frecuencias y Vocabulario |V|=27<br>• Entropía H(p) vs log2(|V|)<br>• Gráfica F1 y Tabla T1"]
     Fase2["Fase 2: Estimación MLE (n = 1 a 5)<br>• Programar modelos.py (conteos c(h,y) / c(h))<br>• Evaluar en validación<br>• Reportar fallo de ceros (Tabla T2)"]
     Fase3["Fase 3: Suavizado Aditivo y Calibración α<br>• Fórmula de Laplace generalizada<br>• Rejilla α ∈ {0.001, ..., 1.0} en validación<br>• Gráfica F2 y selección de α* óptimo"]
-    Fase4["Fase 4: Evaluación en Prueba (¡1 sola vez!)<br>• BPC y Perplejidad (Tabla T3)<br>• Desigualdad de Gibbs H(p) ≤ H(p,q)<br>• Gráfica F3: Ley de los Grandes Números"]
+    Fase4["Fase 4: Evaluación en Prueba (¡1 sola vez!)<br>• BPC y Perplejidad (Tabla T3)<br>• Desigualdad de Gibbs H(p) ≤ H(p,q)<br>• Gráfica F3: BPC vs n | Gráfica F4: promedio acumulado"]
     Fase5["Fase 5: Simulación y Cadenas de Markov<br>• Generar texto de 300 caracteres (n=2,3,5)<br>• Matriz de transición y distribución π<br>• Análisis cualitativo del español"]
     Fase6["Fase 6: Incertidumbre y Bootstrap 95%<br>• Bloques contiguos de 2000 caracteres<br>• 10,000 remuestreos Bootstrap<br>• Intervalo de confianza de diferencia de BPC"]
     Reporte["Reporte Final LaTeX y Empaquetado<br>• 10 a 14 páginas (según Tabla 3)<br>• README.md y ejecución < 10 min<br>• Empaquetado .zip"]
@@ -146,16 +146,20 @@ flowchart TD
   1. Fijar los mejores hiperparámetros $\alpha^*(n)$ obtenidos en la Fase 3.
   2. Cargar `datos/prueba.txt` y correr la evaluación una única vez.
   3. Calcular y reportar para cada orden $n \in \{1, 2, 3, 4, 5\}$:
-     - **Bits Por Carácter (BPC)**.
+     - **BPC de entrenamiento** (con el $\alpha^*(n)$ fijado).
+     - **BPC de prueba**.
      - **Perplejidad (PPL):** $\text{PPL} = 2^{\text{BPC}}$.
-  4. Generar la **Tabla T3** con los resultados comparativos de prueba.
-  5. **Verificación de la Desigualdad de Gibbs:**
-     - Comprobar numéricamente que la entropía cruzada siempre acota superiormente a la entropía real:
-       $$H(p) \le H(p, q) \iff \text{BPC} \ge H(p)$$
+  4. Generar la **Tabla T3** con BPC de entrenamiento, BPC y PPL de prueba y el $\alpha$ elegido, por $n$.
+  5. **Verificación de la Desigualdad de Gibbs con el modelo de unigramas:**
+     - Comprobar numéricamente que
+       $$H(\hat p_{\text{prueba}}) \le H(\hat p_{\text{prueba}}, \hat q)$$
+       y calcular la divergencia de Kullback–Leibler como la diferencia entre ambas.
   6. **Comprobación de la Ley de los Grandes Números (LLN):**
      - Calcular el promedio acumulado de sorpresa bit a bit a lo largo de las 31,579 posiciones de prueba:
        $$S_k = -\frac{1}{k} \sum_{t=1}^k \log_2 \hat{q}(x_t \mid h_t)$$
-     - Generar la **Gráfica F3**, mostrando cómo $S_k$ oscila al principio y se estabiliza asintóticamente alrededor de la media teórica esperada.
+     - Generar la **Gráfica F4**, mostrando cómo $S_k$ oscila al principio y se estabiliza alrededor del BPC final.
+  7. Generar la **Gráfica F3**: BPC de entrenamiento y de prueba contra $n$ en la misma gráfica.
+* **Nota de numeración:** el enunciado asigna F3 a la comparación BPC entrenamiento/prueba y F4 al promedio acumulado; F5 queda para $\pi$ en la Fase 5.
 
 ---
 
@@ -167,11 +171,13 @@ flowchart TD
   2. Generar secuencias sintéticas de **300 caracteres** para los modelos $n = 2$ (bigramas), $n = 3$ (trigramas) y $n = 5$.
   3. Analizar cualitativamente qué propiedades del idioma se capturan (formación de sílabas, alternancia consonante-vocal, palabras válidas del español, concordancia y cuándo se pierde el sentido semántico).
   4. **Análisis de Cadena de Markov para $n = 2$:**
-     - Construir la matriz de transición de estados $P$ de tamaño $27 \times 27$.
-     - Verificar que es una matriz estocástica (suma de cada fila igual a 1).
-     - Calcular analíticamente o por el método de potencias la **distribución estacionaria** $\pi$:
+     - Construir la matriz de transición de estados $P$ de tamaño $27 \times 27$ con el bigrama suavizado.
+     - Verificar que es una matriz estocástica (suma de cada fila igual a 1) y que todas sus entradas son positivas.
+     - Calcular por iteración de potencias la **distribución estacionaria** $\pi$:
        $$\pi P = \pi, \quad \sum_{i=1}^{27} \pi_i = 1$$
-     - Comparar formalmente el vector $\pi$ con las frecuencias empíricas de unigramas de la Fase 1, demostrando la propiedad ergódica de la cadena.
+       hasta que la norma $\ell_1$ entre iteraciones sea menor que $10^{-10}$.
+     - Comparar el vector $\pi$ con las frecuencias empíricas de unigramas de la Fase 1 y generar la **Gráfica F5**.
+* **Nota de numeración:** F4 es el promedio acumulado de la Fase 4; F5 es $\pi$ frente a las frecuencias de unigramas.
 
 ---
 
@@ -185,7 +191,7 @@ flowchart TD
      - En cada remuestreo $b$, calcular la diferencia de BPC:
        $$\Delta^{(b)} = \text{BPC}_{\text{segundo}}^{(b)} - \text{BPC}_{\text{mejor}}^{(b)}$$
   4. Construir el **Intervalo de Confianza del 95%** utilizando el método de percentiles ($[q_{0.025}, q_{0.975}]$).
-  5. Graficar el histograma de la distribución Bootstrap de $\Delta$ (**Gráfica F4**).
+  5. Graficar el histograma de la distribución Bootstrap de $\Delta$ (figura complementaria, no numerada).
   6. Concluir si $0$ está fuera del intervalo, demostrando estadísticamente la superioridad del modelo ganador al nivel de significancia $\alpha = 0.05$.
 
 ---
@@ -233,18 +239,18 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 * [x] Implementación y validación de `pruebas.py` con *«abracadabra»*.
 * [x] Ejecutar conteos de Fase 1 sobre `entrenamiento.txt` y calcular $H(\hat{p})$ vs $H_{\max}$ (Gráfica F1 y Tabla T1).
 
-### 🗓️ Semana 2: Modelado Probabilístico y Calibración *(ESTADO: 80% Completada — falta la Revisión 1)*
+### 🗓️ Semana 2: Modelado Probabilístico y Calibración *(ESTADO: 100% Completada)*
 * [x] Programar `codigo/modelos.py` con conteos para $n = 1, 2, 3, 4, 5$.
 * [x] Demostrar el fallo de ceros en validación (Fase 2, Tabla T2).
 * [x] Implementar suavizado de Laplace generalizado en `modelos.py`.
 * [x] Realizar la calibración de $\alpha \in \{0.001, \dots, 1.0\}$ sobre `datos/validacion.txt` (Fase 3, Gráfica F2). Mejor modelo: $n=5$, $\alpha=0.03$, BPC $2.1902$.
-* [ ] **Hito:** Revisión 1 con el profesor con los mejores $\alpha^*$ seleccionados. Resumen listo en `resumen_revision_1.md`.
+* [x] **Hito:** Revisión 1 con el profesor. El profesor pidió elegir los mejores $\alpha^*$ y justificar el porqué; la justificación quedó en `decisiones_informe.md`, sección 12, y en `resumen_revision_1.md`.
 
-### 🗓️ Semana 3: Evaluación en Prueba, Simulación e Incertidumbre
-* [ ] Correr la evaluación definitiva sobre `datos/prueba.txt` una única vez (Fase 4, Tabla T3).
-* [ ] Generar gráfica de la Ley de los Grandes Números (Gráfica F3) y verificar Desigualdad de Gibbs.
-* [ ] Simular textos de 300 caracteres y calcular la distribución estacionaria $\pi$ del bigrama (Fase 5).
-* [ ] Ejecutar el remuestreo Bootstrap de 10,000 iteraciones con bloques de 2000 caracteres (Fase 6, Gráfica F4).
+### 🗓️ Semana 3: Evaluación en Prueba, Simulación e Incertidumbre *(ESTADO: tareas 1–3 completadas; falta Bootstrap y Revisión 2)*
+* [x] Correr la evaluación definitiva sobre `datos/prueba.txt` una única vez (Fase 4, Tabla T3). Mejor $n=5$, BPC de prueba $2.2514$, PPL $4.761$.
+* [x] Generar gráfica de la Ley de los Grandes Números (Gráfica F4, eje logarítmico) y verificar la Desigualdad de Gibbs con unigramas ($H=4.047143 \le H(p,q)=4.053576$, $KL=0.006433$) y la Gráfica F3 (BPC entrenamiento vs prueba).
+* [x] Simular textos de 300 caracteres y calcular la distribución estacionaria $\pi$ del bigrama (Fase 5, Gráfica F5). $\|\pi - p_{\text{unigramas}}\|_\infty = 3.71\times10^{-6}$.
+* [ ] Ejecutar el remuestreo Bootstrap de 10,000 iteraciones con bloques de 2000 caracteres (Fase 6, Tabla T4).
 * [ ] **Hito:** Revisión 2 con el profesor con todos los resultados numéricos consolidados.
 
 ### 🗓️ Semana 4: Reporte Final, Reproducibilidad y Defensa

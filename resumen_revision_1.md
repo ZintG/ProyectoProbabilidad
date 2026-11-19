@@ -92,6 +92,8 @@ El valor de $\alpha$ no se elige a ojo: se probó una rejilla de siete valores s
 
 El modelo con mejor desempeño en validación es el de orden $n=5$ con $\alpha = 0.03$, con 2.1902 bits por carácter. En $n=1$ la curva es prácticamente plana, por lo que su $\alpha^* = 1.0$ no representa un óptimo real.
 
+El criterio de elección fue, en todos los casos, minimizar el BPC de validación: los conteos provienen solo del entrenamiento y la validación únicamente compara modelos. En $n=1$ y $n=2$ el mínimo cae en el borde de la rejilla porque no hay ceros que corregir; en $n=3$ y $n=4$, los valores $0.03$ y $0.1$ son casi indistinguibles (diferencias menores a $5\times10^{-4}$ bits); en $n=5$ el mínimo es claro y el segundo mejor queda a $3.6\times10^{-3}$ bits. Por eso los $\alpha^*$ se reportan como el mínimo de la rejilla sobre validación, sin atribuir a los casos planos un óptimo estadístico fuerte.
+
 ---
 
 ## 4. Estado y siguientes pasos
