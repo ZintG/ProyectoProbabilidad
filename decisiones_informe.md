@@ -247,3 +247,42 @@ Este documento registra todas las decisiones técnicas, metodológicas y de mode
   * \(n=5\) alterna fragmentos memorizados del entrenamiento (`"contaba porque no"`, `"maravillo dudar"`) con tramos de letras sin estructura (`"dhyqzl..."`). La causa es doble: el modelo solo mira 4 caracteres de contexto y, cuando el contexto es nuevo, el suavizado reparte la probabilidad casi uniforme entre los 27 símbolos. Con \(c(h)\) medio de 16, esos contextos raros son frecuentes durante la generación.
 * **Conclusión de la fase:** la simulación confirma lo que ya insinuaba el BPC. Aumentar \(n\) mejora la predicción local (baja el BPC) pero no produce texto globalmente coherente: el modelo de n-gramas no tiene memoria más allá de \(n-1\) caracteres. Es una limitación estructural, no un error de implementación.
 * **Archivos generados:** `codigo/fase5.py`, `tablas/T5_muestras.csv` y `figuras/F5_pi_unigramas.png/.pdf`.
+
+---
+
+## 15. Fase 6: incertidumbre por bootstrap de bloques
+
+* **Pregunta que responde:** el BPC de prueba dice que \(n=5\) gana a \(n=4\) por \(0.0947\) bits. ¿Esa diferencia es señal o podría ser ruido de esta muestra concreta? La Fase 6 le pone intervalo.
+* **Decisión de diseño:** se define \(\Delta_j=\text{BPC}_j(n=4)-\text{BPC}_j(n=5)\), de modo que **\(\Delta_j>0\) significa que \(n=5\) predice mejor**. En el enunciado la diferencia se menciona como «el mejor \(n\) frente a \(n-1\)»; se elige este signo para que el intervalo se lea como *mejora* y no como un número negativo.
+* **Bloques:** el texto de prueba tiene \(31\,579\) caracteres, así que salen **16 bloques contiguos**: 15 de 2\,000 caracteres y uno final de 1\,579. Se usan los 31\,579 caracteres (no se descarta el resto). Cada bloque se evalúa con el contexto real que lo precede en el texto de prueba, y el primero con la cola del entrenamiento.
+* **Consistencia con T3:** el promedio de los BPC de bloque ponderado por longitud reproduce exactamente T3: \(2.3461\) para \(n=4\) y \(2.2514\) para \(n=5\). La media simple de las \(\Delta_j\) da \(0.0926\) en lugar de \(0.0947\) porque cada bloque pesa igual y el último es más corto; es una diferencia esperada, no un error.
+* **Resultado (Tabla T4):**
+
+  | Cantidad | Valor |
+  |---|---:|
+  | Bloques | 16 (15 de 2\,000 + 1 de 1\,579) |
+  | Media de \(\Delta_j\) | 0.0926 bits |
+  | IC percentil 95 % | [0.0553, 0.1259] |
+  | Error estándar bootstrap | 0.0179 |
+  | Sesgo bootstrap | \(+2.1\times10^{-5}\) |
+  | Bloques con \(\Delta_j>0\) | 14 de 16 |
+  | ¿El IC excluye el cero? | Sí |
+
+* **Lectura:** el intervalo queda completamente por encima de cero, así que la ventaja de \(n=5\) sobre \(n=4\) **no se explica por el azar de esta partición**. Dicho esto, el tamaño importa: \(0.0926\) bits por carácter equivale a una perplejidad \(2^{0.0926}\approx1.066\), es decir, un \(6.6\,\%\) menos de perplejidad. Es una mejora real pero modesta, coherente con la meseta que muestra F3.
+* **Dos bloques en contra:** los bloques 15 y 16 dan \(\Delta_j=-0.0534\) y \(-0.0646\), es decir, ahí gana \(n=4\). Corresponden al final del libro (epílogo y cierre), con un estilo distinto al resto. Es un buen ejemplo de que el supuesto de estacionariedad es aproximado: el español de la novela no es homogéneo de principio a fin.
+* **Sensibilidad:** repitiendo todo solo con los 15 bloques completos, la media es \(0.1031\) y el IC \([0.0711, 0.1326]\). La conclusión no cambia, así que el bloque corto no está fabricando el resultado.
+* **Por qué bloques y no caracteres:** los caracteres consecutivos están fuertemente correlacionados. Un bootstrap que remuestree caracteres individuales rompería esa dependencia y produciría un intervalo artificialmente estrecho (falsa precisión). Los bloques de 2\,000 caracteres conservan la estructura local y son aproximadamente independientes entre sí, que es la hipótesis que el bootstrap necesita.
+* **Limitaciones a declarar:** con 16 unidades el bootstrap percentil es grueso (el intervalo se apoya en pocos valores distintos); los bloques no son perfectamente independientes; y la conclusión vale para este texto de prueba, no para el español en general. Se reporta como lo que es: una estimación de incertidumbre, no una prueba de hipótesis formal.
+* **Archivos generados:** `codigo/fase6.py`, `tablas/T4_bootstrap.csv`, `tablas/T4_deltas_bloques.csv` y `figuras/bootstrap_delta.png/.pdf` (figura complementaria, **no numerada**: las figuras del reporte son F1–F5).
+
+---
+
+## 16. Revisión interna de resultados (sustituye a la Revisión 2)
+
+* **Contexto:** la Revisión 2 estaba planteada como reunión con el profesor. Al no realizarse, el cierre de la Semana 3 se hace por **verificación interna** en lugar de por presentación.
+* **Método:** el script `codigo/verificar_todo.py` reconstruye los cinco modelos desde `datos/`, recalcula cada métrica y la compara con el valor guardado en las tablas. No lee las tablas para copiarlas: las usa solo como referencia de contraste. Cualquier error de cálculo, redondeo o transcripción habría aparecido como `FALLA`.
+* **Alcance:** 127 comprobaciones en ocho bloques: particiones y entropía (8), ceros de la MLE (30), rejilla completa de \(\alpha\) (35), T3 (18), Gibbs (4), matriz y \(\pi\) (8), bootstrap (9) y muestras (9).
+* **Resultado:** **127 correctas, 0 fallidas**. Las dos únicas marcas iniciales de fallo eran de tolerancia (el CSV de T4 guarda 6 decimales y se comparaba con \(10^{-9}\)); se corrigió la tolerancia y quedó documentado en el script.
+* **Coherencia cruzada verificada:** el BPC de prueba de \(n=1\) coincide con \(H(\hat p,\hat q)\) de Gibbs; los puntos de F3 son las columnas de T3; la asíntota de F4 es el BPC final de \(n=5\); el promedio ponderado de los BPC de bloque de T4 devuelve 2.346130 y 2.251390, idénticos a T3; y \(\pi\) reproduce las frecuencias de T1.
+* **Decisiones cerradas:** se mantiene el símbolo `#` unificado; se mantienen los 16 bloques con análisis de sensibilidad a 15; la Fase 7 no se inicia; la Semana 4 queda a cargo de los compañeros.
+* **Archivos generados:** `codigo/verificar_todo.py`, `tablas/verificacion_resultados.csv`, `revision_resultados.md` y la actualización de `resumen_revision_2.md`.

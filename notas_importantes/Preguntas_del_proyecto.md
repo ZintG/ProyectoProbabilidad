@@ -3,9 +3,10 @@ Modelos de lenguaje de n-gramas · Niebla (Unamuno)
 ================================================================
 
 Archivo vivo: se completa a medida que avanzan las fases.
-Última actualización: 18/11/2026
-Estado: Semanas 1 y 2 cerradas. Semana 3: Fases 4 y 5 cerradas.
-Pendientes: Fase 6 (bootstrap), Revisión 2, reporte final y defensa.
+Última actualización: 19/11/2026
+Estado: Semanas 1, 2 y 3 cerradas (Fases 1 a 6 completas).
+Pendientes: Semana 4 (reporte y defensa, a cargo de los compañeros)
+y Fase 7 opcional (BPE).
 
 ----------------------------------------------------------------
 CÓMO USAR ESTE ARCHIVO
@@ -107,15 +108,21 @@ BLOQUE 1. PREGUNTAS OFICIALES DEL ENUNCIADO (sección 7)
 
 1.10 [O] Fase 6
      ¿El intervalo excluye el cero?
-     [ ] Pendiente: se responde al ejecutar el bootstrap.
+     [x] Sí. Δ medio = 0.0926 bits con IC 95 % [0.0553, 0.1259], todo
+         por encima de cero: la ventaja de n=5 sobre n=4 no se explica
+         por el azar de esta partición. En tamaño práctico,
+         2^0.0926 ≈ 1.066, un 6.6 % menos de perplejidad. Es
+         significativo pero modesto, y 14 de 16 bloques favorecen a
+         n=5 (los dos últimos, del epílogo, favorecen a n=4).
 
 1.11 [O] Fase 6
      ¿Por qué se remuestrean bloques y no caracteres individuales?
-     [ ] Pendiente. Pista para redactar: los caracteres de un texto
-         no son independientes; el bootstrap i.i.d. rompería la
-         dependencia serial y subestimaría la varianza del BPC.
-         Los bloques de 2000 conservan la estructura local y son
-         aproximadamente independientes entre sí.
+     [x] Porque los caracteres consecutivos están correlacionados.
+         Remuestrear caracteres sueltos rompería esa dependencia y
+         produciría un intervalo artificialmente estrecho (falsa
+         precisión). Los bloques de 2000 conservan la estructura
+         local y son aproximadamente independientes entre sí, que es
+         justo la hipótesis que el bootstrap necesita.
 
 ================================================================
 BLOQUE 2. LA PREGUNTA CENTRAL Y LAS MÉTRICAS
@@ -216,6 +223,16 @@ BLOQUE 3. METODOLOGÍA Y TRAMPAS DE DISEÑO
     [x] Son monótonas entre sí (PPL = 2^BPC): el orden de los modelos
         es idéntico. Se reporta PPL porque es más interpretable, pero
         la decisión se toma con BPC.
+
+3.10 ¿Cómo se comprobó que todas las cifras del proyecto son correctas?
+     [x] Con una revisión interna: `codigo/verificar_todo.py`
+         reconstruye los modelos desde `datos/` y recalcula las 127
+         cifras (T1–T4, F1–F5) para compararlas con lo reportado. No
+         copia las tablas: las usa como referencia de contraste.
+         Resultado: 127 correctas, 0 fallidas. Incluye coherencias
+         cruzadas, por ejemplo que el BPC de prueba de n=1 coincide
+         exactamente con H(p,q) de Gibbs, y que los BPC de bloque
+         ponderados de T4 devuelven los valores de T3.
 
 ================================================================
 BLOQUE 4. DETALLES TÉCNICOS POR FASE
@@ -402,24 +419,52 @@ BLOQUE 5. DEFENSA ORAL Y PREGUNTAS TRAMPA
          información entre particiones. La partición contigua es la
          única honesta para este problema.
 
+5.11 [!] El intervalo excluye el cero, ¿entonces n=5 es «el mejor»
+     sin discusión?
+     [x] Es mejor con significancia del 5 % para este texto, pero
+         conviene matizar tres cosas: (a) el tamaño es modesto,
+         0.09 bits/carácter ≈ 6.6 % de perplejidad; (b) solo hay 16
+         bloques, así que el intervalo percentil es grueso; (c) el
+         resultado es condicional al libro y a la partición. La
+         conclusión correcta es «hay evidencia de mejora», no
+         «n=5 es el mejor modelo posible».
+
+5.12 [!] ¿Por qué la media de Δ_j (0.0926) no coincide con la
+     diferencia de los BPC globales (0.0947)?
+     [x] Porque la media de Δ_j da el mismo peso a cada bloque y el
+         último tiene 1579 caracteres en vez de 2000. Ponderando por
+         longitud se recupera exactamente 0.0947, que es la
+         diferencia de T3. No hay inconsistencia: son dos promedios
+         distintos del mismo conjunto de datos.
+
 ================================================================
-BLOQUE 6. PENDIENTES (Semana 3 en adelante)
+BLOQUE 6. ESTADO DE LAS TAREAS Y PENDIENTES (Semana 4)
 ================================================================
 
-6.1 [ ] Fase 6: dividir prueba en bloques contiguos de 2000
-    caracteres y calcular Δ_j = BPC(mejor n) − BPC(n−1) en cada uno.
-    Preguntas a responder al terminar:
-      - ¿Cuántos bloques salen? (31 579 / 2000 ≈ 15.8)
-      - ¿La media de Δ_j es positiva? ¿De qué tamaño?
-      - ¿El IC percentil del 95 % con 10 000 remuestras excluye 0?
-      - ¿Qué implica si excluye 0 y qué si no?
-      - ¿Por qué la unidad de remuestreo es el bloque?
+6.1 [x] Fase 6: dividir prueba en bloques contiguos de 2000
+    caracteres y calcular Δ_j = BPC(n=4) − BPC(n=5) en cada uno.
+    Resultados:
+      - Bloques: 16 (15 de 2000 + 1 de 1579). Se usan los 31 579
+        caracteres, sin descartar el resto.
+      - Δ medio = 0.0926 bits; IC 95 % [0.0553, 0.1259]; error
+        estándar 0.0179; sesgo bootstrap +2.1e-05.
+      - 14 de 16 bloques con Δ_j > 0. Los dos negativos son los
+        últimos (epílogo): −0.0534 y −0.0646.
+      - Sensibilidad con solo los 15 bloques completos:
+        media 0.1031, IC [0.0711, 0.1326]. La conclusión no cambia.
+      - La unidad de remuestreo es el bloque porque los caracteres
+        están correlacionados (ver 1.11).
 
-6.2 [ ] Revisión 2 con el profesor: llevar T3, T3_gibbs, F3, F4, F5,
-    las muestras y los α* congelados. Preguntar explícitamente si el
-    tratamiento de # y de la ñ/tildes es aceptable.
+6.2 [x] Revisión 2: **no se realizará** con el profesor. Se sustituyó
+    por una revisión interna en `revision_resultados.md`:
+    `codigo/verificar_todo.py` recalcula desde los datos las 127
+    cifras del proyecto (T1–T4, F1–F5) y las compara con lo
+    reportado. Resultado: 127 correctas, 0 fallidas. El consolidado
+    narrativo sigue en `resumen_revision_2.md`.
 
-6.3 [ ] Reporte final (10–14 páginas, 8 secciones obligatorias):
+6.3 [ ] Reporte final (10–14 páginas, 8 secciones obligatorias,
+    Semana 4, a cargo de los compañeros; este archivo sirve de
+    fuente para la discusión):
       - Resumen ≤ 200 palabras con el número principal.
       - Marco con notación definida antes de usarla.
       - Datos: obra, URL, fecha, licencia, normalización, |V|.
@@ -437,8 +482,9 @@ BLOQUE 6. PENDIENTES (Semana 3 en adelante)
     reparto entre los 4 integrantes. Los bloques 2, 3 y 5 de este
     archivo son el guion de estudio.
 
-6.6 [ ] Preguntas todavía sin respuesta en este archivo: 1.10, 1.11
-    y todo el bloque 6.
+6.6 [x] Todas las preguntas de los bloques 1 a 5 están respondidas.
+    Lo que queda abierto es trabajo de la Semana 4 (reporte y
+    defensa) y, si el equipo lo decide, la Fase 7 opcional (BPE).
 
 ================================================================
 REGISTRO DE AVANCE
@@ -448,11 +494,11 @@ REGISTRO DE AVANCE
   Fase 3  Suavizado y elección de α ................. [x]
   Fase 4  Evaluación única, Gibbs, F3 y F4 .......... [x]
   Fase 5  Simulación y π ............................ [x]
-  Fase 6  Bootstrap ................................. [ ]
+  Fase 6  Bootstrap ................................. [x]
   Fase 7  BPE (opcional) ............................ [ ]
   Reporte final ..................................... [ ]
   Defensa oral ...................................... [ ]
 
-  Preguntas oficiales respondidas: 9 de 11.
-  Pendientes: 1.10 y 1.11 (Fase 6).
+  Preguntas oficiales respondidas: 11 de 11.
+  Pendientes: ninguna en este archivo.
 ================================================================

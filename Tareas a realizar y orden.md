@@ -246,12 +246,12 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 * [x] Realizar la calibración de $\alpha \in \{0.001, \dots, 1.0\}$ sobre `datos/validacion.txt` (Fase 3, Gráfica F2). Mejor modelo: $n=5$, $\alpha=0.03$, BPC $2.1902$.
 * [x] **Hito:** Revisión 1 con el profesor. El profesor pidió elegir los mejores $\alpha^*$ y justificar el porqué; la justificación quedó en `decisiones_informe.md`, sección 12, y en `resumen_revision_1.md`.
 
-### 🗓️ Semana 3: Evaluación en Prueba, Simulación e Incertidumbre *(ESTADO: tareas 1–3 completadas; falta Bootstrap y Revisión 2)*
+### 🗓️ Semana 3: Evaluación en Prueba, Simulación e Incertidumbre *(ESTADO: completa)*
 * [x] Correr la evaluación definitiva sobre `datos/prueba.txt` una única vez (Fase 4, Tabla T3). Mejor $n=5$, BPC de prueba $2.2514$, PPL $4.761$.
 * [x] Generar gráfica de la Ley de los Grandes Números (Gráfica F4, eje logarítmico) y verificar la Desigualdad de Gibbs con unigramas ($H=4.047143 \le H(p,q)=4.053576$, $KL=0.006433$) y la Gráfica F3 (BPC entrenamiento vs prueba).
 * [x] Simular textos de 300 caracteres y calcular la distribución estacionaria $\pi$ del bigrama (Fase 5, Gráfica F5). $\|\pi - p_{\text{unigramas}}\|_\infty = 3.71\times10^{-6}$.
-* [ ] Ejecutar el remuestreo Bootstrap de 10,000 iteraciones con bloques de 2000 caracteres (Fase 6, Tabla T4).
-* [ ] **Hito:** Revisión 2 con el profesor con todos los resultados numéricos consolidados.
+* [x] Ejecutar el remuestreo Bootstrap de 10,000 iteraciones con bloques de 2000 caracteres (Fase 6, Tabla T4). $\Delta$ medio $= 0.0926$ bits, IC 95 % $[0.0553,\ 0.1259]$, excluye el cero.
+* [x] **Hito:** cierre de la Semana 3 mediante **revisión interna de resultados** (la Revisión 2 con el profesor no se realizará). Verificación en `revision_resultados.md`: 127 de 127 comprobaciones correctas. Consolidado en `resumen_revision_2.md`.
 
 ### 🗓️ Semana 4: Reporte Final, Reproducibilidad y Defensa
 * [ ] Estructurar y redactar el reporte en LaTeX (10 a 14 páginas estrictas).

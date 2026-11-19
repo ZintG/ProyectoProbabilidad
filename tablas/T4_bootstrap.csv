@@ -1,0 +1,2 @@
+n_mejor,n_alterno,delta_medio,ic_inferior,ic_superior,nivel,remuestras,semilla,n_bloques,tam_bloque,caracteres,excluye_cero
+5,4,0.092644,0.055343,0.125915,0.95,10000,2026,16,2000,31579,si
