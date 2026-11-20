@@ -156,6 +156,8 @@ El estudio se apoya en \emph{Niebla} (1914), de Miguel de Unamuno, y en seis fas
 % =====================================================================
 \section{Marco probabilístico}\label{sec:marco}
 
+La notación, las definiciones y las proposiciones que se invocan a lo largo del reporte siguen las notas de la sección S01~\cite{marcano} y el texto de Rincón~\cite{rincon}.
+
 \subsection{Vocabulario, secuencias y regla de la cadena}
 
 Sea $\mathcal{V}$ un conjunto finito de símbolos, el \emph{vocabulario}, con tamaño $|\mathcal{V}|$. Aquí los símbolos son caracteres: letras minúsculas, el espacio y un símbolo especial que agrupa todo lo demás. Un texto de longitud $T$ es una secuencia $x_{1:T}=x_1x_2\cdots x_T$ con $x_t\in\mathcal{V}$. Su probabilidad se factoriza exactamente mediante la \emph{regla de la cadena}:
@@ -195,7 +197,7 @@ Es la fórmula de Laplace generalizada: las condicionales suman 1, si $c(h)=0$ d
 
 \subsection{Entropía, entropía cruzada, BPC y perplejidad}
 
-La \emph{entropía} de una distribución $p$ sobre $\mathcal{V}$ mide su incertidumbre media, en bits:
+La \emph{entropía} de una distribución $p$ sobre $\mathcal{V}$ mide su incertidumbre media, en bits~\cite{shannon,cover}:
 \begin{equation}\label{eq:entropia}
 H(p)=-\sum_{x\in\mathcal{V}} p(x)\log_2 p(x).
 \end{equation}
@@ -237,7 +239,7 @@ El bootstrap estima la variabilidad remuestreando con reemplazo. Para no romper 
 
 \subsection{Obra y fuente}
 
-Se utilizó \emph{Niebla (Nivola)}, de Miguel de Unamuno (1914), descargada de Project Gutenberg (eBook \#49836) el 12 de noviembre de 2026 desde \url{https://www.gutenberg.org/ebooks/49836}. La obra es de dominio público en los Estados Unidos y en la mayoría de los países. Tras eliminar la nota de transcripción y el índice final, y normalizar, quedan 315\,783 caracteres.
+Se utilizó \emph{Niebla (Nivola)}, de Miguel de Unamuno (1914)~\cite{unamuno}, descargada de Project Gutenberg (eBook \#49836) el 12 de noviembre de 2026 desde \url{https://www.gutenberg.org/ebooks/49836}. La obra es de dominio público en los Estados Unidos y en la mayoría de los países. Tras eliminar la nota de transcripción y el índice final, y normalizar, quedan 315\,783 caracteres.
 
 \subsection{Normalización}
 
@@ -559,6 +561,9 @@ Aumentar la memoria de un modelo de $n$-gramas mejora la predicción del siguien
 
 \bibitem{marcano}
 Marcano, J. G. \emph{Modelos de Lenguaje de Gran Escala: fundamentos matemáticos, arquitecturas y aplicaciones}, sección S01 \guillemotleft{}El lenguaje como distribución de probabilidad\guillemotright{}. Edición v0.9 del curso.
+
+\bibitem{rincon}
+Rincón, L. \emph{Introducción a la Probabilidad}. Texto de referencia del curso de Teoría de la Probabilidad.
 
 \bibitem{unamuno}
 Unamuno, M. de (1914). \emph{Niebla (Nivola)}. Madrid: Renacimiento. Texto de Project Gutenberg, eBook \#49836, \url{https://www.gutenberg.org/ebooks/49836}. Descargado el 12 de noviembre de 2026.

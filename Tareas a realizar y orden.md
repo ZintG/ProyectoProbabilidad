@@ -268,11 +268,11 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 
 Antes de comprimir y enviar la entrega final, el equipo debe verificar cada una de estas casillas obligatorias:
 
-- [ ] **Resumen ejecutivo:** Incluye el mejor orden $n^*$ hallado, su BPC de prueba y el intervalo de confianza Bootstrap del 95%.
-- [ ] **Glosario y notación:** Cada variable matemática ($n, \mathcal{V}, h, y, \alpha, \text{BPC}, \text{PPL}$) está definida antes de su primer uso formal.
-- [ ] **Protocolo de prueba ciega:** El bloque `datos/prueba.txt` se utilizó estrictamente una sola vez y el reporte lo declara formalmente.
-- [ ] **Blindaje de código:** El script `codigo/pruebas.py` se ejecuta sin errores y reproduce con total exactitud las cifras de *«abracadabra»* de la Tabla 1.
-- [ ] **Tablas y figuras:** Las tablas (T1 a T4) y figuras (F1 a F5) están numeradas, citadas en el texto y expresadas con unidades claras (bits, caracteres).
-- [ ] **Preguntas de discusión:** Cada pregunta conceptual en cursiva de la sección 4 del enunciado cuenta con respuesta detallada en la sección de discusión del reporte.
-- [ ] **Referencias bibliográficas:** Se citan debidamente la obra *Niebla* de Miguel de Unamuno (Gutenberg #49836), el libro de texto del curso (Luis Rincón) y las notas de S01.
-- [ ] **Nombre del archivo comprimido:** Sigue la nomenclatura exacta `P1_EquipoNN_Apellido1_Apellido2.zip` y corre de principio a fin en menos de 10 minutos.
+- [x] **Resumen ejecutivo:** Incluye el mejor orden $n^*$ hallado, su BPC de prueba y el intervalo de confianza Bootstrap del 95%. Verificado: $n^*=5$, BPC 2.251 bits e IC $[0.0553,\,0.1259]$ en el resumen del reporte.
+- [x] **Glosario y notación:** Cada variable matemática ($n, \mathcal{V}, h, y, \alpha, \text{BPC}, \text{PPL}$) está definida antes de su primer uso formal. Verificado en la sección 2.
+- [x] **Protocolo de prueba ciega:** El bloque `datos/prueba.txt` se utilizó estrictamente una sola vez y el reporte lo declara formalmente. Verificado en resumen, métodos, T3 y 7.6; `main.py` omite `fase4.py` si T3 existe.
+- [x] **Blindaje de código:** El script `codigo/pruebas.py` se ejecuta sin errores y reproduce con total exactitud las cifras de *«abracadabra»* de la Tabla 1. Verificado: 6/6 pruebas OK (2.0404 bits, 0.5, 0.3333, 0.6000 bits, 1.5157).
+- [x] **Tablas y figuras:** Las tablas (T1 a T4) y figuras (F1 a F5) están numeradas, citadas en el texto y expresadas con unidades claras (bits, caracteres). Verificado en la compilación final.
+- [x] **Preguntas de discusión:** Cada pregunta conceptual en cursiva de la sección 4 del enunciado cuenta con respuesta detallada en la sección de discusión del reporte. Verificado: 11 preguntas, respondidas en 7.1–7.11.
+- [x] **Referencias bibliográficas:** Se citan debidamente la obra *Niebla* de Miguel de Unamuno (Gutenberg #49836), el libro de texto del curso (Luis Rincón) y las notas de S01. Verificado: las 6 entradas de la bibliografía aparecen citadas en el texto.
+- [x] **Nombre del archivo comprimido:** Sigue la nomenclatura exacta `P1_EquipoNN_Apellido1_Apellido2.zip` y corre de principio a fin en menos de 10 minutos. Tiempo medido: 39.14 s. Nota: se conserva el nombre con las cuatro cédulas solicitado explícitamente por el equipo, `Proyecto_probabilidad_31.678.578_21.129.684_33.638.501_30.445.947.zip`, en lugar del formato genérico del enunciado.
