@@ -137,9 +137,9 @@ Este reporte estudia cuánto mejora la predicción del siguiente carácter de un
 % =====================================================================
 \section{Introducción}
 
-Predecir el siguiente carácter de un texto es un problema probabilístico elemental y, a la vez, una puerta de entrada a los modelos de lenguaje. Al escribir \guillemotleft{}la ca\guillemotright{}, un hablante de español no elige la letra siguiente entre las 27 posibilidades con la misma confianza: espera una vocal, probablemente una \guillemotleft{}s\guillemotright{}, una \guillemotleft{}m\guillemotright{} o una \guillemotleft{}r\guillemotright{}. Esa asimetría no es un detalle estilístico; es estructura probabilística, y puede medirse.
+Predecir el siguiente carácter de un texto es un problema probabilístico elemental y una puerta de entrada a los modelos de lenguaje. Al escribir \guillemotleft{}la ca\guillemotright{}, un hablante de español no elige la letra siguiente entre 27 posibilidades con la misma confianza: espera una vocal, probablemente \guillemotleft{}s\guillemotright{}, \guillemotleft{}m\guillemotright{} o \guillemotleft{}r\guillemotright{}. Esa asimetría es estructura probabilística y puede medirse.
 
-Un modelo de $n$-gramas formaliza la idea de que el carácter siguiente depende de los $n-1$ anteriores. Para $n=1$ el modelo ignora el pasado y solo usa la frecuencia global de cada símbolo; para $n=2$ mira el carácter previo; para $n=5$ mira cuatro caracteres, suficientes para reconocer terminaciones, sílabas y fragmentos de palabras. La pregunta central del proyecto es:
+Un modelo de $n$-gramas supone que el carácter siguiente depende de los $n-1$ anteriores: $n=1$ ignora el pasado, $n=2$ mira el carácter previo y $n=5$ mira cuatro, suficientes para reconocer sílabas y fragmentos de palabras. La pregunta central es:
 
 \begin{quote}
 \centering
@@ -149,7 +149,7 @@ Un modelo de $n$-gramas formaliza la idea de que el carácter siguiente depende 
 
 La tensión es inevitable. Cuanto mayor es $n$, más específico es el contexto y menos veces aparece en el entrenamiento. En el límite, el modelo encuentra combinaciones que nunca vio y, si se estima por frecuencia relativa, les asigna probabilidad cero. Como las métricas usan logaritmos, un solo cero hace infinito el costo medio. El suavizado aditivo corrige ese fallo; elegir cuánto suavizar es el segundo problema del proyecto.
 
-El estudio se apoya en un corpus real, \emph{Niebla} (1914), de Miguel de Unamuno, y en seis fases experimentales: exploración del corpus, estimación por máxima verosimilitud, calibración del suavizado, evaluación única en prueba, simulación de la cadena y cuantificación de la incertidumbre por bootstrap. El reporte sigue ese orden. La sección~\ref{sec:marco} fija la notación y las definiciones probabilísticas; la sección~\ref{sec:datos} describe el corpus y la partición; la sección~\ref{sec:metodos} explica los métodos con el detalle necesario para repetirlos; la sección~\ref{sec:resultados} presenta las tablas y figuras; la sección~\ref{sec:verificaciones} reúne las comprobaciones numéricas; la sección~\ref{sec:discusion} responde las once preguntas de discusión y declara las limitaciones; y la sección~\ref{sec:conclusiones} cierra con la respuesta a la pregunta central.
+El estudio se apoya en \emph{Niebla} (1914), de Miguel de Unamuno, y en seis fases experimentales. El reporte sigue ese orden: marco, datos, métodos, resultados, verificaciones, discusión y conclusiones.
 
 % =====================================================================
 %  2. MARCO PROBABILÍSTICO
@@ -162,7 +162,7 @@ Sea $\mathcal{V}$ un conjunto finito de símbolos, el \emph{vocabulario}, con ta
 \begin{equation}\label{eq:cadena}
 q(x_{1:T})=\prod_{t=1}^{T} q\bigl(x_t\mid x_{1:t-1}\bigr),
 \end{equation}
-donde $x_{1:t-1}$ es el historial anterior a $t$. La regla es una identidad, pero el historial crece con $t$ y no puede estimarse por conteo.
+donde $x_{1:t-1}$ es el historial anterior a $t$. El historial crece con $t$ y no puede estimarse por conteo.
 
 \subsection{Modelo de $n$-gramas e hipótesis de Markov}
 
@@ -170,12 +170,12 @@ El modelo de $n$-gramas supone que el símbolo actual depende solo de los $n-1$ 
 \begin{equation}\label{eq:markov}
 q\bigl(x_t\mid x_{1:t-1}\bigr)=q\bigl(x_t\mid x_{t-n+1:t-1}\bigr).
 \end{equation}
-El bloque $h=x_{t-n+1:t-1}$ se llama \emph{contexto}. Para $n=1$ el contexto es vacío y el modelo es i.i.d.; para $n=2$ es una cadena de Markov ordinaria; para $n=5$ el contexto tiene cuatro caracteres. Bajo \eqref{eq:cadena} y \eqref{eq:markov}, la probabilidad de la secuencia queda
+El bloque $h=x_{t-n+1:t-1}$ es el \emph{contexto}: vacío en $n=1$, ordinario en $n=2$ y de cuatro caracteres en $n=5$. Bajo \eqref{eq:cadena} y \eqref{eq:markov},
 \begin{equation}\label{eq:ngrama}
 q(x_{1:T})=\prod_{t=1}^{T} q\bigl(x_t\mid x_{t-n+1:t-1}\bigr).
 \end{equation}
 
-Los contextos posibles crecen como $|\mathcal{V}|^{n-1}$ y los $n$-gramas como $|\mathcal{V}|^{n}$: con $|\mathcal{V}|=27$ se pasa de 729 combinaciones en $n=2$ a 14\,348\,907 en $n=5$. El corpus tiene longitud fija; esa asimetría explica por qué la memoria adicional deja de compensar.
+Los contextos crecen como $|\mathcal{V}|^{n-1}$ y los $n$-gramas como $|\mathcal{V}|^{n}$: con $|\mathcal{V}|=27$ se pasa de 729 combinaciones en $n=2$ a 14\,348\,907 en $n=5$. Con corpus fijo, esa asimetría agota la memoria útil.
 
 \subsection{Estimación por máxima verosimilitud}
 
@@ -183,7 +183,7 @@ Dado el texto de entrenamiento, sean $c(h)$ el número de veces que aparece el c
 \begin{equation}\label{eq:mle}
 \hat q_{\text{MLE}}(y\mid h)=\frac{c(h,y)}{c(h)},\qquad c(h)>0.
 \end{equation}
-La deducción con multiplicador de Lagrange está en el anexo~\ref{anexo:mle}. La MLE maximiza la log-verosimilitud $\ell(\hat q)=\sum_{h}\sum_{y} c(h,y)\log \hat q(y\mid h)$, pero falla sobre texto nuevo: si un contexto o un par no apareció en el entrenamiento, asigna probabilidad cero, y un solo cero en una posición observada hace $-\log_2 0=+\infty$ y arruina el promedio. El problema no es numérico: el modelo declara imposible algo que ocurrió.
+La deducción está en el anexo~\ref{anexo:mle}. La MLE maximiza $\ell(\hat q)=\sum_h\sum_y c(h,y)\log\hat q(y\mid h)$, pero asigna probabilidad cero a contextos o pares no observados; el efecto sobre el BPC se analiza en la sección~\ref{sec:discusion}.
 
 \subsection{Suavizado aditivo}
 
@@ -191,7 +191,7 @@ El suavizado aditivo suma una pseudomasa $\alpha>0$ a cada conteo:
 \begin{equation}\label{eq:suavizado}
 \hat q_\alpha(y\mid h)=\frac{c(h,y)+\alpha}{c(h)+\alpha|\mathcal{V}|}.
 \end{equation}
-Es la fórmula de Laplace generalizada: las condicionales suman 1 para todo contexto, si $c(h)=0$ se reduce a la uniforme $1/|\mathcal{V}|$ y si $\alpha\to0$ se recupera la MLE. El parámetro $\alpha$ controla el compromiso entre tapar los ceros y conservar la señal de los conteos. Con una previa de Dirichlet simétrica de parámetro $\alpha$, la media predictiva posterior tiene la misma forma; con dos símbolos equivale a una previa Beta$(\alpha,\alpha)$.
+Es la fórmula de Laplace generalizada: las condicionales suman 1, si $c(h)=0$ da la uniforme $1/|\mathcal{V}|$ y si $\alpha\to0$ recupera la MLE. Con una previa de Dirichlet simétrica de parámetro $\alpha$, la media predictiva posterior tiene la misma forma.
 
 \subsection{Entropía, entropía cruzada, BPC y perplejidad}
 
@@ -216,7 +216,7 @@ donde $N_e$ es el número de caracteres evaluados. La \emph{perplejidad} es su e
 \begin{equation}\label{eq:ppl}
 \PPL=2^{\BPC}.
 \end{equation}
-Menos BPC significa mejor predicción y mejor compresión; la perplejidad se interpreta como el número de alternativas equiprobables entre las que el modelo duda, no como el tamaño del vocabulario.
+Menos BPC significa mejor predicción; la perplejidad es el número de alternativas equiprobables entre las que el modelo duda, no el tamaño del vocabulario.
 
 \subsection{Cadenas de Markov y distribución estacionaria}
 
@@ -224,11 +224,11 @@ Para $n=2$ el modelo es una cadena de Markov sobre $\mathcal{V}$ con matriz $P$ 
 \begin{equation}\label{eq:estacionaria}
 \pi P=\pi,\qquad \sum_{i}\pi_i=1.
 \end{equation}
-Si $P$ es estrictamente positiva, la cadena es irreducible y aperiódica; por el teorema ergódico tiene una única estacionaria y converge a ella desde cualquier distribución inicial. En el proyecto, $\pi$ se calcula por iteración de potencias, $\pi_{t+1}=\pi_tP$, hasta que $\|\pi_{t+1}-\pi_t\|_1<10^{-10}$.
+Si $P$ es estrictamente positiva, la cadena es irreducible y aperiódica y tiene una única estacionaria. Aquí $\pi$ se calcula por iteración de potencias $\pi_{t+1}=\pi_tP$ hasta $\|\pi_{t+1}-\pi_t\|_1<10^{-10}$.
 
 \subsection{Bootstrap por bloques}
 
-El bootstrap estima la variabilidad de un estadístico remuestreando con reemplazo. Remuestrear caracteres individuales rompería la dependencia entre posiciones vecinas y produciría un intervalo artificialmente estrecho. Por eso se remuestrean bloques contiguos de 2\,000 caracteres y se toma el intervalo percentil del 95\,\% de la distribución bootstrap de la media.
+El bootstrap estima la variabilidad remuestreando con reemplazo. Para no romper la dependencia entre posiciones vecinas se remuestrean bloques contiguos de 2\,000 caracteres y se toma el intervalo percentil del 95\,\% de la media bootstrap.
 
 % =====================================================================
 %  3. DATOS
@@ -237,17 +237,17 @@ El bootstrap estima la variabilidad de un estadístico remuestreando con reempla
 
 \subsection{Obra y fuente}
 
-Se utilizó \emph{Niebla (Nivola)}, de Miguel de Unamuno (1914), descargada de Project Gutenberg (eBook \#49836) el 12 de noviembre de 2026 desde \url{https://www.gutenberg.org/ebooks/49836}. La obra es de dominio público en los Estados Unidos y en la mayoría de los países. El archivo original tiene 319\,674 caracteres; tras eliminar la nota de transcripción y el índice final, y aplicar la normalización, quedan 315\,783.
+Se utilizó \emph{Niebla (Nivola)}, de Miguel de Unamuno (1914), descargada de Project Gutenberg (eBook \#49836) el 12 de noviembre de 2026 desde \url{https://www.gutenberg.org/ebooks/49836}. La obra es de dominio público en los Estados Unidos y en la mayoría de los países. Tras eliminar la nota de transcripción y el índice final, y normalizar, quedan 315\,783 caracteres.
 
 \subsection{Normalización}
 
-Todo el texto se pasó a minúsculas; cualquier secuencia de espacios, tabuladores o saltos de línea se colapsó en un solo espacio; y todo carácter fuera del alfabeto $a$--$z$ y el espacio se reemplazó por un único símbolo, \texttt{\#}. Ese símbolo agrupa puntuación, dígitos, \emph{ñ}, vocales con tilde o diéresis y signos de apertura y cierre: \guillemotleft{}más\guillemotright{} se escribe \texttt{m\#s} y \guillemotleft{}año\guillemotright{}, \texttt{a\#o}. La decisión mantiene el vocabulario pequeño, a costa de que \texttt{\#} concentre el 8.1\,\% de la masa y de que el modelo no distinga \guillemotleft{}mas\guillemotright{} de \guillemotleft{}más\guillemotright{}.
+Todo el texto se pasó a minúsculas, se colapsaron los espacios y se reemplazó por \texttt{\#} todo carácter fuera de $a$--$z$ y el espacio: puntuación, dígitos, \emph{ñ}, tildes y signos. Así \guillemotleft{}más\guillemotright{} se escribe \texttt{m\#s}. La decisión mantiene $|\mathcal{V}|$ pequeño, a costa de que \texttt{\#} concentre 8.1\,\% de la masa y de que \guillemotleft{}mas\guillemotright{} y \guillemotleft{}más\guillemotright{} sean indistinguibles.
 
 El vocabulario se fijó solo con el entrenamiento: $|\mathcal{V}|=27$, es decir, 25 letras (Unamuno no usa la \emph{w}), el espacio y \texttt{\#}. El espacio es el símbolo más frecuente (17.9\,\%).
 
 \subsection{Partición contigua}
 
-El texto normalizado se dividió en tres bloques contiguos, entrenamiento--validación--prueba, con proporciones 80/10/10 (tabla~\ref{tab:T1}). No se barajaron caracteres ni oraciones: el lenguaje tiene dependencia entre posiciones vecinas y barajar filtraría información del entrenamiento a la evaluación. Para las primeras $n-1$ posiciones de cada bloque se heredó el contexto del final del bloque anterior, de modo que no se pierde ningún carácter.
+El texto se dividió en tres bloques contiguos, entrenamiento--validación--prueba, 80/10/10 (tabla~\ref{tab:T1}). No se barajó: barajar filtraría dependencias locales del entrenamiento a la evaluación. Las primeras $n-1$ posiciones de cada bloque heredan el contexto del bloque anterior, sin perder caracteres.
 
 \begin{table}[htbp]
 \centering
@@ -269,7 +269,7 @@ Total & 315\,783 & 100.00\,\%\\
 
 \subsection{Frecuencias y entropía}
 
-La figura~\ref{fig:F1} muestra las frecuencias relativas de los 27 símbolos, ordenadas de mayor a menor. La distribución es muy desigual: el espacio y la \guillemotleft{}a\guillemotright{} dominan, mientras que \guillemotleft{}k\guillemotright{}, \guillemotleft{}x\guillemotright{} o \guillemotleft{}z\guillemotright{} aparecen con frecuencias muy bajas. Esa desigualdad es la primera evidencia de estructura.
+La figura~\ref{fig:F1} ordena las frecuencias de los 27 símbolos: el espacio y la \guillemotleft{}a\guillemotright{} dominan, mientras \guillemotleft{}k\guillemotright{}, \guillemotleft{}x\guillemotright{} y \guillemotleft{}z\guillemotright{} son raros. Esa desigualdad es la primera evidencia de estructura.
 
 La entropía empírica de unigramas es $H(\hat p)=4.059$ bits; el máximo posible sobre 27 símbolos equiprobables es $\log_2 27=4.755$ bits. La diferencia es $0.6957$ bits por carácter y la redundancia relativa es
 \[
@@ -291,9 +291,7 @@ es decir, 14.63\,\%. Un texto sin estructura gastaría 4.755 bits por carácter;
 
 \subsection{Conteos y construcción de los modelos}
 
-Para cada $n\in\{1,2,3,4,5\}$ se construyeron los conteos de contextos $c(h)$ y de pares $c(h,y)$ sobre el entrenamiento. Solo se cuentan $n$-gramas completos, de modo que $c(h)=\sum_{y}c(h,y)$ y el total es $N-n+1$, con $N=252\,626$. Para $n=1$ el contexto es la cadena vacía.
-
-La evaluación usó los $31\,578$ y $31\,579$ caracteres completos de validación y prueba. Para las primeras $n-1$ posiciones se heredó el contexto del bloque anterior; el denominador es el número de caracteres evaluados, no el de $n$-gramas contados.
+Para cada $n\in\{1,\ldots,5\}$ se contaron $c(h)$ y $c(h,y)$ sobre el entrenamiento, con $c(h)=\sum_y c(h,y)$ y un total de $N-n+1$ $n$-gramas ($N=252\,626$). La evaluación usó los 31\,578 y 31\,579 caracteres completos de validación y prueba; las primeras $n-1$ posiciones heredan contexto del bloque anterior y el denominador cuenta caracteres evaluados, no $n$-gramas.
 
 \subsection{Suavizado y elección de $\alpha$}
 
@@ -305,29 +303,25 @@ Para cada $n$ se calculó el BPC de validación en los siete valores y se eligi�
 \[
 \alpha^*(n)=\arg\min_{\alpha}\BPC_{\Val}(n,\alpha).
 \]
-La elección se hizo siempre con validación, nunca con prueba: en entrenamiento bajar $\alpha$ siempre mejora el ajuste, y prueba está reservado para una sola medición. Los conteos provienen solo del entrenamiento, así que no hay fuga de información.
+La elección usa solo validación: en entrenamiento bajar $\alpha$ siempre mejora el ajuste y prueba se reserva para una medición única. Los conteos salen solo del entrenamiento, sin fuga.
 
 \subsection{Protocolo de evaluación única}
 
-Los $\alpha^*(n)$ se congelaron antes de abrir prueba. La evaluación oficial se ejecutó una sola vez y el script se niega a repetirla si la tabla ya existe; su modo de ensayo evalúa sobre validación sin escribir nada y reprodujo exactamente los BPC de la calibración. Para cada $n$ se reportan BPC de entrenamiento, BPC de prueba y perplejidad.
+Los $\alpha^*(n)$ se congelaron antes de abrir prueba. La evaluación oficial se ejecutó una sola vez y el script se niega a repetirla si T3 existe; el modo de ensayo evalúa sobre validación sin escribir y reprodujo los BPC de calibración.
 
 \subsection{Simulación y distribución estacionaria}
 
-Con el bigrama suavizado ($\alpha^*=0.001$) se construyó la matriz $P$ de $27\times27$, con filas iguales al contexto y columnas iguales al símbolo siguiente. Se verificó que cada fila suma 1 y que todas las entradas son positivas. La estacionaria se calculó por iteración de potencias desde la uniforme, con criterio $\|\pi_{t+1}-\pi_t\|_1<10^{-10}$.
+Con el bigrama suavizado ($\alpha^*=0.001$) se construyó la matriz $P$ de $27\times27$, estocástica y estrictamente positiva. La estacionaria se calculó por iteración de potencias desde la uniforme, con criterio $\|\pi_{t+1}-\pi_t\|_1<10^{-10}$.
 
-Se generaron tres muestras de 300 caracteres con $n=2$, $3$ y $5$, semilla 2026 y contexto inicial \guillemotleft{}habia \guillemotright{}, muestreando de $\hat q_\alpha(\cdot\mid h)$. Las muestras completas están en el anexo~\ref{anexo:muestras}.
+Se generaron tres muestras de 300 caracteres ($n=2,3,5$, semilla 2026, contexto \guillemotleft{}habia \guillemotright{}) muestreando de $\hat q_\alpha(\cdot\mid h)$; están en el anexo~\ref{anexo:muestras}.
 
 \subsection{Bootstrap por bloques}
 
-El texto de prueba se dividió en bloques contiguos de 2\,000 caracteres: 16 bloques, 15 completos y uno final de 1\,579. En cada bloque $j$ se calculó
-\[
-\Delta_j=\BPC_j(n=4)-\BPC_j(n=5),
-\]
-de modo que $\Delta_j>0$ significa que $n=5$ predice mejor. Se construyó un intervalo percentil del 95\,\% para la media con 10\,000 remuestras y semilla 2026, y se repitió el cálculo solo con los 15 bloques completos como análisis de sensibilidad.
+Prueba se dividió en 16 bloques contiguos de 2\,000 caracteres (el último, de 1\,579). En cada uno, $\Delta_j=\BPC_j(n=4)-\BPC_j(n=5)>0$ indica que $n=5$ predice mejor. El intervalo percentil del 95\,\% usó 10\,000 remuestras y semilla 2026; se repitió con 15 bloques como sensibilidad.
 
 \subsection{Software}
 
-Todo el cálculo se programó en Python 3.13.5 con la biblioteca estándar, NumPy 2.2.4 y Matplotlib 3.10.1. No se usaron bibliotecas que implementen modelos de lenguaje ni redes neuronales. Los conteos, el suavizado, las métricas, la simulación y el bootstrap son código propio del equipo. Los comandos y las semillas se detallan en el anexo~\ref{anexo:repro}.
+El cálculo se programó en Python 3.13.5 con biblioteca estándar, NumPy 2.2.4 y Matplotlib 3.10.1, sin bibliotecas de modelos de lenguaje ni redes neuronales. Comandos y semillas están en el anexo~\ref{anexo:repro}.
 
 % =====================================================================
 %  5. RESULTADOS
@@ -357,7 +351,7 @@ La tabla~\ref{tab:T2} muestra, por $n$, los contextos y $n$-gramas observados, l
 \end{tabular}
 \end{table}
 
-El BPC de la MLE es finito para $n=1,2$ e infinito desde $n=3$: un solo cero cuesta $-\log_2 0=+\infty$ y hace infinita la media de 31\,578 términos. La proporción crece con $n$ porque los contextos posibles crecen como $27^{n-1}$ mientras el entrenamiento es fijo; el contexto medio pasa de 252\,626 apariciones a 9\,357, 612, 70 y 16. El plan inicial suponía ceros desde $n=2$; los datos muestran que el bigrama está cubierto y el fallo empieza en $n=3$.
+El BPC de la MLE es finito en $n=1,2$ e infinito desde $n=3$; la causa se explica en 7.2 y 7.3. El plan inicial suponía ceros desde $n=2$, pero el bigrama está cubierto.
 
 \subsection{Calibración de $\alpha$}
 
@@ -370,9 +364,9 @@ La figura~\ref{fig:F2} muestra el BPC de validación contra $\alpha$ para cada $
 \label{fig:F2}
 \end{figure}
 
-Los valores elegidos son $\alpha^*(1)=1.0$, $\alpha^*(2)=0.001$, $\alpha^*(3)=0.1$, $\alpha^*(4)=0.03$ y $\alpha^*(5)=0.03$. En $n=1,2$ el mínimo cae en el borde de la rejilla, donde la curva es plana; se reporta como mínimo de la rejilla, sin atribuirle un óptimo fuerte. En $n=5$ el mínimo está bien definido: el segundo valor ($\alpha=0.1$) queda a $3.6\times10^{-3}$ bits. En $n=3,4$, 0.03 y 0.1 son casi indistinguibles.
+Los valores elegidos son $\alpha^*(1)=1.0$, $\alpha^*(2)=0.001$, $\alpha^*(3)=0.1$, $\alpha^*(4)=0.03$ y $\alpha^*(5)=0.03$. En $n=1,2$ el mínimo está en el borde de la rejilla (7.4); en $n=5$ está bien definido: el segundo valor queda a $3.6\times10^{-3}$ bits.
 
-El valor $\alpha=1$ aplana demasiado los contextos poco frecuentes: con $c(h)=1$, el símbolo observado recibe $2/28=0.071$ en lugar de casi 1. El costo en validación es $+0.0019$ bits en $n=2$, $+0.0227$ en $n=3$, $+0.1439$ en $n=4$ y $+0.3755$ en $n=5$.
+El valor $\alpha=1$ aplana los contextos raros; el costo se cuantifica en 7.5.
 
 \subsection{Evaluación única en prueba}
 
@@ -396,7 +390,7 @@ La tabla~\ref{tab:T3} presenta el resultado definitivo. Validación y prueba coi
 \end{tabular}
 \end{table}
 
-La figura~\ref{fig:F3} compara ambos BPC contra $n$. Las curvas se separan desde $n=3$, cuando aparecen los ceros y el suavizado empieza a costar. De $n=1$ a $n=5$ el BPC de prueba baja 1.802 bits por carácter (44.5\,\%) y la perplejidad cae de 16.61 a 4.761; la mayor parte de la ganancia ocurre entre $n=1$ y $n=3$.
+La figura~\ref{fig:F3} compara ambos BPC: las curvas se separan desde $n=3$. De $n=1$ a $n=5$ el BPC de prueba baja 1.802 bits (44.5\,\%) y la perplejidad de 16.61 a 4.761; la mayor ganancia ocurre entre $n=1$ y $n=3$.
 
 \begin{figure}[htbp]
 \centering
@@ -411,9 +405,9 @@ Con el modelo de unigramas, $H(\hat p_{\Prue})=4.047143$ bits y $H(\hat p_{\Prue
 \[
 \KL=4.053576-4.047143=0.006433\text{ bits}.
 \]
-La comparación se hizo solo con unigramas, como indica el enunciado: comparar el BPC de un modelo condicionado con la entropía marginal no sería válido, porque condicionar reduce la entropía.
+La comparación se hizo solo con unigramas: condicionar reduce la entropía, así que comparar el BPC de un modelo condicionado con la entropía marginal no sería válido.
 
-La figura~\ref{fig:F4} muestra el promedio acumulado $S_k$ de $-\log_2\hat q$ en las 31\,579 posiciones de prueba. $S_k$ parte en 8.9 bits, cae rápido y se estabiliza alrededor de 2.251 bits; el eje logarítmico permite ver la caída y la meseta. Esa estabilización es la manifestación empírica de la ley de los grandes números.
+La figura~\ref{fig:F4} muestra el promedio acumulado $S_k$ en 31\,579 posiciones: parte en 8.9 bits y se estabiliza en 2.251. El eje logarítmico hace visible la convergencia esperada por la ley de los grandes números.
 
 \begin{figure}[htbp]
 \centering
@@ -424,7 +418,7 @@ La figura~\ref{fig:F4} muestra el promedio acumulado $S_k$ de $-\log_2\hat q$ en
 
 \subsection{Simulación y distribución estacionaria}
 
-La matriz $P$ del bigrama suavizado tiene desviación máxima de fila $2.22\times10^{-16}$ y entrada mínima $2.207\times10^{-8}$: es estocástica y estrictamente positiva. La iteración de potencias convergió en 22 iteraciones, con última diferencia $\ell_1$ de $3.35\times10^{-11}$. La estacionaria reproduce las frecuencias de unigramas con diferencia máxima $3.71\times10^{-6}$ y distancia $\ell_1$ de $9.05\times10^{-6}$ (figura~\ref{fig:F5}). Al ser $P$ positiva, la cadena es irreducible y aperiódica, la estacionaria es única y coincide con las frecuencias del entrenamiento: la ergodicidad queda confirmada numéricamente.
+$P$ es estocástica y estrictamente positiva (desviación de fila $2.22\times10^{-16}$, entrada mínima $2.207\times10^{-8}$). La iteración convergió en 22 pasos ($\ell_1=3.35\times10^{-11}$) y $\pi$ reproduce los unigramas con diferencia máxima $3.71\times10^{-6}$ y distancia $\ell_1$ de $9.05\times10^{-6}$ (F5), como explica 7.8.
 
 \begin{figure}[htbp]
 \centering
@@ -433,11 +427,11 @@ La matriz $P$ del bigrama suavizado tiene desviación máxima de fila $2.22\time
 \label{fig:F5}
 \end{figure}
 
-Las tres muestras de 300 caracteres (semilla 2026, contexto \guillemotleft{}habia \guillemotright{}) están en el anexo~\ref{anexo:muestras}. $n=2$ produce pseudo-español con sílabas plausibles (\guillemotleft{}de que\guillemotright{}, \guillemotleft{}lespostes\guillemotright{}); $n=3$ mejora la sílaba y pierde la palabra (\guillemotleft{}menesto\guillemotright{}, \guillemotleft{}aparadia\guillemotright{}); $n=5$ alterna fragmentos memorizados (\guillemotleft{}contaba porque no\guillemotright{}, \guillemotleft{}maravillo dudar\guillemotright{}) con tramos sin estructura, porque el contexto se vuelve desconocido y el suavizado reparte la probabilidad casi uniforme.
+Las muestras están en el anexo~\ref{anexo:muestras}: $n=2$ da sílabas plausibles (\guillemotleft{}de que\guillemotright{}), $n=3$ mejora la sílaba y pierde la palabra, y $n=5$ alterna fragmentos memorizados con tramos sin estructura (7.9).
 
 \subsection{Incertidumbre de la comparación}
 
-La tabla~\ref{tab:T4} resume el bootstrap. La media de las $\Delta_j$ es 0.0926 bits y el intervalo del 95\,\% es $[0.0553,\,0.1259]$, por encima de cero: la ventaja de $n=5$ sobre $n=4$ no se explica por el azar de esta partición. El error estándar es 0.0179, el sesgo $+2.1\times10^{-5}$ y 14 de 16 bloques favorecen a $n=5$.
+La tabla~\ref{tab:T4} resume el bootstrap: media 0.0926 bits, IC 95\,\% $[0.0553,\,0.1259]$, error estándar 0.0179 y 14 de 16 bloques a favor de $n=5$ (7.10).
 
 \begin{table}[htbp]
 \centering
@@ -459,7 +453,7 @@ Sensibilidad (15 bloques) & 0.1031 $\cdot$ $[0.0711,\,0.1326]$\\
 \end{tabular}
 \end{table}
 
-En tamaño práctico, 0.0926 bits equivalen a $2^{0.0926}\approx1.066$, un 6.6\,\% menos de perplejidad: mejora real pero modesta, coherente con la meseta de F3. Los bloques 15 y 16 dan $-0.0534$ y $-0.0646$ (epílogo, estilo distinto). Con los 15 bloques completos, la media es 0.1031 e intervalo $[0.0711,\,0.1326]$; la conclusión no cambia.
+$0.0926$ bits equivalen a $2^{0.0926}\approx1.066$, un 6.6\,\% menos de perplejidad. Los bloques 15 y 16 dan $-0.0534$ y $-0.0646$ (epílogo); con 15 bloques la media es 0.1031 y el IC $[0.0711,\,0.1326]$. La conclusión no cambia.
 
 % =====================================================================
 %  6. VERIFICACIONES
@@ -468,7 +462,7 @@ En tamaño práctico, 0.0926 bits equivalen a $2^{0.0926}\approx1.066$, un 6.6\,
 
 \paragraph{Prueba de cordura con \emph{abracadabra}.}
 
-Antes de procesar el corpus se ejecutó el programa \texttt{codigo/pruebas.py} sobre \emph{abracadabra}. La tabla~\ref{tab:cordura} compara los valores esperados con los obtenidos: las seis comprobaciones coinciden.
+Se ejecutó \texttt{codigo/pruebas.py} sobre \emph{abracadabra}; la tabla~\ref{tab:cordura} muestra que las seis comprobaciones coinciden.
 
 \begin{table}[htbp]
 \centering
@@ -491,53 +485,53 @@ Perplejidad correspondiente & 1.516 & 1.516\\
 
 \paragraph{Condicionales, máxima verosimilitud y Gibbs.}
 
-Para todos los contextos observados, la suma de las condicionales sobre $\mathcal{V}$ tuvo desviación máxima $1.11\times10^{-16}$, muy por debajo de la tolerancia $10^{-12}$; el contexto nunca visto \guillemotleft{}\ \ \ \ \guillemotright{} devolvió $1/27$ para los 27 símbolos.
+Las condicionales suman 1 con desviación máxima $1.11\times10^{-16}$ (tolerancia $10^{-12}$); el contexto nunca visto devuelve $1/27$.
 
-La MLE maximiza la log-verosimilitud. Con $h=$ espacio ($c(h)=45\,320$) se comparó con dos perturbaciones de 0.01: de \guillemotleft{}e\guillemotright{} a \guillemotleft{}d\guillemotright{} y de \guillemotleft{}e\guillemotright{} a un símbolo con conteo cero. Los valores fueron $\ell_{\text{MLE}}=-566\,543.6785$, $\ell_A=-566\,591.3136$ y $\ell_B=-567\,021.2821$; la MLE es mayor, como exige la Proposición~1.1.8 del libro.
+La MLE maximiza la log-verosimilitud. Con $h=$ espacio ($c(h)=45\,320$), dos perturbaciones de 0.01 dieron $\ell_{\text{MLE}}=-566\,543.6785$, $\ell_A=-566\,591.3136$ y $\ell_B=-567\,021.2821$: la MLE es mayor, como exige la Proposición~1.1.8 del libro.
 
 La desigualdad de Gibbs se comprobó con unigramas: $4.047143\le4.053576$, con $\KL=0.006433$ bits. La matriz $P$ tiene filas que suman 1 con desviación $2.22\times10^{-16}$, entrada mínima $2.207\times10^{-8}$ y estacionaria que suma 1 hasta el error de máquina; la iteración convergió en 22 pasos con última diferencia $3.35\times10^{-11}$.
 
 \paragraph{Verificación interna de las cifras.}
 
-Se ejecutó \texttt{codigo/verificar\_todo.py}, que reconstruye los cinco modelos desde \texttt{datos/} y recalcula cada métrica para compararla con las tablas guardadas: 127 comprobaciones correctas de 127. Incluye coherencias cruzadas: el BPC de prueba de $n=1$ coincide con $H(\hat p,\hat q)$ de Gibbs; los puntos de F3 son las columnas de T3; la asíntota de F4 es el BPC final de $n=5$; el promedio ponderado de los BPC de bloque de T4 devuelve 2.346 y 2.251; y $\pi$ reproduce las frecuencias de T1.
+\texttt{codigo/verificar\_todo.py} reconstruye los cinco modelos desde \texttt{datos/} y recalcula cada métrica: 127 comprobaciones correctas de 127. Incluye coherencias cruzadas entre T3, F3, F4, T4, Gibbs y T1.
 
 % =====================================================================
 %  7. DISCUSIÓN Y LIMITACIONES
 % =====================================================================
 \section{Discusión y limitaciones}\label{sec:discusion}
 
-\paragraph{7.1 \textquestiondown{}Qué tan lejos está el texto de ser \guillemotleft{}al azar\guillemotright{} sobre su alfabeto?}
-La entropía de unigramas es 4.059 bits y el máximo sobre 27 símbolos, 4.755. La diferencia de 0.6957 bits por carácter es la estructura que el modelo puede explotar; la redundancia relativa es 14.63\,\%.
+\paragraph{7.1 \textquestiondown{}Qué tan lejos está el texto de ser \guillemotleft{}al azar\guillemotright{} sobre su alfabeto? Interprete la diferencia en bits.}
+La referencia de azar es la uniforme sobre $\mathcal{V}$. Por \eqref{eq:entropia}, $H(U_{27})=\log_2 27=4.755$ bits, mientras que la entropía empírica del entrenamiento es $H(\hat p)=4.059$ bits (F1, T1). La diferencia $D=0.6957$ bits por carácter es la incertidumbre media que se elimina al conocer la distribución real: codificar sin estructura costaría 4.755 bits por símbolo y \emph{Niebla} cuesta 4.059. La redundancia relativa $R=1-H(\hat p)/\log_2|\mathcal{V}|=14.63\,\text{\%}$ expresa la misma idea en porcentaje. Esa brecha es el margen máximo explotable con frecuencias marginales; los modelos condicionados recuperan una parte de ella (sección~\ref{sec:resultados}).
 
 \paragraph{7.2 \textquestiondown{}Por qué el BPC de la MLE es infinito en cuanto aparece un cero?}
-Porque el BPC promedia $-\log_2 q$: si $q(y\mid h)=0$ para un carácter que ocurrió, $-\log_2 0=+\infty$ y la media es infinita aunque los otros 31\,577 términos sean finitos. El modelo declara imposible algo que ocurrió.
+El BPC \eqref{eq:bpc} promedia las sorpresas $-\log_2\hat q(y_t\mid h_t)$. La MLE \eqref{eq:mle} asigna $\hat q=0$ a todo par no observado; si ese par aparece en validación, el término vale $-\log_2 0=+\infty$ y la media de 31\,578 términos es infinita aunque los otros 31\,577 sean finitos. No es un artefacto numérico: el modelo declara imposible un evento ocurrido, violando el requisito mínimo de asignar masa positiva a lo observable. El suavizado aditivo \eqref{eq:suavizado} garantiza $\hat q_\alpha(y\mid h)>0$ para todo $y$ con $\alpha>0$, y por eso devuelve un BPC finito (T2).
 
 \paragraph{7.3 \textquestiondown{}Por qué crece la proporción de ceros con $n$?}
-Porque los contextos posibles crecen como $27^{n-1}$ (1, 27, 729, 19\,683 y 531\,441) mientras el entrenamiento es fijo: el contexto medio cae de 252\,626 apariciones a 9\,357, 612, 70 y 16. Los ceros pasan de 0 y 0 a 50, 491 y 2\,171 (0.158\,\%, 1.555\,\% y 6.875\,\%). El bigrama está cubierto; el fallo empieza en $n=3$.
+El número de contextos posibles es $|\mathcal{V}|^{n-1}$: 1, 27, 729, 19\,683 y 531\,441 para $n=1,\ldots,5$. Con 252\,626 caracteres de entrenamiento, el contexto medio cae de 252\,626 apariciones a 9\,357, 612, 70 y 16. Crece así la fracción de contextos de validación nunca vistos o con un sucesor nuevo: los ceros van de 0 y 0 en $n=1,2$ a 50, 491 y 2\,171 en $n=3,4,5$ (0.158\,\%, 1.555\,\% y 6.875\,\% de 31\,578 caracteres; T2). El bigrama está cubierto porque 27 contextos son pocos frente al corpus; el fallo empieza en $n=3$, no en $n=2$ como preveía el plan inicial.
 
 \paragraph{7.4 \textquestiondown{}Por qué el $\alpha$ óptimo cambia con $n$?}
-Porque el costo de suavizar depende de los datos por contexto. Con $c(h)$ grande ($n=1,2$) la masa de suavizado es despreciable y el mínimo cae en el borde de la rejilla; con $c(h)\approx16$ ($n=5$) hay más contextos raros y $\alpha$ sube a 0.03, donde $\alpha|\mathcal{V}|=0.81$ cubre casi el 5\,\% de la masa.
+El suavizado \eqref{eq:suavizado} reparte $\alpha|\mathcal{V}|$ de masa entre los símbolos y su costo relativo depende de $c(h)$. Si el contexto es frecuente ($n=1,2$), $\alpha$ es despreciable frente a $c(h)$, la curva de validación es plana y el mínimo cae en el borde de la rejilla (F2): no hay un óptimo fuerte que reportar. Cuando $c(h)\approx16$ ($n=5$), dominan los contextos raros y los ceros; hace falta más masa y el mínimo se desplaza a $\alpha^*=0.03$, donde $\alpha|\mathcal{V}|=0.81$. El óptimo es, por tanto, un compromiso entre cubrir pares no vistos y no aplanar lo que los conteos ya saben.
 
 \paragraph{7.5 \textquestiondown{}Qué ocurre con $\alpha=1$ en contextos que aparecen pocas veces?}
-La distribución se aplana: con $c(h)=1$ el símbolo observado recibe $2/28=0.071$ en vez de casi 1. El costo es $+0.0019$ bits en $n=2$, $+0.0227$ en $n=3$, $+0.1439$ en $n=4$ y $+0.3755$ en $n=5$.
+Con $\alpha=1$ y $|\mathcal{V}|=27$, \eqref{eq:suavizado} queda $\hat q_1(y\mid h)=(c(h,y)+1)/(c(h)+27)$. En un contexto con $c(h)=1$, el símbolo observado recibe $2/28=0.071$ en lugar de casi 1: la evidencia se diluye entre 27 alternativas y el modelo olvida lo aprendido. El efecto crece con $n$ porque abundan los contextos escasos: el costo en validación respecto de $\alpha^*$ es $+0.0019$ bits en $n=2$, $+0.0227$ en $n=3$, $+0.1439$ en $n=4$ y $+0.3755$ en $n=5$. En $n=1$ apenas se nota, porque no hay contexto y la uniforme es casi la distribución empírica.
 
 \paragraph{7.6 \textquestiondown{}Qué $n$ elige la validación y confirma la prueba ese orden?}
-Ambas eligen $n=5$: 2.190 bits en validación y 2.251 en prueba, con una diferencia de 0.0612 bits (2.8\,\%). No se reajustó nada después de ver la prueba.
+La selección se hizo solo con validación, $\alpha^*(n)=\arg\min_\alpha\BPC_{\Val}(n,\alpha)$, y se congeló antes de abrir prueba. Validación elige $n=5$ con 2.190 bits y prueba confirma el mismo orden con 2.251 bits (T3); la diferencia de 0.0612 bits (2.8\,\%) corresponde al cambio de bloque, no a un reajuste. Prueba se leyó una sola vez y el script se niega a reescribir T3. Ese protocolo es lo que permite interpretar 2.251 bits como estimación honesta de generalización y no como el resultado de elegir mirando el examen.
 
 \paragraph{7.7 \textquestiondown{}Por qué el BPC de entrenamiento sigue bajando cuando el de prueba ya no?}
-Es sobreajuste: el BPC de entrenamiento cae 4.059, 3.235, 2.687, 2.154 y 1.732, pero los contextos nuevos caen al casi uniforme $1/27$ (4.755 bits) y el de prueba se estanca en 4.054, 3.212, 2.722, 2.346 y 2.251. La brecha llega a 0.52 bits.
+Es sobreajuste: divergencia entre ajuste y generalización. En entrenamiento el BPC cae monótonamente 4.059, 3.235, 2.687, 2.154 y 1.732 bits porque el modelo memoriza secuencias concretas. En prueba, los contextos nuevos caen en su mayoría al casi uniforme $1/27$ (4.755 bits) y el costo se estanca en 4.054, 3.212, 2.722, 2.346 y 2.251 bits (T3, F3). La brecha se abre hasta 0.5194 bits en $n=5$. La causa es estructural: el número de parámetros crece como $|\mathcal{V}|^{n}$ mientras el corpus es fijo, así que más memoria reduce el error en lo ya visto y deja de ayudar en lo nuevo.
 
 \paragraph{7.8 \textquestiondown{}Por qué $\pi$ se parece a las frecuencias del texto?}
-Porque $P$ es estrictamente positiva ($\alpha>0$), así que la cadena es irreducible y aperiódica y tiene estacionaria única, solución de $\pi_j=\sum_i\pi_iP_{ij}$. Esa solución es el vector de frecuencias que generó los conteos; la diferencia máxima es $3.71\times10^{-6}$ y la distancia $\ell_1$, $9.05\times10^{-6}$.
+El bigrama suavizado cumple $P_{ij}=\hat q_\alpha(V_j\mid V_i)>0$ porque $\alpha>0$; la cadena es entonces irreducible y aperiódica y admite una única estacionaria, solución de $\pi P=\pi$ con $\sum_i\pi_i=1$ \eqref{eq:estacionaria}. Por el teorema ergódico, las frecuencias empíricas de visita convergen a $\pi$, y son justamente las que generaron los conteos de pares. Numéricamente la iteración de potencias convergió en 22 pasos y $\pi$ reproduce los unigramas con diferencia máxima $3.71\times10^{-6}$ y distancia $\ell_1$ de $9.05\times10^{-6}$ (F5). La cercanía no es accidental: es la consecuencia esperada de la ergodicidad.
 
 \paragraph{7.9 \textquestiondown{}Qué propiedades del español capturan las muestras y cuáles no?}
-Capturan frecuencias de letras, combinaciones locales (sílabas, \guillemotleft{}de que\guillemotright{}, \guillemotleft{}contaba porque no\guillemotright{}) y las proporciones de espacio (17.9\,\%) y \texttt{\#} (8.1\,\%). No capturan palabras completas, concordancia, sintaxis ni coherencia global; en $n=5$ aparecen tramos aleatorios.
+Las muestras del anexo~\ref{anexo:muestras} conservan la distribución marginal de símbolos (espacio 17.9\,\%, \texttt{\#} 8.1\,\%) y las transiciones locales frecuentes: sílabas plausibles y segmentos como \guillemotleft{}de que\guillemotright{} o \guillemotleft{}contaba porque no\guillemotright{}. No conservan propiedades que exigen memoria larga: palabras completas, concordancia, sintaxis, puntuación con sentido ni coherencia global. En $n=5$ aparecen tramos memorizados alternados con cadenas sin estructura; cuando el contexto de cuatro caracteres es nuevo, el suavizado reparte la masa casi uniformemente y la salida se vuelve ruido. El experimento muestra que el modelo captura estadística de orden bajo, no gramática.
 
 \paragraph{7.10 \textquestiondown{}El intervalo bootstrap excluye el cero?}
-Sí: la media es 0.0926 bits y el intervalo $[0.0553,\,0.1259]$ queda por encima de cero. La ventaja es real pero modesta ($2^{0.0926}\approx1.066$, un 6.6\,\% menos de perplejidad); 14 de 16 bloques favorecen $n=5$ y los dos del epílogo, $n=4$.
+Sí. La media de las diferencias por bloque es $\bar\Delta=0.0926$ bits y el intervalo percentil del 95\,\% es $[0.0553,\,0.1259]$, integralmente positivo (T4). Bajo el supuesto de bloques aproximadamente independientes, ello permite rechazar la hipótesis de ventaja nula de $n=5$ sobre $n=4$ al nivel del 5\,\%. El tamaño del efecto es modesto: $2^{0.0926}\approx1.066$, es decir, 6.6\,\% menos de perplejidad. El resultado es estable en el análisis de sensibilidad con 15 bloques (0.1031, $[0.0711,\,0.1326]$), aunque 14 de 16 bloques favorecen $n=5$ y los dos del epílogo favorecen $n=4$.
 
 \paragraph{7.11 \textquestiondown{}Por qué se remuestrean bloques y no caracteres individuales?}
-Porque los caracteres consecutivos están correlacionados; remuestrear caracteres sueltos rompería esa dependencia y daría un intervalo artificialmente estrecho. Los bloques de 2\,000 caracteres conservan la estructura local y son aproximadamente independientes.
+Los caracteres consecutivos están correlacionados, así que la hipótesis de independencia del bootstrap i.i.d. es falsa aquí. Remuestrear caracteres sueltos destruiría las transiciones y subestimaría la varianza, produciendo un intervalo artificialmente estrecho y una falsa precisión. Al remuestrear bloques contiguos de 2\,000 caracteres se preserva la dependencia local dentro de cada bloque; los 16 bloques, separados en el tiempo, son aproximadamente independientes entre sí, que es la hipótesis que exige el bootstrap por bloques \cite{efron}. El intervalo resultante es más ancho, pero cubre la incertidumbre real de la comparación.
 
 \subsection{Limitaciones}
 \begin{enumerate}[leftmargin=1.2em,itemsep=0pt]

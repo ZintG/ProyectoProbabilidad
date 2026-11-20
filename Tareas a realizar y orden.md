@@ -254,9 +254,9 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 * [x] **Hito:** cierre de la Semana 3 mediante **revisión interna de resultados** (la Revisión 2 con el profesor no se realizará). Verificación en `revision_resultados.md`: 127 de 127 comprobaciones correctas. Consolidado en `resumen_revision_2.md`.
 
 ### 🗓️ Semana 4: Reporte Final, Reproducibilidad y Defensa
-* [ ] Estructurar y redactar el reporte en LaTeX (10 a 14 páginas estrictas).
-* [ ] Responder formalmente todas las preguntas de discusión teórica.
-* [ ] Integrar figuras vectoriales (`.pdf`/`.png`) y tablas exportadas desde Python.
+* [x] Estructurar y redactar el reporte en LaTeX (10 a 14 páginas estrictas).
+* [x] Responder formalmente todas las preguntas de discusión teórica.
+* [x] Integrar figuras vectoriales (`.pdf`/`.png`) y tablas exportadas desde Python.
 * [ ] Verificar que todo el flujo corra desde la consola en menos de 10 minutos (`python3 main.py` o scripts individuales).
 * [ ] Redactar `README.md` final con instrucciones reproducibles paso a paso.
 * [ ] Ensayar la sincronización de 20 minutos entre los 4 integrantes para la defensa oral aleatoria de 10 minutos.
