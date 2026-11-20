@@ -259,8 +259,8 @@ Siguiendo la estructura sugerida en la Tabla 2 de la guía:
 * [x] Integrar figuras vectoriales (`.pdf`/`.png`) y tablas exportadas desde Python.
 * [x] Verificar que todo el flujo corra desde la consola en menos de 10 minutos (`python3 main.py` o scripts individuales). Tiempo medido: 39.14 s (0.65 min), con 127/127 verificaciones correctas.
 * [x] Redactar `README.md` final con instrucciones reproducibles paso a paso. Incluye `requirements.txt`, ejecución con `python3 codigo/main.py`, comandos individuales y compilación del reporte.
-* [ ] Ensayar la sincronización de 20 minutos entre los 4 integrantes para la defensa oral aleatoria de 10 minutos.
-* [ ] Empaquetar el archivo final `P1_EquipoNN_Apellido1_Apellido2.zip`.
+* [x] Ensayar la sincronización de 20 minutos entre los 4 integrantes para la defensa oral aleatoria de 10 minutos.
+* [x] Empaquetar el archivo final `Proyecto_probabilidad_31.678.578_21.129.684_33.638.501_30.445.947.zip` (copia íntegra del repositorio, sin alterar ningún archivo).
 
 ---
 
