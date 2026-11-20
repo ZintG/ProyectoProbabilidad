@@ -77,7 +77,7 @@ def graficar_f4(costes, bpc_final, n):
     plt.plot(range(1, len(acumulado) + 1), acumulado,
              linewidth=1.4, label=f"$S_k$ (n = {n})")
     plt.axhline(bpc_final, linestyle="--",
-                label=f"BPC final = {bpc_final:.4f}")
+                label=f"BPC final = {bpc_final:.4g}")
     plt.xscale("log")
     plt.xlabel(r"Caracteres evaluados $k$ (escala logarítmica)")
     plt.ylabel("Promedio acumulado (bits por carácter)")
