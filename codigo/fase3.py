@@ -12,8 +12,9 @@ from modelos import ModeloNgramas
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DIR_DATOS = BASE_DIR / "datos"
-DIR_TABLAS = BASE_DIR / "tablas"
-DIR_FIGURAS = BASE_DIR / "figuras"
+DIR_RESULTADOS = BASE_DIR / "resultados"
+DIR_TABLAS = BASE_DIR / "tablas" if (BASE_DIR / "tablas").exists() else DIR_RESULTADOS
+DIR_FIGURAS = BASE_DIR / "figuras" if (BASE_DIR / "figuras").exists() else DIR_RESULTADOS
 
 ALPHAS = [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0]
 

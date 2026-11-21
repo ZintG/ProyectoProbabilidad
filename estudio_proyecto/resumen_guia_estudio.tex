@@ -1,0 +1,287 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands,es-noquoting]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% Estilo de cajas tcolorbox con títulos protegidos
+\tcbset{
+    sharp corners,
+    boxrule=0.8pt,
+    colback=white,
+    fonttitle=\bfseries,
+    before skip=8pt,
+    after skip=8pt
+}
+
+\newtcolorbox{conceptbox}[1]{
+    colback=blue!3!white,
+    colframe=blue!65!black,
+    title={#1}
+}
+
+\newtcolorbox{decisionbox}[1]{
+    colback=teal!3!white,
+    colframe=teal!65!black,
+    title={#1}
+}
+
+\newtcolorbox{alertbox}[1]{
+    colback=red!3!white,
+    colframe=red!65!black,
+    title={#1}
+}
+
+\newtcolorbox{summarybox}[1]{
+    colback=gray!5!white,
+    colframe=gray!75!black,
+    title={#1}
+}
+
+% Encabezados y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small \textsc{Guía de Estudio} \textperiodcentered{} Teoría de la Probabilidad}
+\lhead{\small \textit{Modelos de $n$-gramas sobre Niebla}}
+\rfoot{\small Página \thepage\ de \pageref{LastPage}}
+\lfoot{\small Equipo 05 \textperiodcentered{} UC}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+
+\begin{document}
+
+% ---------------------------------------------------------------------
+%  PORTADA / ENCABEZADO
+% ---------------------------------------------------------------------
+\begin{center}
+    {\large \textbf{UNIVERSIDAD DE CARABOBO}}\\[2pt]
+    {\normalsize FACULTAD EXPERIMENTAL DE CIENCIAS Y TECNOLOGÍA (FACYT)}\\[2pt]
+    {\normalsize DEPARTAMENTO DE COMPUTACIÓN \textperiodcentered{} TEORÍA DE LA PROBABILIDAD}\\[10pt]
+    
+    \begin{tcolorbox}[colback=blue!8!white, colframe=blue!60!black, arc=3mm, width=\linewidth, halign=center]
+        \vspace{4pt}
+        {\Large \bfseries GUÍA MAESTRA DE ESTUDIO Y PREPARACIÓN}\\[4pt]
+        {\large Modelos de Lenguaje de $n$-gramas sobre \textit{Niebla} de Miguel de Unamuno}\\[4pt]
+        {\small \textit{Explicación intuitiva, decisiones metodológicas, desarrollo fase por fase y resultados clave para la defensa oral}}
+        \vspace{4pt}
+    \end{tcolorbox}
+    \vspace{6pt}
+    
+    \textbf{Equipo 05:} Simón Tovar (31.678.578), Samuel Primera (21.129.684), Román Valero (33.638.501), Rolando Suárez (30.445.947)\\[2pt]
+    \textbf{Profesor:} Dr. José G. Marcano \textperiodcentered{} \textbf{Fecha de Entrega/Defensa:} Noviembre de 2026
+\end{center}
+
+\vspace{5pt}
+\hrule
+\vspace{10pt}
+
+% ---------------------------------------------------------------------
+%  SECCIÓN 1: DE QUÉ TRATA EL PROYECTO
+% ---------------------------------------------------------------------
+\section{¿De qué trata este proyecto? (Visión general en palabras simples)}
+
+El objetivo central del proyecto es responder a una pregunta fundamental: \textbf{¿Se puede predecir con probabilidad matemática la siguiente letra que un autor va a escribir, mirando únicamente las letras que escribió inmediatamente antes? ¿Y qué tanto mejora nuestra predicción si miramos más hacia atrás?}
+
+\begin{conceptbox}{La analogía cotidiana: El teclado predictivo de tu teléfono}
+Cuando escribes en WhatsApp y el teclado te sugiere la siguiente palabra o letra, está usando un modelo probabilístico. Si escribes \texttt{"qu"}, sabes con casi total certeza que la siguiente letra será la \texttt{"e"} o la \texttt{"i"}. Si solo miras una letra hacia atrás (\texttt{"u"}), la incertidumbre es moderada; pero si miras dos letras (\texttt{"qu"}), la probabilidad se concentra fuertemente en unas pocas opciones. Eso es exactamente un modelo de $n$-gramas de caracteres.
+\end{conceptbox}
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{¿Por qué caracteres y no palabras?} En español hay cientos de miles de palabras distintas (conjugaciones, plurales, femeninos), lo que requeriría corpus gigantescos. El alfabeto de caracteres, en cambio, es pequeño, cerrado y exacto ($|\mathcal{V}| = 27$ símbolos).
+    \item \textbf{La obra elegida:} \textit{Niebla} (1914), obra cumbre del filósofo y escritor español Miguel de Unamuno, descargada de \textit{Project Gutenberg} (eBook \#49836). Es de dominio público y cuenta con $315\,783$ caracteres procesados, superando el umbral de $300\,000$ caracteres fijado en el enunciado.
+\end{itemize}
+
+---
+
+% ---------------------------------------------------------------------
+%  SECCIÓN 2: DECISIONES CLAVE
+% ---------------------------------------------------------------------
+\section{Decisiones Clave del Proyecto (¿Por qué se hizo así?)}
+
+En la defensa, el jurado prestará especial atención a las decisiones de ingeniería y diseño metodológico:
+
+\begin{decisionbox}{Decisión 1: Alfabeto $|\mathcal{V}|=27$ y el comodín numeral (\texttt{\#})}
+\textbf{Qué se hizo:} Se permitieron las 26 letras del inglés más el espacio en blanco. Todo carácter fuera de este conjunto (tildes \texttt{á, é, í, ó, ú}, diéresis \texttt{ü}, la letra \texttt{ñ}, dígitos \texttt{0-9} y signos de puntuación \texttt{, . ; : ! ? -}) se reemplazó por el símbolo único \texttt{\#}. Además, en \textit{Niebla} Unamuno nunca usó la letra \texttt{w}, por lo que el vocabulario efectivo consta de 25 letras + 1 espacio + 1 comodín \texttt{\#} = \textbf{27 caracteres}.\\[3pt]
+\textbf{Justificación simple:} Si creáramos un símbolo para cada letra con tilde, mayúsculas y signos, el vocabulario pasaría de 27 a más de 120 caracteres. Al crecer el vocabulario, las combinaciones posibles explotan exponencialmente ($|\mathcal{V}|^n$), dispersando los datos y provocando una catástrofe de ceros. El \texttt{\#} absorbe el 4.34\,\% de la masa del texto, capturando fielmente los límites de cláusulas y acentos.
+\end{decisionbox}
+
+\begin{decisionbox}{Decisión 2: Minúsculas y colapso de espacios múltiples}
+\textbf{Qué se hizo:} Todo el texto se convirtió a minúsculas y cualquier seguidilla de espacios, saltos de línea o tabuladores se redujo a un solo espacio en blanco (\texttt{' '}).\\[3pt]
+\textbf{Justificación simple:} Para el flujo probabilístico del lenguaje, un salto de línea entre párrafos cumple la misma función delimitadora que un espacio. Distinguir mayúsculas duplicaría artificialmente el número de estados sin aportar estructura fonética nueva.
+\end{decisionbox}
+
+\begin{decisionbox}{Decisión 3: Partición contigua (80\% / 10\% / 10\%) sin barajar (Shuffle)}
+\textbf{Qué se hizo:} Se tomaron secuencialmente los primeros $252\,626$ caracteres para entrenamiento (80\%), los siguientes $31\,578$ para validación (10\%) y los últimos $31\,579$ para prueba (10\%).\\[3pt]
+\textbf{Justificación crucial (pregunta típica de examen):} \textbf{El texto NO se debe barajar}. El lenguaje natural es un proceso estocástico con dependencia temporal (propiedad de Markov). Si barajamos oraciones o caracteres, destruiríamos la coherencia del discurso y provocaríamos \textit{data leakage} (fuga de información), violando la hipótesis de prueba ciega.
+\end{decisionbox}
+
+\begin{decisionbox}{Decisión 4: Protocolo de prueba ciega y congelada (\textit{Blind Test})}
+\textbf{Qué se hizo:} El conjunto de prueba se guardó bajo llave y solo se evaluó \textbf{una única vez} en la Fase 4. Todas las decisiones de ajuste (como el valor óptimo del parámetro de suavizado $\alpha$) se tomaron exclusivamente usando el conjunto de validación.\\[3pt]
+\textbf{Justificación simple:} Si ajustáramos hiperparámetros mirando el conjunto de prueba, estaríamos cometiendo trampa estadística (sobreajuste al examen). El código implementado bloquea físicamente la reevaluación de la prueba si la tabla ya existe.
+\end{decisionbox}
+
+---
+
+% ---------------------------------------------------------------------
+%  SECCIÓN 3: RECORRIDO FASE POR FASE
+% ---------------------------------------------------------------------
+\section{Recorrido Fase por Fase: Implementación y Cifras Exactas}
+
+\subsection{Fase 0: Prueba de cordura con \texttt{"abracadabra"}}
+\textbf{Propósito:} Comprobar que todas las fórmulas matemáticas de conteos, entropía, MLE, suavizado y perplejidad funcionan al 100\% antes de procesar el libro real.
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Texto de prueba:} \texttt{"abracadabra"} ($N=11$, $|\mathcal{V}|=5$ símbolos: \texttt{a:5, b:2, r:2, c:1, d:1}).
+    \item \textbf{Resultados teóricos y verificados:} Entropía $H(p) = 2.0404$ bits; Probabilidad MLE $\hat{q}(b|a) = 2/4 = 0.5000$; Probabilidad con suavizado de Laplace ($\alpha=1$) $\hat{q}_1(b|a) = (2+1)/(4+5) = 3/9 = 0.3333$; BPC sobre las 10 transiciones = $0.6000$ bits; Perplejidad $\text{PPL} = 2^{0.6000} = 1.5157$. Pasan las 6 de 6 pruebas.
+\end{itemize}
+
+\subsection{Fase 1: Exploración del corpus y entropía de unigramas (T1 y F1)}
+\textbf{Propósito:} Medir qué tan predecible es el español de Unamuno a nivel de caracteres individuales (sin mirar el pasado).
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Entropía máxima teórica:} Si todas las 27 letras fueran equiprobables (caos o ruido blanco perfecto), la incertidumbre sería $\log_2(27) = \mathbf{4.7549\text{ bits}}$.
+    \item \textbf{Entropía real medida ($n=1$):} $H(\hat{p}) = \mathbf{4.0592\text{ bits}}$.
+    \item \textbf{Redundancia del texto:} $R = 1 - \frac{4.0592}{4.7549} = \text{14.63\,\%}$ ($0.6957$ bits por carácter).
+    \item \textbf{Interpretación sencilla:} La diferencia de $\sim 0.70$ bits por letra es la estructura propia del idioma español. Las letras más frecuentes son el espacio en blanco (17.37\,\%), la \texttt{'e'} (10.87\,\%) y la \texttt{'a'} (10.45\,\%). La menos frecuente es la \texttt{'k'} (solo 23 apariciones, 0.009\,\%).
+\end{itemize}
+
+\subsection{Fase 2: El fracaso del estimador clásico (MLE) y los ceros (T2)}
+\textbf{Propósito:} Demostrar matemáticamente por qué la Máxima Verosimilitud pura falla en procesamiento de lenguaje natural.
+\begin{conceptbox}{¿Por qué la MLE da BPC infinito?}
+La probabilidad MLE es simplemente contar y dividir: $\hat{q}_{\text{MLE}}(y|h) = \frac{c(h,y)}{c(h)}$.\\
+El costo de información por predecir $y$ dado $h$ es $-\log_2 \hat{q}(y|h)$.\\
+Si en el conjunto de validación aparece una combinación de letras que Unamuno nunca usó en el entrenamiento (por ejemplo, el trigrama \texttt{"xyz"}), entonces $c(h,y) = 0 \implies \hat{q} = 0$.\\
+Como $-\log_2(0) = +\infty$, \textbf{¡un solo cero hace que el promedio global (BPC) se dispare a infinito!}
+\end{conceptbox}
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Explosión combinatoria:} Los contextos teóricos crecen como $27^{n-1}$ ($1, 27, 729, 19\,683, 531\,441$). Conforme $n$ crece, los datos se vuelven insuficientes para llenar todos los contextos posibles.
+    \item \textbf{Ceros encontrados en validación:} Para $n=1$ y $n=2$, hubo \textbf{0 ceros} (el vocabulario y los 413 bigramas observados estaban cubiertos). Para $n=3$: 50 ceros (0.158\,\%). Para $n=4$: 491 ceros (1.555\,\%). Para $n=5$: \textbf{2.171 ceros} (6.875\,\%).
+\end{itemize}
+
+\subsection{Fase 3: El salvavidas: Suavizado aditivo de Lidstone (\texorpdfstring{$\alpha$}{alpha}) (F2)}
+\textbf{Propósito:} Evitar el infinito sumando una pequeña pseudocuenta $\alpha > 0$ a cada transición posible:
+$$\hat{q}_\alpha(y \mid h) = \frac{c(h,y) + \alpha}{c(h) + \alpha |\mathcal{V}|}$$
+Si un contexto nunca apareció ($c(h)=0$), la fórmula le asigna probabilidad uniforme $1/|\mathcal{V}| = 1/27$.
+
+\begin{conceptbox}{¿Por qué no usar siempre $\alpha=1$ (regla clásica de Laplace)?}
+Porque si un contexto apareció una sola vez ($c(h)=1$), con $\alpha=1$ el carácter observado recibe una probabilidad de $\frac{1+1}{1+27} = \frac{2}{28} \approx 0.071$. Le estamos quitando el 93\,\% de la certeza a lo que sí aprendimos. Por eso se calibra un $\alpha$ más pequeño.
+\end{conceptbox}
+
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Calibración en validación:} Se probó una rejilla de 7 valores: $\{0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0\}$.
+    \item \textbf{Valores óptimos $\alpha^*(n)$ hallados:}
+    \begin{itemize}[nosep]
+        \item $n=1 \implies \alpha^* = 1.0$ (el entrenamiento es masivo, $252\,626$ datos, cualquier $\alpha$ da casi igual).
+        \item $n=2 \implies \alpha^* = 0.001$ (los contextos de 1 letra son muy frecuentes, se necesita alterar lo mínimo posible).
+        \item $n=3 \implies \alpha^* = 0.100$.
+        \item $n=4 \implies \alpha^* = 0.030$.
+        \item $n=5 \implies \alpha^* = \mathbf{0.030}$ (alcanza el menor BPC de validación: $2.1902$ bits).
+    \end{itemize}
+\end{itemize}
+
+\subsection{Fase 4: Evaluación honesta y definitiva en prueba (T3, F3, F4)}
+\textbf{Propósito:} Evaluar los 5 modelos con sus respectivos $\alpha^*$ sobre los $31\,579$ caracteres no vistos del bloque de prueba.
+
+\begin{table}[H]
+\centering
+\small
+\begin{tabular}{ccccc}
+\toprule
+\textbf{Orden ($n$)} & \textbf{$\alpha^*$ óptimo} & \textbf{BPC Entrenamiento} & \textbf{BPC Prueba} & \textbf{Perplejidad (PPL)} \\
+\midrule
+1 & $1.000$ & $4.059$ bits & $4.054$ bits & $16.61$ alternativas \\
+2 & $0.001$ & $3.235$ bits & $3.212$ bits & $9.27$ alternativas \\
+3 & $0.100$ & $2.687$ bits & $2.722$ bits & $6.60$ alternativas \\
+4 & $0.030$ & $2.154$ bits & $2.346$ bits & $5.08$ alternativas \\
+\textbf{5} & $\mathbf{0.030}$ & $\mathbf{1.732\text{ bits}}$ & $\mathbf{2.251\text{ bits}}$ & $\mathbf{4.761\text{ alternativas}}$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{conceptbox}{Interpretación directa de los resultados:}
+\begin{enumerate}[leftmargin=*, nosep]
+    \item \textbf{El modelo $n=5$ es el ganador:} Alcanza el menor BPC ($2.251$ bits/carácter) y reduce la incertidumbre a una perplejidad de solo $4.76$. Es decir, en promedio, el modelo duda entre menos de 5 letras posibles para predecir la siguiente.
+    \item \textbf{Sobreajuste evidente (\textit{Overfitting}):} En entrenamiento, el BPC cae drásticamente hasta $1.732$ bits en $n=5$. Pero en prueba se frena en $2.251$ bits (brecha de $0.52$ bits). El modelo empieza a memorizar palabras específicas de Unamuno en lugar de aprender reglas generales del idioma.
+    \item \textbf{Desigualdad de Gibbs comprobada:} Para unigramas, la entropía cruzada en prueba con el modelo de entrenamiento ($H(p,q) = 4.0536$) fue estrictamente mayor que la entropía verdadera de la prueba ($H(p) = 4.0471$), cumpliendo la ley probabilística: $H(p) \le H(p,q)$ con divergencia KL positiva ($0.00643 > 0$).
+\end{enumerate}
+\end{conceptbox}
+
+\subsection{Fase 5: Cadenas de Markov y Distribución Estacionaria \texorpdfstring{$\pi$}{pi} (F5, T5)}
+\textbf{Propósito:} Tratar el modelo de bigramas ($n=2$) como una Cadena de Markov homogénea y estudiar su comportamiento asintótico.
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Matriz de transición $P$ ($27 \times 27$):} Cada fila representa la probabilidad condicional de pasar de una letra a otra. Como $\alpha=0.001 > 0$, todas las entradas son estrictamente positivas ($P_{ij} \ge 2.21 \times 10^{-8} > 0$).
+    \item \textbf{Propiedades matemáticas garantizadas:} La matriz es irreducible y aperiódica (regular). Por el \textbf{Teorema Ergódico}, la cadena tiene una \textbf{distribución estacionaria única} $\pi$ que satisface $\pi P = \pi$ y $\sum \pi_i = 1$.
+    \item \textbf{Método de las potencias:} Se calculó iterando $\pi^{(k+1)} = \pi^{(k)} P$. Convergió en exactamente \textbf{22 iteraciones} con una tolerancia de error $L_1 < 10^{-10}$.
+    \item \textbf{Coincidencia con unigramas:} La distribución $\pi$ resultó ser prácticamente idéntica a las frecuencias de unigramas del texto: la diferencia absoluta máxima fue de apenas $3.71 \times 10^{-6}$ y la distancia $L_1$ total fue de $9.05 \times 10^{-6}$.
+    \item \textbf{¿Por qué ocurre esto?} Porque la matriz de transición se estimó a partir de los pares contiguos del texto; la distribución marginal invariante de esas transiciones son precisamente las frecuencias de unigramas.
+    \item \textbf{Generación de texto simulado:} A partir del prefijo inicial \texttt{"habia "}, el modelo de $n=1$ produce letras incoherentes; el de $n=2$ forma sílabas legibles; y el de $n=5$ produce frases gramaticalmente creíbles en español (\textit{"habia de ser que el se\#or augusto pensaba en eugenia"}).
+\end{itemize}
+
+\subsection{Fase 6: Cuantificación de Incertidumbre con Bootstrap por Bloques (T4)}
+\textbf{El problema:} El modelo $n=5$ superó al de $n=4$ por $\Delta = 2.3461 - 2.2514 = 0.0947$ bits. ¿Es una ventaja estadísticamente real o una casualidad fortuita de esa partición de prueba?
+
+\begin{alertbox}{¿Por qué el Bootstrap tradicional de libro de texto está PROHIBIDO aquí?}
+El bootstrap estándar extrae observaciones al azar con reemplazo, asumiendo que los datos son variables independientes e idénticamente distribuidas (IID). En un texto, los caracteres consecutivos están fuertemente correlacionados (si hay una \texttt{'q'}, la siguiente es una \texttt{'u'}). Si remuestreamos letra por letra, destruimos la estructura temporal y subestimamos severamente el error estándar.
+\end{alertbox}
+
+\begin{conceptbox}{La solución matemática: Bootstrap por Bloques}
+Dividimos la partición de prueba ($31\,579$ caracteres) en \textbf{16 bloques contiguos}: 15 bloques de $2\,000$ caracteres y 1 bloque final de $1\,579$ caracteres. Cada bloque conserva intacta la dependencia interna de Markov.\\
+En cada bloque $j$ calculamos la diferencia de desempeño: $\Delta_j = \text{BPC}_{n=4}(j) - \text{BPC}_{n=5}(j)$.\\
+Luego remuestreamos los 16 bloques con reemplazo durante \textbf{$B = 10\,000$ iteraciones}.
+\end{conceptbox}
+
+\textbf{Resultados oficiales del Bootstrap:}
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Diferencia media muestral:} $\bar{\Delta} = \mathbf{0.0926\text{ bits/carácter}}$ a favor de $n=5$.
+    \item \textbf{Intervalo de confianza al 95 \% (Percentil):} $[\mathbf{0.0553},\, \mathbf{0.1259}]\text{ bits}$.
+    \item \textbf{Conclusión estadística irrebatible:} Como el intervalo de confianza \textbf{excluye estrictamente el valor cero}, se concluye con un nivel de confianza del 95\,\% que $n=5$ es genuinamente superior a $n=4$.
+    \item \textbf{Consistencia de los bloques:} En 14 de los 16 bloques, $n=5$ venció a $n=4$. Los dos únicos bloques donde $n=4$ superó a $n=5$ correspondieron exactamente al epílogo final (la elegía fúnebre del perro Orfeo), donde el estilo literario y el léxico de Unamuno cambiaron drásticamente.
+\end{itemize}
+
+---
+
+% ---------------------------------------------------------------------
+%  SECCIÓN 4: CIFRAS MAESTRAS PARA LA DEFENSA
+% ---------------------------------------------------------------------
+\section{Ficha Rápida: Cifras Maestras para Memorizar}
+
+\begin{summarybox}{Los 10 números que debes tener en la punta de la lengua}
+\begin{enumerate}[leftmargin=*, nosep]
+    \item \textbf{Longitud del corpus:} $315\,783$ caracteres ($|\mathcal{V}|=27$). Partición: $252\,626$ / $31\,578$ / $31\,579$.
+    \item \textbf{Entropía de unigramas:} $H(\hat{p}) = 4.0592$ bits vs máxima de $\log_2(27) = 4.7549$ bits (Redundancia 14.63\,\%).
+    \item \textbf{Prueba de cordura (\texttt{abracadabra}):} $H=2.0404$ bits, MLE=$0.5$, Laplace=$0.3333$, BPC=$0.6000$, PPL=$1.5157$.
+    \item \textbf{Ceros en validación (MLE):} $n=1: 0$; $n=2: 0$; $n=3: 50$ (0.16\,\%); $n=4: 491$ (1.55\,\%); $n=5: 2\,171$ (6.88\,\%).
+    \item \textbf{$\alpha^*$ óptimos:} $n=1: 1.0$; $n=2: 0.001$; $n=3: 0.1$; $n=4: 0.03$; $n=5: 0.03$.
+    \item \textbf{BPC de prueba ganador:} $n=5$ con \textbf{$2.251$ bits/carácter} y Perplejidad \textbf{$4.761$}.
+    \item \textbf{Evolución del BPC de prueba:} $n=1 (4.054) \to n=2 (3.212) \to n=3 (2.722) \to n=4 (2.346) \to n=5 (2.251)$.
+    \item \textbf{Distribución estacionaria $\pi$:} Convergió en \textbf{22 iteraciones}; diferencia máxima vs unigramas de $3.71 \times 10^{-6}$.
+    \item \textbf{Bootstrap por bloques:} 16 bloques, $10\,000$ remuestras, $\bar{\Delta} = 0.0926$, IC 95\,\%: $[\mathbf{0.0553},\, \mathbf{0.1259}]$.
+    \item \textbf{Verificación total del código:} \textbf{127 comprobaciones automáticas exitosas}, 0 fallos, tiempo total de ejecución $\sim 39$ segundos.
+\end{enumerate}
+\end{summarybox}
+
+---
+
+% ---------------------------------------------------------------------
+%  SECCIÓN 5: CONCLUSIÓN MAESTRA
+% ---------------------------------------------------------------------
+\section{Respuesta a la Pregunta Central del Proyecto (Para el Cierre de la Defensa)}
+
+\textit{«El estudio demuestra empíricamente que incorporar memoria de Markov reduce de forma contundente la incertidumbre al predecir el texto en español: pasar de unigrama ($n=1$) a pentagrama ($n=5$) reduce la tasa de compresión de $4.054$ a $2.251$ bits por carácter y la perplejidad de $16.61$ a $4.76$ alternativas. El suavizado aditivo con $\alpha=0.03$ es indispensable para neutralizar el 6.88\,\% de transiciones no vistas. Finalmente, el remuestreo por bloques confirma con un intervalo de confianza al 95\,\% de $[0.0553, 0.1259]$ bits que la superioridad de $n=5$ es estadísticamente sólida y no atribuible al azar.»}
+
+\end{document}

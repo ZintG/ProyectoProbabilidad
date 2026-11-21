@@ -1,0 +1,128 @@
+bloque,verificacion,reportado,calculado,diferencia,tolerancia,estado
+T1,longitud entrenamiento,252626,252626,0.000e+00,0e+00,OK
+T1,longitud validación,31578,31578,0.000e+00,0e+00,OK
+T1,longitud prueba,31579,31579,0.000e+00,0e+00,OK
+T1,longitud total,315783,315783,0.000e+00,0e+00,OK
+T1,|V| del entrenamiento,27,27,0.000e+00,0e+00,OK
+F1,entropía de unigramas (entrenamiento),4.059162507,4.059162507,0.000e+00,1e-09,OK
+F1,log2 |V|,4.754887502,4.754887502,0.000e+00,1e-09,OK
+F1,redundancia R (fracción),0.146321,0.1463178665,3.133e-06,1e-05,OK
+T2,n=1 contextos observados,1,1,0.000e+00,0e+00,OK
+T2,n=1 n-gramas observados,27,27,0.000e+00,0e+00,OK
+T2,n=1 ceros totales,0,0,0.000e+00,0e+00,OK
+T2,n=1 ceros por c(h)=0,0,0,0.000e+00,0e+00,OK
+T2,"n=1 ceros por c(h,y)=0",0,0,0.000e+00,0e+00,OK
+T2,n=1 porcentaje de ceros,0,0,0.000e+00,1e-09,OK
+T2,n=2 contextos observados,27,27,0.000e+00,0e+00,OK
+T2,n=2 n-gramas observados,413,413,0.000e+00,0e+00,OK
+T2,n=2 ceros totales,0,0,0.000e+00,0e+00,OK
+T2,n=2 ceros por c(h)=0,0,0,0.000e+00,0e+00,OK
+T2,"n=2 ceros por c(h,y)=0",0,0,0.000e+00,0e+00,OK
+T2,n=2 porcentaje de ceros,0,0,0.000e+00,1e-09,OK
+T2,n=3 contextos observados,413,413,0.000e+00,0e+00,OK
+T2,n=3 n-gramas observados,3620,3620,0.000e+00,0e+00,OK
+T2,n=3 ceros totales,50,50,0.000e+00,0e+00,OK
+T2,n=3 ceros por c(h)=0,0,0,0.000e+00,0e+00,OK
+T2,"n=3 ceros por c(h,y)=0",50,50,0.000e+00,0e+00,OK
+T2,n=3 porcentaje de ceros,0.1583380835,0.1583380835,0.000e+00,1e-09,OK
+T2,n=4 contextos observados,3620,3620,0.000e+00,0e+00,OK
+T2,n=4 n-gramas observados,15803,15803,0.000e+00,0e+00,OK
+T2,n=4 ceros totales,491,491,0.000e+00,0e+00,OK
+T2,n=4 ceros por c(h)=0,50,50,0.000e+00,0e+00,OK
+T2,"n=4 ceros por c(h,y)=0",441,441,0.000e+00,0e+00,OK
+T2,n=4 porcentaje de ceros,1.55487998,1.55487998,0.000e+00,1e-09,OK
+T2,n=5 contextos observados,15803,15803,0.000e+00,0e+00,OK
+T2,n=5 n-gramas observados,41148,41148,0.000e+00,0e+00,OK
+T2,n=5 ceros totales,2171,2171,0.000e+00,0e+00,OK
+T2,n=5 ceros por c(h)=0,491,491,0.000e+00,0e+00,OK
+T2,"n=5 ceros por c(h,y)=0",1680,1680,0.000e+00,0e+00,OK
+T2,n=5 porcentaje de ceros,6.875039585,6.875039585,0.000e+00,1e-09,OK
+F2,n=1 alpha=0.001 BPC validación,4.051468431,4.051468431,0.000e+00,5e-04,OK
+F2,n=1 alpha=0.003 BPC validación,4.051468425,4.051468425,0.000e+00,5e-04,OK
+F2,n=1 alpha=0.01 BPC validación,4.051468404,4.051468404,0.000e+00,5e-04,OK
+F2,n=1 alpha=0.03 BPC validación,4.051468343,4.051468343,0.000e+00,5e-04,OK
+F2,n=1 alpha=0.1 BPC validación,4.051468131,4.051468131,0.000e+00,5e-04,OK
+F2,n=1 alpha=0.3 BPC validación,4.051467535,4.051467535,0.000e+00,5e-04,OK
+F2,n=1 alpha=1.0 BPC validación,4.051465571,4.051465571,0.000e+00,5e-04,OK
+F2,n=1 alpha óptimo (índice),1,1,0.000e+00,0e+00,OK
+F2,n=2 alpha=0.001 BPC validación,3.217190075,3.217190075,0.000e+00,5e-04,OK
+F2,n=2 alpha=0.003 BPC validación,3.217193802,3.217193802,0.000e+00,5e-04,OK
+F2,n=2 alpha=0.01 BPC validación,3.217206846,3.217206846,0.000e+00,5e-04,OK
+F2,n=2 alpha=0.03 BPC validación,3.217244101,3.217244101,0.000e+00,5e-04,OK
+F2,n=2 alpha=0.1 BPC validación,3.217374411,3.217374411,0.000e+00,5e-04,OK
+F2,n=2 alpha=0.3 BPC validación,3.217746806,3.217746806,0.000e+00,5e-04,OK
+F2,n=2 alpha=1.0 BPC validación,3.219057968,3.219057968,0.000e+00,5e-04,OK
+F2,n=2 alpha óptimo (índice),0.001,0.001,0.000e+00,0e+00,OK
+F2,n=3 alpha=0.001 BPC validación,2.704841489,2.704841489,0.000e+00,5e-04,OK
+F2,n=3 alpha=0.003 BPC validación,2.702419658,2.702419658,0.000e+00,5e-04,OK
+F2,n=3 alpha=0.01 BPC validación,2.699971746,2.699971746,0.000e+00,5e-04,OK
+F2,n=3 alpha=0.03 BPC validación,2.698294351,2.698294351,0.000e+00,5e-04,OK
+F2,n=3 alpha=0.1 BPC validación,2.698246488,2.698246488,0.000e+00,5e-04,OK
+F2,n=3 alpha=0.3 BPC validación,2.702672361,2.702672361,0.000e+00,5e-04,OK
+F2,n=3 alpha=1.0 BPC validación,2.720877183,2.720877183,0.000e+00,5e-04,OK
+F2,n=3 alpha óptimo (índice),0.1,0.1,0.000e+00,0e+00,OK
+F2,n=4 alpha=0.001 BPC validación,2.352280785,2.352280785,0.000e+00,5e-04,OK
+F2,n=4 alpha=0.003 BPC validación,2.331048405,2.331048405,0.000e+00,5e-04,OK
+F2,n=4 alpha=0.01 BPC validación,2.3098603,2.3098603,0.000e+00,5e-04,OK
+F2,n=4 alpha=0.03 BPC validación,2.295907578,2.295907578,0.000e+00,5e-04,OK
+F2,n=4 alpha=0.1 BPC validación,2.296311313,2.296311313,0.000e+00,5e-04,OK
+F2,n=4 alpha=0.3 BPC validación,2.329577451,2.329577451,0.000e+00,5e-04,OK
+F2,n=4 alpha=1.0 BPC validación,2.439792986,2.439792986,0.000e+00,5e-04,OK
+F2,n=4 alpha óptimo (índice),0.03,0.03,0.000e+00,0e+00,OK
+F2,n=5 alpha=0.001 BPC validación,2.398529942,2.398529942,0.000e+00,5e-04,OK
+F2,n=5 alpha=0.003 BPC validación,2.318298625,2.318298625,0.000e+00,5e-04,OK
+F2,n=5 alpha=0.01 BPC validación,2.239564812,2.239564812,0.000e+00,5e-04,OK
+F2,n=5 alpha=0.03 BPC validación,2.19016767,2.19016767,0.000e+00,5e-04,OK
+F2,n=5 alpha=0.1 BPC validación,2.193725522,2.193725522,0.000e+00,5e-04,OK
+F2,n=5 alpha=0.3 BPC validación,2.29514318,2.29514318,0.000e+00,5e-04,OK
+F2,n=5 alpha=1.0 BPC validación,2.565689716,2.565689716,0.000e+00,5e-04,OK
+F2,n=5 alpha óptimo (índice),0.03,0.03,0.000e+00,0e+00,OK
+T3,n=1 alpha reportado,1,1,0.000e+00,0e+00,OK
+T3,n=1 BPC entrenamiento,4.059162759,4.059162759,0.000e+00,1e-06,OK
+T3,n=1 BPC prueba,4.053576307,4.053576307,0.000e+00,1e-06,OK
+T3,n=1 PPL prueba,16.60535093,16.60535093,0.000e+00,1e-06,OK
+T3,n=2 alpha reportado,0.001,0.001,0.000e+00,0e+00,OK
+T3,n=2 BPC entrenamiento,3.235428842,3.235428842,0.000e+00,1e-06,OK
+T3,n=2 BPC prueba,3.212248311,3.212248311,0.000e+00,1e-06,OK
+T3,n=2 PPL prueba,9.267937476,9.267937476,0.000e+00,1e-06,OK
+T3,n=3 alpha reportado,0.1,0.1,0.000e+00,0e+00,OK
+T3,n=3 BPC entrenamiento,2.687248434,2.687248434,0.000e+00,1e-06,OK
+T3,n=3 BPC prueba,2.722348462,2.722348462,0.000e+00,1e-06,OK
+T3,n=3 PPL prueba,6.599462202,6.599462202,0.000e+00,1e-06,OK
+T3,n=4 alpha reportado,0.03,0.03,0.000e+00,0e+00,OK
+T3,n=4 BPC entrenamiento,2.153823025,2.153823025,0.000e+00,1e-06,OK
+T3,n=4 BPC prueba,2.346130171,2.346130171,0.000e+00,1e-06,OK
+T3,n=4 PPL prueba,5.084585507,5.084585507,0.000e+00,1e-06,OK
+T3,n=5 alpha reportado,0.03,0.03,0.000e+00,0e+00,OK
+T3,n=5 BPC entrenamiento,1.731994713,1.731994713,0.000e+00,1e-06,OK
+T3,n=5 BPC prueba,2.251389702,2.251389702,0.000e+00,1e-06,OK
+T3,n=5 PPL prueba,4.761412767,4.761412767,0.000e+00,1e-06,OK
+Gibbs,H(p) de prueba,4.047142925,4.047142925,0.000e+00,1e-09,OK
+Gibbs,"H(p,q) de prueba",4.053576307,4.053576307,0.000e+00,1e-09,OK
+Gibbs,"KL = H(p,q) - H(p)",0.006433382023,0.006433382023,0.000e+00,1e-09,OK
+Gibbs,"H(p) <= H(p,q)",4.047142925,4.053576307,6.433e-03,0,OK
+F5,desviación máxima de filas,2.22e-16,2.220446049e-16,4.460e-20,1e-15,OK
+F5,entrada mínima de P,2.207e-08,2.206530018e-08,4.700e-12,1e-11,OK
+F5,iteraciones hasta 1e-10,22,22,0.000e+00,0e+00,OK
+F5,última diferencia L1,3.35e-11,3.351323976e-11,1.324e-14,1e-11,OK
+F5,suma de pi,1,1,6.661e-16,1e-12,OK
+F5,diferencia máxima pi vs unigramas,3.71e-06,3.713994065e-06,3.994e-09,1e-08,OK
+F5,distancia L1 pi vs unigramas,9.05e-06,9.050263552e-06,2.636e-10,1e-08,OK
+T4,número de bloques,16,16,0.000e+00,0e+00,OK
+T4,caracteres cubiertos,31579,31579,0.000e+00,0e+00,OK
+T4,media de Delta_j,0.092644,0.09264418227,1.823e-07,1e-06,OK
+T4,bloques con Delta_j > 0,14,14,0.000e+00,0e+00,OK
+T4,IC 95 % inferior,0.055343,0.05534260865,3.914e-07,1e-06,OK
+T4,IC 95 % superior,0.125915,0.1259146209,3.791e-07,1e-06,OK
+T4,el IC excluye el cero,1,1,0.000e+00,0e+00,OK
+T4,BPC n=4 ponderado = T3,2.34613,2.346130171,1.711e-07,1e-05,OK
+T4,BPC n=5 ponderado = T3,2.25139,2.251389702,2.983e-07,1e-05,OK
+T5,n=2 longitud total,306,306,0.000e+00,0e+00,OK
+T5,n=2 semilla,2026,2026,0.000e+00,0e+00,OK
+T5,n=2 prefijo,1,1,0.000e+00,0e+00,OK
+T5,n=3 longitud total,306,306,0.000e+00,0e+00,OK
+T5,n=3 semilla,2026,2026,0.000e+00,0e+00,OK
+T5,n=3 prefijo,1,1,0.000e+00,0e+00,OK
+T5,n=5 longitud total,306,306,0.000e+00,0e+00,OK
+T5,n=5 semilla,2026,2026,0.000e+00,0e+00,OK
+T5,n=5 prefijo,1,1,0.000e+00,0e+00,OK

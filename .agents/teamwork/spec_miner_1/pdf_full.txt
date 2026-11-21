@@ -1,0 +1,663 @@
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+Curso de Probabilidad · Licenciatura en Computación · Quinto semestre
+
+Proyecto de Probabilidad:
+modelos de lenguaje de n-gramas
+Basado en la sección S01 «El lenguaje como distribución de probabilidad» del libro
+Modelos de Lenguaje de Gran Escala (Dr. José G. Marcano)
+Noviembre de 2026
+En una línea. Cada equipo construye, evalúa y compara modelos probabilísticos que predicen el
+siguiente carácter de un texto en español, y entrega un reporte técnico cuyas cifras se reproducen con
+su propio código.
+
+1. Presentación
+El proyecto aplica la sección S01 del libro a un curso de probabilidad para estudiantes de Computación
+de quinto semestre.
+Pregunta central. ¿Cuánto mejora la predicción del siguiente carácter al aumentar la memoria del
+modelo (el orden n de un modelo de n-gramas) y a partir de qué orden deja de compensar por falta
+de datos?
+Objetivos de aprendizaje. Al terminar, el estudiante podrá:
+1. Escribir la probabilidad de una secuencia con la regla de la cadena y simplificarla bajo la
+hipótesis de Markov.
+2. Estimar probabilidades condicionales por máxima verosimilitud (frecuencias relativas) y explicar
+por qué asignan probabilidad cero a lo no observado.
+3. Corregir los ceros con suavizado aditivo y elegir su parámetro con datos de validación, nunca
+con los de prueba.
+4. Medir la calidad predictiva con entropía cruzada, bits por carácter (BPC) y perplejidad (PPL),
+y comprobar numéricamente la desigualdad de Gibbs.
+5. Simular la cadena estimada y comparar su distribución estacionaria con las frecuencias del
+texto.
+6. Cuantificar la incertidumbre de una comparación entre modelos con bootstrap, y redactar un
+reporte que separe lo verificado de lo ilustrativo.
+Modalidad. Equipos de 2 o 3 personas; duración sugerida de 4 semanas; Python (recomendado) o R.
+No se necesita una unidad de procesamiento gráfico (GPU) ni bibliotecas de aprendizaje profundo.
+
+2. Conceptos de S01 que usa el proyecto
+Todo el proyecto se apoya en ocho ideas de probabilidad de la sección S01; el reporte debe definirlas
+antes de usarlas, con la notación de la tabla 1. Los números remiten al libro.
+
+1
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+Tabla 1: Conceptos de S01 y su definición operativa.
+Concepto
+
+Definición operativa
+
+En el libro
+
+Vocabulario V
+
+Conjunto finito de símbolos que el modelo puede predecir
+(aquí, caracteres); su tamaño es |V|
+La probabilidad de una secuencia es el producto de las
+condicionales de cada símbolo dados los anteriores
+Cadena de Markov de orden n − 1: cada carácter depende
+solo de los n − 1 anteriores (su contexto)
+Estimar cada condicional por frecuencia relativa: conteo del
+par (contexto, símbolo) entre conteo del contexto
+Sumar α > 0 a cada conteo para que nada tenga
+probabilidad cero
+Incertidumbre media de una distribución; costo medio, en
+bits, de codificar datos de p con un modelo q
+
+Def. 1.1.1
+
+Regla de la cadena
+Modelo de n-gramas
+Máxima verosimilitud
+(MLE)
+Suavizado aditivo
+Entropía y entropía
+cruzada
+BPC y perplejidad
+Bootstrap
+
+Media de − log2 q por carácter evaluado, y 2 elevado a esa
+media
+Remuestrear con reemplazo unidades independientes para
+estimar la variabilidad de un estadístico
+
+Prop. 1.1.3
+Def. 1.1.6
+Prop. 1.1.8
+Prop. 1.1.14
+§1.1.4, Prop. 1.1.15,
+Def. 1.1.17,
+Prop. 1.1.18
+Def. 1.1.20,
+Prop. 1.1.42
+Def. 1.1.44
+
+Las cuatro fórmulas que se programan son las siguientes, donde xt es el carácter en la posición t, c(·)
+un conteo en el texto de entrenamiento, h un contexto y Ne el número de caracteres evaluados:
+q(x1:T ) =
+
+T
+Y
+
+
+
+q xt | xt−n+1:t−1 ,
+
+(1)
+
+t=1
+
+c(h, y) + α
+,
+α = 0 es la MLE,
+c(h) + α |V|
+
+1 X
+BPC = −
+log2 q̂α xt | xt−n+1:t−1 ,
+PPL = 2BPC ,
+Ne t
+
+q̂α (y | h) =
+
+H(p) = −
+
+X
+
+pi log2 pi ≤ H(p, q) = −
+
+i
+
+X
+
+pi log2 qi
+
+(2)
+(3)
+
+(desigualdad de Gibbs, Teo. 1.1.27). (4)
+
+i
+
+Nivel del curso. Se suponen conocidas la probabilidad condicional, la independencia, la esperanza
+y la ley de los grandes números. La interpretación bayesiana del suavizado (distribución de Dirichlet,
+Teo. 1.1.12 y Prop. 1.1.13) es opcional; quien no la haya visto la trata como una regla de estimación.
+
+3. Datos y herramientas
+Cada equipo trabaja con un texto en español de al menos 300 000 caracteres, de dominio público o
+con licencia que permita su uso, aprobado por el profesor en la semana 1.
+Fuente sugerida. Una obra en español de Project Gutenberg (https://www.gutenberg.org). Se
+elimina el preámbulo y la licencia del archivo, y se registran en el reporte el título, el autor, la URL
+y la fecha de descarga. Dos equipos no pueden usar la misma obra.
+Normalización obligatoria (documentada en el reporte):
+2
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+1. Pasar a minúsculas y reemplazar cualquier carácter fuera del alfabeto elegido por un único
+símbolo especial, por ejemplo «#»; el alfabeto elegido (letras con tildes, ñ, dígitos, signos) se
+declara en el reporte.
+2. Colapsar los espacios y saltos de línea repetidos en un solo espacio.
+3. Fijar el vocabulario V a partir del texto de entrenamiento y reportar |V| (típicamente entre 30
+y 45 símbolos).
+Partición. El texto se divide en tres bloques contiguos: 80 % entrenamiento, 10 % validación y
+10 % prueba, en ese orden. No se mezclan caracteres ni oraciones al azar: un texto tiene dependencia
+entre posiciones vecinas, y mezclar filtraría información del entrenamiento a la evaluación. El bloque
+de prueba se usa una sola vez, al final.
+Herramientas permitidas. Python 3 con la biblioteca estándar, NumPy, pandas y Matplotlib, o R
+base con ggplot2. Los conteos, el suavizado, las métricas, la simulación y el bootstrap los programa
+el equipo.
+No permitido. Bibliotecas que ya implementen modelos de lenguaje o n-gramas (por ejemplo, el
+módulo lm de NLTK o KenLM), redes neuronales y modelos de lenguaje de terceros para producir
+resultados. El uso de asistentes de inteligencia artificial para redactar o depurar se permite solo si se
+declara (sección 7).
+Prueba de cordura obligatoria. Antes de usar el corpus, el código debe reproducir las cifras de
+la tabla 2 con el texto de juguete abracadabra (cifras verificadas con Python).
+Tabla 2: Valores esperados para el texto abracadabra.
+Magnitud
+
+Valor esperado
+
+Conteos de unigramas
+Entropía de las frecuencias de unigramas
+q̂(b | a) por MLE (bigramas)
+q̂α (b | a) con α = 1 y |V| = 5
+BPC del bigrama MLE sobre sus 10 transiciones
+PPL correspondiente
+
+a 5, b 2, r 2, c 1, d 1
+2.0404 bits
+0.5
+1/3 ≈ 0.3333
+0.6 bits
+1.5157
+
+4. Tareas del proyecto
+El proyecto tiene seis fases obligatorias y una opcional; cada fase produce al menos una tabla (T) o
+una figura (F) que va al reporte. Las preguntas en cursiva deben responderse explícitamente en la
+sección de discusión del reporte.
+
+3
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+Texto en español
+
+Normalizar y partir
+
+Conteos y MLE
+
+Suavizado aditivo
+
+≥ 300 000 caracteres
+
+80/10/10, contiguo
+
+n = 1, . . . , 5 (F1–F2)
+
+malla de α (F3)
+
+Reporte
+
+Bootstrap
+
+Prueba, una sola vez
+
+Elegir α y n
+
+T1–T4 y F1–F5
+
+bloques de 2000 (F6)
+
+BPC y PPL (F4–F5)
+
+mínimo BPC de validación
+
+Figura 1: Flujo del proyecto. Todas las decisiones (α y el orden n) se toman con validación; el bloque
+de prueba solo se usa al final. La simulación de la Fase 5 usa el modelo de bigramas ya suavizado.
+(Fk = Fase k.)
+
+Fase 1. Explorar el corpus
+Contar caracteres en cada partición y la frecuencia de cada símbolo de V en entrenamiento.
+Calcular la entropía de las frecuencias de unigramas, H(p̂), y compararla con log2 |V|, su
+máximo posible (Prop. 1.1.15).
+T1: tamaño de cada partición y |V|. F1: frecuencias de los símbolos, ordenadas de mayor a
+menor.
+¿Qué tan lejos está el texto de ser «al azar» sobre su alfabeto? Interprete la diferencia en bits.
+Fase 2. Estimar por máxima verosimilitud
+Programar los conteos de contextos y de pares (contexto, símbolo) para n = 1, 2, 3, 4, 5, y las
+condicionales MLE.
+Comprobar que cada condicional suma 1 sobre V (tolerancia 10−12 ).
+Calcular la log-verosimilitud del entrenamiento con la MLE y con dos perturbaciones (mover
+0.01 de probabilidad entre dos símbolos de un contexto frecuente): la MLE debe dar la mayor
+(Prop. 1.1.8).
+Para las primeras n − 1 posiciones de validación y de prueba, tomar como contexto el final de
+la partición anterior. Medir en validación la proporción de caracteres a los que el modelo MLE
+asigna probabilidad cero, para cada n.
+T2: contextos distintos observados y proporción de ceros en validación, por n.
+¿Por qué el BPC de la MLE en validación es infinito en cuanto aparece un cero? ¿Por qué
+crece la proporción de ceros con n?
+Fase 3. Suavizar y elegir α con validación
+Implementar el suavizado aditivo (2) para α ∈ {0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1}.
+Para cada n, elegir el α que minimiza el BPC de validación.
+F2: BPC de validación contra α (eje horizontal logarítmico), una curva por n.
+¿Por qué el α óptimo cambia con n? ¿Qué ocurre con α = 1 en contextos que aparecen pocas
+veces?
+Opcional: mostrar que, con dos símbolos y distribución previa Beta(α, α), la media predictiva
+posterior coincide con la fórmula (2) (caso particular de la Prop. 1.1.14).
+
+4
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+Fase 4. Evaluar en prueba y comprobar la teoría
+Elegir el mejor n por el BPC de validación. Con el α elegido para cada n, calcular una sola
+vez el BPC y la PPL de prueba, y el BPC de entrenamiento.
+Comprobar la desigualdad de Gibbs (4) con el modelo de unigramas: H(p̂prueba ) ≤ H(p̂prueba , q̂),
+y calcular la divergencia de Kullback–Leibler (KL) como diferencia de ambas (Def. 1.1.17).
+Graficar el promedio acumulado de − log2 q̂ a lo largo del texto de prueba: debe estabilizarse,
+como predice la ley de los grandes números.
+T3: BPC de entrenamiento, BPC y PPL de prueba y α elegido, por n. F3: BPC de entrenamiento y de prueba contra n en la misma gráfica. F4: promedio acumulado.
+¿Qué n elige la validación y confirma la prueba ese orden? ¿Por qué el BPC de entrenamiento
+sigue bajando cuando el de prueba ya no?
+Fase 5. Simular la cadena y su distribución estacionaria
+Con el modelo de bigramas suavizado, construir la matriz de transición P de tamaño |V| × |V|
+y comprobar que sus filas suman 1 y sus entradas son positivas.
+Calcular su distribución estacionaria π por iteración de potencias (π0 P t ) hasta que la norma
+ℓ1 entre iteraciones sea menor que 10−10 (Teo. 1.1.40), y compararla con las frecuencias de
+unigramas.
+Generar con semilla fija 3 muestras de 300 caracteres con los modelos n = 2, 3 y 5, partiendo
+del mismo contexto inicial.
+F5: π frente a las frecuencias de unigramas. Anexo: las muestras generadas, con la semilla.
+¿Por qué π se parece a las frecuencias del texto? ¿Qué propiedades del español capturan las
+muestras y cuáles no?
+Fase 6. Cuantificar la incertidumbre
+Dividir el texto de prueba en bloques contiguos de 2000 caracteres y calcular, en cada bloque
+j, la diferencia ∆j entre el BPC de dos modelos (el mejor n frente a n − 1).
+Construir un intervalo bootstrap percentil del 95 % para la media de las ∆j con 10 000
+remuestras y semilla fija (Def. 1.1.44).
+T4: media de las ∆j , intervalo y número de bloques.
+¿El intervalo excluye el cero? ¿Por qué se remuestrean bloques y no caracteres individuales?
+Fase 7 (opcional, hasta 10 puntos extra). Tokenización por pares de bytes
+Implementar 200 fusiones de codificación por pares de bytes (Byte Pair Encoding, BPE;
+Def. 1.1.2) y entrenar un bigrama de tokens.
+Reportar su BPC por carácter (bits totales del texto de prueba entre su número de caracteres)
+para compararlo de forma justa con la Fase 4.
+
+5. Formato del reporte entregable
+El entregable es un reporte técnico en PDF de 10 a 14 páginas (sin contar anexos), más el código
+que reproduce cada cifra; se califica tanto el contenido como el cumplimiento de este formato.
+5
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+5.1 Estructura obligatoria
+Tabla 3: Estructura del reporte.
+Sección
+
+Qué debe contener
+
+Extensión
+
+Portada
+
+Título, curso, número de equipo, integrantes con cédula,
+profesor, fecha
+Pregunta, datos, método, resultado principal con su número
+(mejor n y su BPC de prueba)
+Problema de predecir el siguiente carácter, pregunta central,
+organización del reporte
+Definiciones de la sección 2 de este enunciado con notación
+propia y consistente; deducción de la MLE (puede ir al Anexo
+A)
+Obra, URL, fecha de descarga, licencia, normalización, V y
+partición; T1 y F1
+Modelos, suavizado, selección de α, métricas, simulación y
+bootstrap, con suficiente detalle para repetirlos
+T2–T4 y F2–F5, cada una citada y comentada en el texto
+Prueba de cordura con abracadabra, sumas de condicionales,
+desigualdad de Gibbs, convergencia de π: qué se comprobó y
+con qué tolerancia
+Respuestas a las preguntas en cursiva de la sección 4; qué no
+permiten concluir los datos
+Respuesta a la pregunta central en 3 a 5 oraciones
+Libro del curso y toda fuente consultada, con formato uniforme
+Deducción de la MLE con multiplicador de Lagrange y, si se
+hizo, la opción bayesiana
+Reproducibilidad: versiones de software, semillas, comandos y
+tiempo de ejecución
+Muestras generadas (Fase 5) y declaración de uso de IA
+
+1 pág.
+
+Resumen
+1. Introducción
+2. Marco
+probabilístico
+3. Datos
+4. Métodos
+5. Resultados
+6. Verificaciones
+
+7. Discusión y
+limitaciones
+8. Conclusiones
+Referencias
+Anexo A
+Anexo B
+Anexo C
+
+≤ 200 palabras
+½–1 pág.
+2–3 pág.
+
+1 pág.
+1–2 pág.
+3–4 pág.
+½–1 pág.
+
+1–2 pág.
+½ pág.
+—
+libre
+libre
+libre
+
+5.2 Presentación
+Tamaño carta, márgenes de 2.5 cm, letra de 11 pt, interlineado 1.15, páginas numeradas.
+Se recomienda LaTeX; se acepta un procesador de texto si las fórmulas usan su editor de
+ecuaciones. Las fórmulas importantes van numeradas y centradas.
+Punto como separador decimal y 4 cifras significativas para BPC y PPL (por ejemplo, 2.153
+bits).
+Toda tabla lleva título arriba y toda figura lleva leyenda abajo; ambas se numeran, se citan en
+el texto antes de aparecer e indican unidades (bits, caracteres).
+Las figuras se generan con código, con ejes rotulados y legibles al imprimir en blanco y negro;
+no se aceptan capturas de pantalla.
+Todo número del reporte sale de una ejecución del código entregado. Un número construido a
+mano para explicar algo se rotula ilustrativo.
+No se pega código en el cuerpo del reporte; solo fragmentos de 15 líneas o menos cuando
+aclaran un paso.
+6
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+5.3 Archivos que se entregan
+Un único archivo comprimido llamado P1_EquipoNN_Apellido1_Apellido2.zip (NN = número de
+equipo, dos dígitos), con esta estructura:
+P1_EquipoNN_Apellido1_Apellido2/
+|-- reporte.pdf
+|-- README.md
+# cómo ejecutar todo, en el orden correcto
+|-- requirements.txt
+# o sessionInfo.txt si se usó R
+|-- datos/
+|
+‘-- FUENTE.md
+# título, URL y fecha de descarga (no subir el texto)
+|-- codigo/
+|
+|-- preparar.py
+# lectura, normalización y partición
+|
+|-- modelos.py
+# conteos, MLE, suavizado, métricas
+|
+|-- experimentos.py # fases 1 a 6; escribe resultados/
+|
+‘-- pruebas.py
+# prueba de cordura y comprobaciones
+‘-- resultados/
+# tablas (.csv) y figuras (.pdf o .png) del reporte
+
+Criterio de reproducibilidad: en un equipo limpio, ejecutar los comandos del README.md debe
+regenerar todas las tablas y figuras del reporte en menos de 10 minutos.
+5.4 Lista de comprobación antes de entregar
+□ El resumen da el mejor n y su BPC de prueba con su intervalo bootstrap.
+□ Cada símbolo y término está definido antes de su primer uso.
+□ El bloque de prueba se usó una sola vez y el reporte lo dice.
+□ pruebas.py reproduce las cifras de abracadabra y pasa sin errores.
+□ Las tablas T1–T4 y las figuras F1–F5 están numeradas, citadas y comentadas.
+□ Cada pregunta en cursiva de la sección 4 tiene respuesta en la sección 7 del reporte.
+□ Las referencias incluyen la obra usada y el libro del curso.
+□ El nombre del archivo y la estructura de carpetas siguen la sección 5.
+
+6. Criterios de evaluación
+El proyecto vale 100 puntos, más hasta 10 de la Fase 7; un reporte sin código que reproduzca sus
+cifras obtiene como máximo 50.
+
+7
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+Tabla 4: Rúbrica de evaluación.
+Criterio
+
+Pts.
+
+Excelente (90–100 %)
+
+Suficiente (60–89 %)
+
+Insuficiente (< 60 %)
+
+Marco
+probabilístico y
+deducciones
+
+20
+
+Definiciones correctas
+antes de su uso; MLE
+deducida paso a paso;
+notación consistente
+
+Definiciones correctas
+con omisiones
+menores o pasos sin
+justificar
+
+Conceptos
+confundidos (p. ej.,
+entropía y entropía
+cruzada) o fórmulas
+sin explicar
+
+Implementación y
+verificaciones
+
+20
+
+Prueba de cordura,
+sumas, Gibbs y
+convergencia de π
+comprobadas con
+tolerancias declaradas
+
+Comprobaciones
+parciales
+
+Sin comprobaciones,
+o cifras que no
+coinciden con
+abracadabra
+
+Resultados y
+análisis
+
+25
+
+T1–T4 y F1–F5
+completas; preguntas en
+cursiva respondidas con
+argumentos
+probabilísticos
+
+Resultados completos
+con análisis
+superficial
+
+Resultados
+incompletos o sin
+interpretar
+
+Incertidumbre y
+protocolo
+
+10
+
+Prueba usada una vez;
+bootstrap por bloques
+bien justificado;
+conclusión acorde al
+intervalo
+
+Bootstrap correcto
+con justificación débil
+
+α o n elegidos con
+prueba, o
+conclusiones sin
+incertidumbre
+
+Reproducibilidad
+
+10
+
+README.md y semillas
+regeneran todo en
+menos de 10 minutos
+
+Se regenera con
+ajustes menores
+
+No se puede ejecutar
+
+Redacción y
+formato
+
+15
+
+Cumple la sección 5
+completa; texto claro y
+preciso
+
+Incumplimientos
+menores de formato
+
+Fuera de extensión, o
+tablas y figuras sin
+numerar ni citar
+
+Fase 7 (opcional)
+
++10
+
+BPE correcto y
+comparación justa por
+carácter
+
+Implementación con
+comparación
+discutible
+
+—
+
+Penalizaciones. −10 puntos por día de retraso, hasta un máximo de dos días. Usar el bloque de
+prueba para elegir α o n anula el criterio de incertidumbre y protocolo (10 puntos).
+
+7. Calendario, entrega e integridad
+El proyecto dura cuatro semanas con dos revisiones breves; el profesor fija las fechas al publicar el
+enunciado.
+
+8
+
+Proyecto de Probabilidad · Modelos de lenguaje de n-gramas
+
+Basado en la sección S01
+
+Tabla 5: Calendario sugerido.
+Semana
+1
+2
+3
+4
+
+Trabajo
+
+Se entrega
+
+Elegir la obra, normalizar, particionar; Fase 1;
+prueba de cordura
+Fases 2 y 3
+
+Obra elegida (para aprobación) y salida de
+pruebas.py
+Revisión 1: T2 y F2 en borrador (10 minutos de
+consulta por equipo)
+Revisión 2: T3, T4 y F3–F5 en borrador
+Archivo final (sección 5)
+
+Fases 4, 5 y 6
+Redacción del reporte y revisión cruzada de
+reproducibilidad
+
+Trabajo en equipo. El reporte incluye al final una tabla breve con la contribución de cada integrante.
+Cualquier integrante debe poder explicar cualquier parte del código y del reporte en una defensa
+oral de 10 minutos, que el profesor puede solicitar.
+Integridad académica. Se permite consultar el libro, la documentación de Python o R y otras
+fuentes, citándolas. El uso de asistentes de inteligencia artificial se declara en el Anexo C del reporte:
+herramienta, para qué se usó y qué se verificó por cuenta propia. Copiar código o texto de otro
+equipo, o presentar cifras que el código entregado no produce, anula el proyecto.
+
+Referencias
+Marcano, J. G. Modelos de Lenguaje de Gran Escala: fundamentos matemáticos, arquitecturas
+y aplicaciones, sección S01 «El lenguaje como distribución de probabilidad» (§§1.1.2–1.1.5 y
+Complementos de S01). Edición v0.9 del curso.
+Shannon, C. E. (1948). A Mathematical Theory of Communication. Bell System Technical Journal,
+27, 379–423 y 623–656. Origen de la entropía; incluye aproximaciones al inglés generadas con
+n-gramas de letras.
+Cover, T. M. y Thomas, J. A. (2006). Elements of Information Theory, 2.ª ed. Wiley. Entropía,
+entropía cruzada y divergencia KL.
+Efron, B. y Tibshirani, R. J. (1993). An Introduction to the Bootstrap. Chapman & Hall. Intervalos
+percentiles.
+Project Gutenberg: https://www.gutenberg.org. Fuente sugerida de textos en español de dominio
+público.
+
+9
+
+

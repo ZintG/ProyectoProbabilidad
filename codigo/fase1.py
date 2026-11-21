@@ -13,8 +13,9 @@ import matplotlib.pyplot as plt
 # 1. Definición de rutas del proyecto
 BASE_DIR = Path(__file__).resolve().parents[1]
 DIR_DATOS = BASE_DIR / "datos"
-DIR_FIGURAS = BASE_DIR / "figuras"
-DIR_TABLAS = BASE_DIR / "tablas"
+DIR_RESULTADOS = BASE_DIR / "resultados"
+DIR_FIGURAS = BASE_DIR / "figuras" if (BASE_DIR / "figuras").exists() else DIR_RESULTADOS
+DIR_TABLAS = BASE_DIR / "tablas" if (BASE_DIR / "tablas").exists() else DIR_RESULTADOS
 
 # Asegurar que existan las carpetas de salida
 DIR_FIGURAS.mkdir(exist_ok=True)

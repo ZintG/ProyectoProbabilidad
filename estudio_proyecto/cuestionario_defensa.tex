@@ -1,0 +1,272 @@
+\documentclass[11pt,letterpaper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-noshorthands,es-noquoting]{babel}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{geometry}
+\geometry{top=2cm,bottom=2cm,left=2cm,right=2cm}
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{array}
+\usepackage{float}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{fancyhdr}
+\usepackage{lastpage}
+\usepackage{tcolorbox}
+\usepackage[hidelinks]{hyperref}
+
+% Estilo de cajas para el cuestionario
+\tcbset{
+    sharp corners,
+    boxrule=0.8pt,
+    colback=white,
+    fonttitle=\bfseries,
+    before skip=6pt,
+    after skip=6pt
+}
+
+\newtcolorbox{qbox}[2]{
+    colback=blue!2!white,
+    colframe=blue!70!black,
+    title={Pregunta #1: #2}
+}
+
+\newtcolorbox{trapbox}[2]{
+    colback=red!2!white,
+    colframe=red!70!black,
+    title={Pregunta Trampa #1: #2}
+}
+
+% Encabezados y pies de página
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small \textsc{Cuestionario de Defensa} \textperiodcentered{} Teoría de la Probabilidad}
+\lhead{\small \textit{Modelos de $n$-gramas sobre Niebla}}
+\rfoot{\small Página \thepage\ de \pageref{LastPage}}
+\lfoot{\small Equipo 05 \textperiodcentered{} UC}
+\renewcommand{\headrulewidth}{0.5pt}
+\renewcommand{\footrulewidth}{0.5pt}
+
+\begin{document}
+
+% ---------------------------------------------------------------------
+%  PORTADA / ENCABEZADO
+% ---------------------------------------------------------------------
+\begin{center}
+    {\large \textbf{UNIVERSIDAD DE CARABOBO}}\\[2pt]
+    {\normalsize FACULTAD EXPERIMENTAL DE CIENCIAS Y TECNOLOGÍA (FACYT)}\\[2pt]
+    {\normalsize DEPARTAMENTO DE COMPUTACIÓN \textperiodcentered{} TEORÍA DE LA PROBABILIDAD}\\[10pt]
+    
+    \begin{tcolorbox}[colback=blue!8!white, colframe=blue!60!black, arc=3mm, width=\linewidth, halign=center]
+        \vspace{4pt}
+        {\Large \bfseries CUESTIONARIO INTEGRAL DE DEFENSA ORAL}\\[4pt]
+        {\large Banco de 31 Preguntas Clave: Teoría, Desarrollo, Métodos y Preguntas Trampa}\\[4pt]
+        {\small \textit{Simulación de interrogatorio de jurado con respuestas modelo, justificaciones matemáticas y errores a evitar}}
+        \vspace{4pt}
+    \end{tcolorbox}
+    \vspace{6pt}
+    
+    \textbf{Equipo 05:} Simón Tovar (31.678.578), Samuel Primera (21.129.684), Román Valero (33.638.501), Rolando Suárez (30.445.947)\\[2pt]
+    \textbf{Profesor:} Dr. José G. Marcano \textperiodcentered{} \textbf{Evaluación Técnica y Defensa:} Noviembre de 2026
+\end{center}
+
+\vspace{5pt}
+\hrule
+\vspace{10pt}
+
+\section*{Instrucciones para el Estudio en Equipo}
+Este documento simula las preguntas exactas que el profesor o jurado evaluador formulará durante la defensa oral del proyecto. Cada ficha incluye:
+\begin{itemize}[leftmargin=*, nosep]
+    \item \textbf{Respuesta Directa (Primeros 10 segundos):} La idea central que debe decirse con seguridad.
+    \item \textbf{Fundamentación Matemática / Metodológica:} El argumento técnico riguroso que respalda la respuesta.
+    \item \textbf{Trampa a Evitar:} El error conceptual común que el evaluador busca cazar para penalizar puntos.
+\end{itemize}
+
+---
+
+% ---------------------------------------------------------------------
+%  BLOQUE 1: PREGUNTAS OFICIALES DEL ENUNCIADO
+% ---------------------------------------------------------------------
+\section{Bloque 1: Las 11 Preguntas Oficiales del Enunciado (Sección 7)}
+
+\begin{qbox}{1.1}{Fase 1: ¿Qué tan lejos está el texto de ser «al azar» sobre su alfabeto?}
+\textbf{Respuesta Directa:} Está a $0.6957$ bits de distancia por carácter, lo que representa una redundancia del 14.63\,\%.\\[3pt]
+\textbf{Fundamento Matemático:} Si las 27 letras del alfabeto fueran perfectamente aleatorias y equiprobables, la entropía máxima sería $\log_2(|\mathcal{V}|) = \log_2(27) = 4.7549$ bits. La entropía real de Unamuno en unigramas es $H(\hat{p}) = 4.0592$ bits. La diferencia ($4.7549 - 4.0592 = 0.6957$ bits) es la estructura intrínseca del idioma español (frecuencia dispar de vocales como la \texttt{'e'} y \texttt{'a'} frente a consonantes raras como la \texttt{'k'}).\\[3pt]
+\textbf{Trampa a Evitar:} No decir que la entropía mide ``el desorden de las palabras''; mide la incertidumbre promedio al emitir un carácter individual sin memoria previa.
+\end{qbox}
+
+\begin{qbox}{1.2}{Fase 2: ¿Por qué el BPC de la MLE en validación es infinito en cuanto aparece un cero?}
+\textbf{Respuesta Directa:} Porque el BPC promedia $-\log_2 \hat{q}(y|h)$, y cuando $\hat{q}=0$, el logaritmo vale $-\infty$, haciendo que $-\log_2(0) = +\infty$.\\[3pt]
+\textbf{Fundamento Matemático:} La métrica BPC (bits por carácter) es una media aritmética: $\text{BPC} = -\frac{1}{T}\sum \log_2 \hat{q}(x_t \mid h_t)$. Aunque $31\,577$ caracteres tengan probabilidades positivas, un solo evento observado con probabilidad estimada cero aporta un sumando infinito: $\frac{1}{T}(\text{finito} + \infty) = +\infty$. No es un desbordamiento numérico: el modelo declara formalmente imposible algo que en la realidad ocurrió.\\[3pt]
+\textbf{Trampa a Evitar:} No decir que es un ``error de división por cero en Python''. Es una inconsistencia teórica de la asignación de probabilidad nula a eventos del soporte.
+\end{qbox}
+
+\begin{qbox}{1.3}{Fase 2: ¿Por qué crece la proporción de ceros al aumentar el orden $n$?}
+\textbf{Respuesta Directa:} Por la explosión combinatoria del espacio de contextos ($27^{n-1}$) frente a un texto de entrenamiento de tamaño fijo.\\[3pt]
+\textbf{Fundamento Matemático:} Para $n=1$, hay 1 contexto (ninguno) y 0 ceros. Para $n=2$, hay 27 contextos y 0 ceros en validación. Para $n=3$, hay 729 contextos y 50 ceros (0.16\,\%). Para $n=4$, hay $19\,683$ contextos y 491 ceros (1.55\,\%). Para $n=5$, hay $531\,441$ contextos posibles y $2\,171$ ceros (6.88\,\%). La masa de datos se diluye entre un número astronómico de casillas vacías.\\[3pt]
+\textbf{Trampa a Evitar:} No afirmar que $n=2$ tuvo ceros; los datos empíricos de \textit{Niebla} demostraron que los 413 bigramas de validación ya estaban presentes en el entrenamiento. El problema de ceros comenzó en $n=3$.
+\end{qbox}
+
+\begin{qbox}{1.4}{Fase 3: ¿Por qué el $\alpha$ óptimo cambia con el orden $n$?}
+\textbf{Respuesta Directa:} Porque representa el balance óptimo entre evitar pagar penalizaciones infinitas en contextos raros y no distorsionar lo aprendido en contextos frecuentes.\\[3pt]
+\textbf{Fundamento Matemático:} El costo de suavizado viene dado por la masa $\alpha |\mathcal{V}| = 27\alpha$ en el denominador $c(h) + 27\alpha$. En $n=2$, el conteo promedio por contexto es muy alto ($\sim 9\,357$), por lo que un $\alpha$ diminuto ($0.001$) basta para eliminar ceros sin alterar las frecuencias relativas. En $n=5$, el conteo promedio por contexto cae a solo $\sim 16$; allí los ceros son abundantes (6.88\,\%) y se requiere un $\alpha$ mayor ($0.030$) para amortiguar la incertidumbre.\\[3pt]
+\textbf{Trampa a Evitar:} Creer que $\alpha$ siempre debe aumentar monótonamente con $n$. Para $n=1$, $\alpha^*=1.0$ porque al no haber contexto previo y tener $252\,626$ muestras, el denominador $N + 27\alpha$ es insensible al valor de $\alpha$.
+\end{qbox}
+
+\begin{qbox}{1.5}{Fase 3: ¿Qué ocurre con $\alpha = 1$ (Laplace) en contextos poco frecuentes?}
+\textbf{Respuesta Directa:} Provoca un sobre-suavizado severo (\textit{over-smoothing}) que aplana artificialmente la distribución y destruye la información aprendida.\\[3pt]
+\textbf{Fundamento Matemático:} Si un contexto $h$ ocurrió una única vez ($c(h)=1$) y produjo el carácter $y$, con $\alpha=1$ la probabilidad asignada es $\hat{q}(y|h) = \frac{1+1}{1+27} = \frac{2}{28} \approx 0.071$. El modelo le quita el 93\,\% de la probabilidad a la letra efectivamente vista para repartirla uniformemente entre las 26 letras restantes no vistas. En validación, usar $\alpha=1$ empeoró el BPC en $+0.3755$ bits en $n=5$.\\[3pt]
+\textbf{Trampa a Evitar:} Responder simplemente que ``funciona mal''. Debe mencionarse la fracción matemática $2/28$ para demostrar dominio cuantitativo.
+\end{qbox}
+
+\begin{qbox}{1.6}{Fase 4: ¿Qué orden $n$ elige la validación y confirma la prueba ese orden?}
+\textbf{Respuesta Directa:} Ambos conjuntos eligen de forma unánime e independiente a $n=5$.\\[3pt]
+\textbf{Fundamento Matemático:} En validación, $n=5$ obtuvo un BPC de $2.1902$ bits (frente a $2.2612$ en $n=4$). En prueba ciega, $n=5$ obtuvo $2.2514$ bits (frente a $2.3461$ en $n=4$). La diferencia entre validación y prueba para $n=5$ fue de apenas $0.0612$ bits (un 2.8\,\%), confirmando la estabilidad del modelo y la ausencia de sorpresas.\\[3pt]
+\textbf{Trampa a Evitar:} Decir que se reajustó algún parámetro después de ver el bloque de prueba. El bloque de prueba solo se evaluó una vez y confirmó la decisión tomada en validación.
+\end{qbox}
+
+\begin{qbox}{1.7}{Fase 4: ¿Por qué el BPC de entrenamiento sigue bajando cuando el de prueba ya no baja al mismo ritmo?}
+\textbf{Respuesta Directa:} Es la manifestación clásica del sobreajuste (\textit{overfitting}) o memorización de secuencias.\\[3pt]
+\textbf{Fundamento Matemático:} En entrenamiento, al aumentar $n$, el modelo memoriza combinaciones de 5 letras exactas del texto, haciendo que el BPC caiga en picada: $4.059 \to 3.235 \to 2.687 \to 2.154 \to 1.732$ bits. Sin embargo, en prueba aparecen contextos de 4 letras que no estaban en el entrenamiento; esos contextos caen a la distribución casi uniforme de suavizado ($1/27$, que cuesta $\log_2(27) = 4.755$ bits). Por eso el BPC de prueba se frena en $2.251$ bits, abriendo una brecha de generalización de $0.52$ bits.\\[3pt]
+\textbf{Trampa a Evitar:} No confundir sobreajuste con error de programación. El sobreajuste es un fenómeno estadístico inevitable cuando la capacidad del modelo supera la densidad de los datos.
+\end{qbox}
+
+\begin{qbox}{1.8}{Fase 5: ¿Por qué la distribución estacionaria $\pi$ coincide con las frecuencias de unigramas?}
+\textbf{Respuesta Directa:} Porque la matriz estocástica $P$ se construyó a partir de las transiciones del texto, cuya distribución marginal invariante son precisamente los unigramas.\\[3pt]
+\textbf{Fundamento Matemático:} Una cadena de Markov homogénea irreducible y aperiódica posee una única distribución estacionaria $\pi$ que cumple $\pi P = \pi$. Si definimos $P_{ij} = \frac{c(i,j)}{c(i)}$, entonces $\sum_i p(i) P_{ij} = \sum_i \frac{c(i)}{N} \frac{c(i,j)}{c(i)} = \frac{\sum_i c(i,j)}{N} = \frac{c(j)}{N} = p(j)$. Como $\alpha=0.001$ es casi cero, la perturbación es mínima: la diferencia máxima observada fue de solo $3.71 \times 10^{-6}$.\\[3pt]
+\textbf{Trampa a Evitar:} Decir que ``coincide de casualidad''. Coincide por el teorema de conservación de flujo de probabilidad en cadenas estacionarias.
+\end{qbox}
+
+\begin{qbox}{1.9}{Fase 6: ¿Qué limitación tiene la prueba de razón de verosimilitudes (LRT) para comparar $n=4$ y $n=5$?}
+\textbf{Respuesta Directa:} El Test de Razón de Verosimilitudes (LRT) exige modelos anidados y datos independientes IID; aquí ninguna de las dos condiciones se cumple.\\[3pt]
+\textbf{Fundamento Matemático:} Primero, el teorema de Wilks establece que $-2\ln\Lambda \sim \chi^2$ asumiendo que los parámetros del modelo nulo son un subconjunto del alternativo; los modelos con suavizado aditivo independiente no están anidados en sentido estricto. Segundo, el texto presenta una fuerte dependencia temporal de Markov, lo que invalida la distribución asintótica Chi-cuadrado.\\[3pt]
+\textbf{Trampa a Evitar:} Proponer usar LRT sin advertir que el estadístico inflaría falsamente los grados de libertad y daría un p-valor artificialmente nulo.
+\end{qbox}
+
+\begin{qbox}{1.10}{Fase 6: ¿Qué limitación tiene la prueba $t$ de Student para comparar los BPC en prueba?}
+\textbf{Respuesta Directa:} La prueba $t$ de Student exige observaciones independientes y diferencias con distribución normal; las pérdidas logarítmicas de caracteres consecutivos están altamente autocorrelacionadas y presentan colas pesadas.\\[3pt]
+\textbf{Fundamento Matemático:} La varianza de la media muestral $\text{Var}(\bar{D}) = \frac{\sigma^2}{N}$ supone independencia. Cuando existe correlación serial positiva ($\text{Cov}(D_t, D_{t+k}) > 0$), la varianza real es mucho mayor: $\text{Var}(\bar{D}) = \frac{\sigma^2}{N} \left[1 + 2\sum_{k=1}^\infty \rho_k\right]$. Aplicar una prueba $t$ tradicional subestimaría el error estándar y arrojaría intervalos de confianza artificialmente estrechos y falsamente optimistas.\\[3pt]
+\textbf{Trampa a Evitar:} Decir que la prueba $t$ no se puede usar por culpa del tamaño de muestra ($N=31\,579$). Con $31\,000$ datos el TCL aplica si fueran IID; el impedimento estricto es la dependencia serial.
+\end{qbox}
+
+\begin{qbox}{1.11}{Fase 6: ¿Por qué la unidad de remuestreo del bootstrap debe ser un bloque y no caracteres individuales?}
+\textbf{Respuesta Directa:} Porque remuestrear caracteres individuales destruye la memoria del lenguaje y rompe la dependencia de Markov; remuestrear bloques contiguos preserva intacta la estructura temporal interna.\\[3pt]
+\textbf{Fundamento Matemático:} Es el método de \textit{Block Bootstrap} (Künsch, 1989). Al remuestrear bloques de longitud $L=2\,000$ caracteres, la correlación serial dentro de cada bloque se mantiene idéntica a la original. Los 16 bloques actúan como unidades independientes entre sí, permitiendo estimar la verdadera variabilidad de la métrica sin sesgos.\\[3pt]
+\textbf{Trampa a Evitar:} Decir que los bloques se crearon para que el código corriera más rápido. Se crearon por necesidad matemática de preservar la autocorrelación.
+\end{qbox}
+
+---
+
+% ---------------------------------------------------------------------
+%  BLOQUE 2: FUNDAMENTOS TEÓRICOS Y MATEMÁTICOS
+% ---------------------------------------------------------------------
+\section{Bloque 2: Fundamentos Teóricos y Matemáticos del Curso}
+
+\begin{qbox}{2.1}{¿Qué es formalmente un modelo de lenguaje de $n$-gramas?}
+\textbf{Respuesta Directa:} Es un proceso estocástico que aproxima la probabilidad de una secuencia de símbolos asumiendo una cadena de Markov de orden $n-1$.\\[3pt]
+\textbf{Fundamento Matemático:} Por la regla de la cadena de probabilidades:
+$$P(X_1=x_1, \ldots, X_T=x_T) = \prod_{t=1}^T P(X_t=x_t \mid X_1=x_1, \ldots, X_{t-1}=x_{t-1})$$
+La hipótesis de Markov de orden $n-1$ postula que el símbolo presente solo depende de los $n-1$ símbolos precedentes:
+$$P(X_t=x_t \mid X_1^{t-1}) \approx P(X_t=x_t \mid X_{t-n+1}^{t-1})$$
+Para $n=1$ (unigrama), la memoria es cero (variables independientes). Para $n=2$ (bigrama), es una cadena de Markov clásica de orden 1. Para $n=5$ (pentagrama), la memoria es de 4 caracteres.
+\end{qbox}
+
+\begin{qbox}{2.2}{¿Qué es la Entropía de Shannon $H(X)$ y cuál es su significado físico e informacional?}
+\textbf{Respuesta Directa:} Es la medida fundamental de la incertidumbre promedio asociada a una variable aleatoria discreta, expresada en bits por símbolo.\\[3pt]
+\textbf{Fundamento Matemático:} $H(X) = -\sum_{x \in \mathcal{V}} p(x) \log_2 p(x)$. Representa el número mínimo teórico de bits necesarios para codificar o transmitir cada símbolo emitido por la fuente sin pérdida de información (Primer Teorema de Shannon para codificación de fuente).
+\end{qbox}
+
+\begin{qbox}{2.3}{¿Qué es la Entropía Cruzada $H(p,q)$ y cómo se relaciona con el BPC?}
+\textbf{Respuesta Directa:} La entropía cruzada mide la incertidumbre cuando la verdadera distribución del texto es $p$, pero usamos un modelo probabilístico $q$ para predecirla. El BPC es su estimador muestral empírico.\\[3pt]
+\textbf{Fundamento Matemático:} $H(p,q) = -\sum_{x} p(x) \log_2 q(x) = H(p) + D_{KL}(p \parallel q)$.\\
+Por el Teorema de Shannon-McMillan-Breiman, cuando evaluamos una secuencia larga ergodica $x_1, \ldots, x_T$, el promedio de la pérdida logarítmica converge casi seguramente a la entropía cruzada:
+$$\text{BPC} = -\frac{1}{T} \sum_{t=1}^T \log_2 q(x_t \mid h_t) \xrightarrow{a.s.} H(p,q)$$
+\end{qbox}
+
+\begin{qbox}{2.4}{¿Qué es la Perplejidad (PPL) y cómo se interpreta intuitivamente?}
+\textbf{Respuesta Directa:} Es la exponenciación en base 2 del BPC ($\text{PPL} = 2^{\text{BPC}}$) y representa el número equivalente de opciones equiprobables entre las que el modelo duda al predecir el siguiente carácter.\\[3pt]
+\textbf{Fundamento Matemático:} Si un modelo tiene $\text{BPC} = 2.251$ bits, su perplejidad es $2^{2.251} = 4.761$. Esto significa que la incertidumbre de nuestro modelo de $n=5$ al predecir cada letra es idéntica a la que tendría alguien intentando adivinar el resultado de un dado de menos de 5 caras equiprobables. Para unigramas ($n=1$), $\text{PPL} = 2^{4.054} = 16.61$, dudando entre casi 17 opciones.
+\end{qbox}
+
+\begin{qbox}{2.5}{¿Qué es la Desigualdad de Gibbs y cómo se comprobó en el proyecto?}
+\textbf{Respuesta Directa:} Establece que la entropía cruzada $H(p,q)$ nunca puede ser menor que la entropía verdadera $H(p)$, es decir, $H(p) \le H(p,q)$, con igualdad si y solo si $q = p$.\\[3pt]
+\textbf{Fundamento Matemático:} La diferencia es la divergencia de Kullback-Leibler: $D_{KL}(p \parallel q) = H(p,q) - H(p) \ge 0$. En la Fase 4 se calculó la distribución empírica de unigramas de la prueba ($p$) y se evaluó con el modelo de unigramas del entrenamiento ($q$). Resultado: $H(p) = 4.0471$ bits, $H(p,q) = 4.0536$ bits, $D_{KL} = 0.00643$ bits $\ge 0$. La ley se cumplió estrictamente.
+\end{qbox}
+
+\begin{qbox}{2.6}{¿Cómo se deduce la MLE usando multiplicadores de Lagrange?}
+\textbf{Respuesta Directa:} Maximizando la log-verosimilitud del corpus sujeta a la restricción de que las probabilidades salientes de cada contexto sumen 1.\\[3pt]
+\textbf{Fundamento Matemático:} Para un contexto fijo $h$, la función lagrangiana es:
+$$\mathcal{L}(q(\cdot \mid h), \lambda) = \sum_{y \in \mathcal{V}} c(h,y) \ln q(y \mid h) - \lambda \left(\sum_{y \in \mathcal{V}} q(y \mid h) - 1\right)$$
+Derivando e igualando a cero: $\frac{\partial \mathcal{L}}{\partial q(y \mid h)} = \frac{c(h,y)}{q(y \mid h)} - \lambda = 0 \implies q(y \mid h) = \frac{c(h,y)}{\lambda}$.\\
+Sumando sobre todo $y$: $\sum_y q(y \mid h) = \frac{\sum_y c(h,y)}{\lambda} = \frac{c(h)}{\lambda} = 1 \implies \lambda = c(h)$.\\
+Sustituyendo $\lambda$: $\hat{q}_{\text{MLE}}(y \mid h) = \frac{c(h,y)}{c(h)}$.
+\end{qbox}
+
+---
+
+% ---------------------------------------------------------------------
+%  BLOQUE 3: PREGUNTAS TRAMPA Y DEFENSA AGRESIVA
+% ---------------------------------------------------------------------
+\section{Bloque 3: Preguntas Trampa y de Juicio Crítico (Para sacar 20/20)}
+
+\begin{trapbox}{3.1}{«Si $n=5$ fue mejor que $n=4$, ¿por qué no probaron $n=6, 7$ o $n=10$?»}
+\textbf{Respuesta Maestra:} Por tres razones fundamentales: explosión combinatoria, saturación de la memoria y sobreajuste inevitable.\\[3pt]
+\textbf{Desarrollo:} Para $n=6$, el espacio de contextos es $27^5 = 14\,348\,907$ casillas; en un texto de solo $252\,626$ caracteres, la inmensa mayoría de contextos tendría conteo cero ($> 98$\,\% de ceros). Además, el rendimiento ya mostró rendimientos decrecientes: la ganancia de $n=1 \to 2$ fue de $0.842$ bits; de $n=2 \to 3$ fue $0.490$ bits; de $n=3 \to 4$ fue $0.376$ bits; y de $n=4 \to 5$ se redujo a solo $0.095$ bits. La curva se está aplanando asintóticamente y la memoria útil del corpus se agotó en $n=5$. Probar $n=6$ habría aumentado el sobreajuste sin mejorar la prueba.
+\end{trapbox}
+
+\begin{trapbox}{3.2}{«¿Por qué evaluaron con BPC y Perplejidad en lugar del porcentaje de aciertos (\textit{accuracy})?»}
+\textbf{Respuesta Maestra:} Porque predecir texto es intrínsecamente estocástico y probabilístico, no determinista.\\[3pt]
+\textbf{Desarrollo:} En lenguaje natural rara vez existe una única letra posible. Después de \texttt{"la "}, puede venir una \texttt{'c'}, una \texttt{'m'} o una \texttt{'p'}. El \textit{accuracy} solo premia si la opción más probable acierta exactamente el carácter que Unamuno escribió, castigando con 0 si la segunda opción tenía un 40\,\% de probabilidad. El BPC, en cambio, mide la calidad de la distribución de probabilidad completa: premia a los modelos calibrados que asignan alta probabilidad a los caracteres reales y castiga severamente la arrogancia de asignar probabilidad cero.
+\end{trapbox}
+
+\begin{trapbox}{3.3}{«El intervalo de confianza excluye el cero. ¿Eso prueba que $n=5$ es el mejor modelo en general para el idioma español?»}
+\textbf{Respuesta Maestra:} \textbf{¡NO! Cuidado: esa conclusión sería estadísticamente inválida.}\\[3pt]
+\textbf{Desarrollo:} El resultado prueba con significancia del 5\,\% que $n=5$ es superior a $n=4$ \textbf{específicamente para la obra \textit{Niebla} de Miguel de Unamuno bajo la partición contigua evaluada}. No se puede extrapolar a todo el idioma español porque el léxico, estilo y puntuación de Unamuno son particulares. En textos científicos, jurídicos o contemporáneos, la estructura sintáctica y los órdenes óptimos podrían diferir.
+\end{trapbox}
+
+\begin{trapbox}{3.4}{«¿Por qué la media de los 16 bloques ($\bar{\Delta} = 0.0926$) no es idéntica a la diferencia de los BPC de la Tabla T3 ($0.0947$)?»}
+\textbf{Respuesta Maestra:} Porque la media del bootstrap $\bar{\Delta}$ es un promedio simple no ponderado de 16 bloques, mientras que el BPC de la Tabla T3 pondera cada bloque por su número exacto de caracteres.\\[3pt]
+\textbf{Desarrollo:} 15 bloques tienen exactamente $2\,000$ caracteres, pero el bloque 16 tiene solo $1\,579$ caracteres. Si ponderamos cada $\Delta_j$ por su peso relativo:
+$$\Delta_{\text{ponderado}} = \sum_{j=1}^{16} \frac{N_j}{31\,579} \Delta_j = \mathbf{0.09474\text{ bits}}$$
+Se recupera con precisión exacta de 5 decimales la diferencia de la Tabla T3 ($2.34613 - 2.25139 = 0.09474$). No existe ninguna contradicción; ambos cálculos son matemáticamente consistentes.
+\end{trapbox}
+
+\begin{trapbox}{3.5}{«¿Cuáles fueron los 2 bloques donde $n=4$ le ganó a $n=5$, y qué explicación tiene?»}
+\textbf{Respuesta Maestra:} Fueron exactamente los bloques 15 y 16 (los dos últimos del libro), y se debe a un cambio drástico en el estilo literario del autor.\\[3pt]
+\textbf{Desarrollo:} En el bloque 15, $\Delta_{15} = -0.0534$; en el bloque 16, $\Delta_{16} = -0.0646$. Corresponden al epílogo de la novela: la muerte del protagonista Augusto Pérez y la conmovedora elegía fúnebre pronunciada por su perro Orfeo. El vocabulario pasa del diálogo intelectual y filosófico habitual a un lamento poético y fúnebre con construcciones sintácticas inusuales en el resto del libro. Al encontrarse con giros desconocidos, el modelo $n=5$ sufre más por su memoria larga que el modelo $n=4$, que es más conservador.
+\end{trapbox}
+
+\begin{trapbox}{3.6}{«¿Qué sucedería si evaluaran este modelo sobre noticias de Twitter o un manual de medicina?»}
+\textbf{Respuesta Maestra:} El BPC se degradaría drásticamente (aumentaría a valores muy altos) debido al fenómeno de desajuste de dominio (\textit{domain mismatch}).\\[3pt]
+\textbf{Desarrollo:} Unamuno escribió en el español literario de 1914, con sintaxis culta, arcaísmos y sin terminología moderna. En Twitter o medicina abundan tecnicismos, anglicismos, siglas y nombres propios que nunca aparecieron en el entrenamiento. Esos términos desconocidos caerían repetidamente en la probabilidad de suavizado uniforme ($1/27$), elevando el BPC hacia el peor escenario posible ($\sim 4.75$ bits).
+\end{trapbox}
+
+\begin{trapbox}{3.7}{«Al generar texto en la Fase 5, ¿el modelo 'entiende' o 'sabe' español?»}
+\textbf{Respuesta Maestra:} No, el modelo carece de comprensión semántica o razonamiento; es únicamente un generador estocástico de dependencias locales.\\[3pt]
+\textbf{Desarrollo:} El modelo solo calcula frecuencias condicionales de caracteres contiguos. A medida que $n$ sube a 5, genera palabras coherentes como \texttt{"pensaba en eugenia"} simplemente porque esas cadenas de caracteres co-ocurrieron con frecuencia en los diálogos del entrenamiento. Es un fenómeno puramente estadístico de correlación local, sin modelo del mundo ni comprensión conceptual subyacente.
+\end{trapbox}
+
+\begin{trapbox}{3.8}{«¿Cuál es la interpretación bayesiana del suavizado aditivo de Lidstone?»}
+\textbf{Respuesta Maestra:} Equivale a estimar la distribución posterior bajo una distribución a priori de Dirichlet simétrica $\text{Dir}(\alpha, \ldots, \alpha)$.\\[3pt]
+\textbf{Fundamento Matemático:} Si la verosimilitud de los conteos condicionales es multinomial, su prior conjugada es una distribución de Dirichlet con hiperparámetros $(\alpha_1, \ldots, \alpha_K)$. Al asumir ignorancia simétrica previa, fijamos $\alpha_k = \alpha$ para todo $k \in \mathcal{V}$. La media de la distribución posterior resulta ser exactamente la fórmula de Lidstone: $E[q(y|h) \mid \text{datos}] = \frac{c(h,y) + \alpha}{c(h) + \alpha K}$. El suavizado es, en el fondo, inferencia bayesiana con información a priori difusa.
+\end{trapbox}
+
+---
+
+\section*{Checklist Rápido de 60 Segundos antes de Entrar a la Defensa}
+\begin{enumerate}[leftmargin=*, nosep]
+    \item \textbf{¿Mejor modelo?} $n=5$, con BPC $2.251$ bits y PPL $4.761$.
+    \item \textbf{¿Mejor $\alpha$?} $0.030$ para $n=5$ y $n=4$; $0.1$ para $n=3$; $0.001$ para $n=2$; $1.0$ para $n=1$.
+    \item \textbf{¿Diferencia contra $n=4$?} $\bar{\Delta} = 0.0926$ bits, IC 95\,\%: $[0.0553,\, 0.1259]$ bits. Excluye el cero.
+    \item \textbf{¿Por qué no MLE?} Porque $-\log_2(0) = +\infty$. En $n=5$ hubo $2\,171$ ceros en validación (6.88\,\%).
+    \item \textbf{¿Por qué no barajar?} Porque rompe la dependencia de Markov contigua del lenguaje natural.
+    \item \textbf{¿Por qué bootstrap por bloques?} Porque los caracteres no son IID; los bloques de $2\,000$ caracteres conservan la autocorrelación serial.
+    \item \textbf{¿Distribución $\pi$?} 22 iteraciones por potencias; diferencia máxima contra unigramas de solo $3.71 \times 10^{-6}$.
+\end{enumerate}
+
+\end{document}

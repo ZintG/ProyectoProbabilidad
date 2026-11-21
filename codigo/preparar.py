@@ -89,19 +89,35 @@ def main():
     print("PREPARACIÓN Y NORMALIZACIÓN DEL CORPUS: 'NIEBLA'")
     print("=" * 65)
 
-    # 1. Cargar el texto limpio de Gutenberg
-    print(f"\n1. Leyendo archivo: {RUTA_ENTRADA.name}...")
-    texto_bruto = cargar_texto(RUTA_ENTRADA)
-    print(f"   - Caracteres iniciales leídos: {len(texto_bruto):,}")
-
-    # 2. Quitar notas editoriales (Gutenberg)
-    print("\n2. Realizando limpieza editorial (nota del transcriptor e índice)...")
-    texto_obra = recortar_paratexto_editorial(texto_bruto)
-    print(f"   - Caracteres tras recorte editorial: {len(texto_obra):,}")
-
-    # 3. Normalizar (minúsculas, espacios colapsados y numeral '#')
-    print("\n3. Aplicando normalización (minúsculas, espacios simples y '#')...")
-    texto_norm = normalizar_texto(texto_obra)
+    # 1. Cargar el texto
+    if RUTA_ENTRADA.exists():
+        print(f"\n1. Leyendo archivo local: {RUTA_ENTRADA.name}...")
+        texto_bruto = cargar_texto(RUTA_ENTRADA)
+        print(f"   - Caracteres iniciales leídos: {len(texto_bruto):,}")
+        print("\n2. Realizando limpieza editorial (nota del transcriptor e índice)...")
+        texto_obra = recortar_paratexto_editorial(texto_bruto)
+        print(f"   - Caracteres tras recorte editorial: {len(texto_obra):,}")
+        print("\n3. Aplicando normalización (minúsculas, espacios simples y '#')...")
+        texto_norm = normalizar_texto(texto_obra)
+    elif (DIR_DATOS / "texto_normalizado.txt").exists():
+        print("\n1. Archivo libro/Niebla_limpio.txt no encontrado.")
+        print("   Usando datos/texto_normalizado.txt disponible en el paquete...")
+        texto_norm = cargar_texto(DIR_DATOS / "texto_normalizado.txt")
+    else:
+        url = "https://www.gutenberg.org/cache/epub/49836/pg49836.txt"
+        print(f"\n1. Descargando obra desde Project Gutenberg ({url})...")
+        try:
+            import urllib.request
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                texto_bruto = resp.read().decode("utf-8")
+            print(f"   - Caracteres descargados: {len(texto_bruto):,}")
+            texto_obra = recortar_paratexto_editorial(texto_bruto)
+            texto_norm = normalizar_texto(texto_obra)
+        except Exception as e:
+            print(f"\nERROR: No se pudo obtener el texto: {e}")
+            print("Por favor revise la URL y ficha en datos/FUENTE.md.")
+            raise SystemExit(1)
     print(f"   - Caracteres finales normalizados: {len(texto_norm):,}")
 
     # Verificar vocabulario resultante

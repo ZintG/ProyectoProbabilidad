@@ -11,7 +11,8 @@ from modelos import ModeloNgramas
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DIR_DATOS = BASE_DIR / "datos"
-DIR_TABLAS = BASE_DIR / "tablas"
+DIR_RESULTADOS = BASE_DIR / "resultados"
+DIR_TABLAS = BASE_DIR / "tablas" if (BASE_DIR / "tablas").exists() else DIR_RESULTADOS
 
 
 def evaluar_ceros(modelo, validacion, entrenamiento):

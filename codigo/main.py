@@ -32,7 +32,7 @@ from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 CODIGO = BASE_DIR / "codigo"
-T3 = BASE_DIR / "tablas" / "T3_evaluacion_prueba.csv"
+T3 = (BASE_DIR / "tablas" / "T3_evaluacion_prueba.csv") if (BASE_DIR / "tablas" / "T3_evaluacion_prueba.csv").exists() else (BASE_DIR / "resultados" / "T3_evaluacion_prueba.csv")
 
 ETAPAS = [
     ("preparar.py", "Corpus: limpieza, normalización y partición"),

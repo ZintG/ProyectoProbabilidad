@@ -14,7 +14,7 @@ from modelos import ModeloNgramas
 
 BASE_DIR = Path(__file__).resolve().parents[1]
 DIR_DATOS = BASE_DIR / "datos"
-DIR_TABLAS = BASE_DIR / "tablas"
+DIR_TABLAS = BASE_DIR / "tablas" if (BASE_DIR / "tablas").exists() else (BASE_DIR / "resultados")
 
 ALPHAS = [0.001, 0.003, 0.01, 0.03, 0.1, 0.3, 1.0]
 ALPHA_OPTIMO = {1: 1.0, 2: 0.001, 3: 0.1, 4: 0.03, 5: 0.03}
